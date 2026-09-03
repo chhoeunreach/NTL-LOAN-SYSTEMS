@@ -341,7 +341,7 @@ class SettingsController extends Controller
         }
 
         $settings = TelegramSettingsService::get();
-        $webhookUrl = url('/webhook/loan-telegram');
+        $webhookUrl = trim((string) config('loanmanagement.telegram.webhook_url')) ?: url('/webhook/loan-telegram');
 
         return view('loanmanagement::settings.telegram', compact('settings', 'webhookUrl'));
     }
@@ -427,7 +427,10 @@ class SettingsController extends Controller
             return response()->json(['success' => false, 'message' => 'Save a webhook secret before registering the webhook.'], 422);
         }
 
-        $webhookUrl = url('/webhook/loan-telegram');
+        $webhookUrl = trim((string) config('loanmanagement.telegram.webhook_url'));
+        if ($webhookUrl === '') {
+            $webhookUrl = url('/webhook/loan-telegram');
+        }
 
         try {
             $response = Http::timeout(15)->asForm()->post("https://api.telegram.org/bot{$token}/setWebhook", [

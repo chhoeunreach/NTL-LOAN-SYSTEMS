@@ -22,6 +22,7 @@ return [
         'bot_token' => env('LOAN_CHAT_TELEGRAM_BOT_TOKEN', ''),
         'bot_username' => env('LOAN_CHAT_TELEGRAM_BOT_USERNAME', ''),
         'webhook_secret' => env('LOAN_CHAT_TELEGRAM_WEBHOOK_SECRET', ''),
+        'webhook_url' => env('LOAN_CHAT_TELEGRAM_WEBHOOK_URL', ''),
         'link_ttl_minutes' => (int) env('LOAN_CHAT_TELEGRAM_LINK_TTL_MINUTES', 15),
     ],
     'allow_without_pos_stock' => true,
