@@ -298,7 +298,7 @@
                 'X-CSRF-TOKEN': csrf
             },
             body: formData
-        }).then(function(r){ return r.json(); });
+        }).then(parseJsonResponse);
     }
     function apiJson(url, method, payload){
         return fetch(url, {
@@ -311,7 +311,25 @@
                 'X-CSRF-TOKEN': csrf
             },
             body: JSON.stringify(payload || {})
-        }).then(function(r){ return r.json(); });
+        }).then(parseJsonResponse);
+    }
+    function parseJsonResponse(response){
+        return response.json()
+            .catch(function(){
+                return {
+                    success: false,
+                    message: response.ok ? 'Invalid server response.' : ('Request failed with status ' + response.status + '.')
+                };
+            })
+            .then(function(json){
+                if (!response.ok && json && json.success !== false) {
+                    json.success = false;
+                }
+                if (!response.ok && json && !json.message) {
+                    json.message = 'Request failed with status ' + response.status + '.';
+                }
+                return json;
+            });
     }
     function singleData(resp){ return resp && resp.data ? resp.data : null; }
     function listData(resp){ return resp && Array.isArray(resp.data) ? resp.data : []; }
@@ -582,13 +600,25 @@
         $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Sending Invoice');
         showComposerError('');
 
-        buildLoanPrintImageFromPreview(activeLoanContext.loan_id)
-            .then(function(blob){
-                var fileName = 'loan-invoice-' + String(activeLoanContext.loan_number || activeLoanContext.loan_id).replace(/[^a-zA-Z0-9_-]+/g, '-') + '.png';
-                var file = new File([blob], fileName, {type: 'image/png'});
-                return sendTelegramFile(file, 'image', caption);
+        sendInvoiceImageFromServer(activeLoanContext.loan_id, caption)
+            .then(function(resp){
+                if (resp && resp.success) {
+                    loadThread(false);
+                    loadContacts($('#lmTgSearchInput').val());
+                    return null;
+                }
+
+                return buildLoanPrintImageFromPreview(activeLoanContext.loan_id)
+                    .then(function(blob){
+                        var fileName = 'loan-invoice-' + String(activeLoanContext.loan_number || activeLoanContext.loan_id).replace(/[^a-zA-Z0-9_-]+/g, '-') + '.png';
+                        var file = new File([blob], fileName, {type: 'image/png'});
+                        return sendTelegramFile(file, 'image', caption);
+                    });
             })
             .then(function(resp){
+                if (resp === null) {
+                    return;
+                }
                 if (!(resp && resp.success)) {
                     showComposerError((resp && resp.message) || 'Failed to send invoice image.');
                     return;
@@ -598,13 +628,31 @@
                 loadContacts($('#lmTgSearchInput').val());
             })
             .catch(function(){
-                showComposerError('Failed to create invoice image from print preview.');
+                showComposerError('Failed to send invoice image.');
             })
             .finally(function(){
                 $button.prop('disabled', false).html('<i class="fa fa-file-text-o"></i> Send Invoice');
             });
 
         return true;
+    }
+
+    function sendInvoiceImageFromServer(loanId, caption){
+        return apiPostJson(chatBaseUrl + '/' + activeThreadId + '/invoice-image', {
+            loan_id: loanId,
+            message: caption || ''
+        });
+    }
+
+    function sendInvoiceImageFromPreview(){
+        var caption = 'Invoice: ' + (activeLoanContext.loan_number || activeLoanContext.loan_id);
+
+        return buildLoanPrintImageFromPreview(activeLoanContext.loan_id)
+            .then(function(blob){
+                var fileName = 'loan-invoice-' + String(activeLoanContext.loan_number || activeLoanContext.loan_id).replace(/[^a-zA-Z0-9_-]+/g, '-') + '.png';
+                var file = new File([blob], fileName, {type: 'image/png'});
+                return sendTelegramFile(file, 'image', caption);
+            });
     }
 
     function buildLoanPrintImageFromPreview(loanId){
@@ -822,6 +870,71 @@
         $('#lmTgFab').addClass('open');
         loadContacts('');
         openContact(customerId, name || 'Customer', !!linked, context || {});
+    };
+
+    window.loanManagementSendInvoiceToTelegramCustomer = function(customerId, name, linked, context){
+        context = context || {};
+        $('#lmTgDrawer').addClass('open');
+        $('#lmTgDrawerOverlay').addClass('open');
+        $('#lmTgFab').addClass('open');
+        loadContacts('');
+
+        activeLoanContext = context;
+        activeCustomerId = customerId;
+        activeCustomerName = name || 'Customer';
+        setHeader({display_name: activeCustomerName, telegram_linked: !!linked}, linked, 'Preparing invoice...');
+        $('#lmTgComposerForm').show();
+        $('#lmTgTools').css('display', 'flex');
+        $('#lmTgMessages').html('<div class="lm-tg-empty">Preparing invoice message...</div>');
+        showComposerError('');
+
+        return apiPostJson(chatBaseUrl, {customer_id: customerId})
+            .then(function(resp){
+                var thread = singleData(resp);
+                if (!thread || !thread.id) {
+                    throw new Error((resp && resp.message) || 'Unable to open this customer chat.');
+                }
+
+                activeThreadId = thread.id;
+                setHeader(thread.customer_profile || thread, !!thread.telegram_linked, 'Sending invoice...');
+                activeCustomerName = profileName(thread.customer_profile || thread, activeCustomerName);
+                startPolling();
+
+                var loanId = context.loan_id || '';
+                if (!loanId) {
+                    throw new Error('No loan selected for this invoice.');
+                }
+
+                var caption = context.message || ('Invoice: ' + (context.loan_number || loanId));
+                return sendInvoiceImageFromServer(loanId, caption)
+                    .then(function(resp){
+                        if (resp && resp.success) {
+                            return resp;
+                        }
+
+                        return sendInvoiceImageFromPreview().then(function(fallbackResp){
+                            if (fallbackResp && fallbackResp.success) {
+                                return fallbackResp;
+                            }
+
+                            throw new Error((fallbackResp && fallbackResp.message) || (resp && resp.message) || 'Failed to send invoice image.');
+                        });
+                    });
+            })
+            .then(function(resp){
+                if (!(resp && resp.success)) {
+                    throw new Error((resp && resp.message) || 'Failed to send invoice image.');
+                }
+
+                loadThread(false);
+                loadContacts($('#lmTgSearchInput').val());
+                return resp;
+            })
+            .catch(function(error){
+                var message = error && error.message ? error.message : 'Failed to send invoice image.';
+                showComposerError(message);
+                throw error;
+            });
     };
 })(jQuery);
 </script>

@@ -254,6 +254,13 @@ class LoanTelegramChatController extends Controller
         $imageCss = '<style>body{background:#fff!important}.page{margin:0 auto!important}.no-print{display:none!important}</style>';
         $html = str_ireplace('</head>', $imageCss.'</head>', $html);
 
+        $rendererBinary = env('WKHTMLTOIMAGE_BINARY');
+        if (! $rendererBinary || ! is_file($rendererBinary)) {
+            return $this->fail('Invoice image renderer is not configured. Using browser invoice image fallback.', 422, (object) [
+                'fallback' => 'browser_invoice_image',
+            ]);
+        }
+
         $tmpDir = storage_path('app/temp/telegram-invoices');
         if (! File::exists($tmpDir)) {
             File::makeDirectory($tmpDir, 0755, true);

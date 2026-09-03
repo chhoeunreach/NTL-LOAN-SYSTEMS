@@ -476,7 +476,10 @@ $(function () {
                 var invoiceCustomer = {
                     id: res.data && res.data.customer_id ? res.data.customer_id : 0,
                     name: (res.data && res.data.customer_name) ? res.data.customer_name : '',
-                    telegramLinked: !!(res.data && res.data.telegram_linked)
+                    telegramLinked: !!(res.data && res.data.telegram_linked),
+                    loanId: res.data && res.data.loan_id ? res.data.loan_id : {{ (int) ($loanRow->id ?? 0) }},
+                    loanNumber: (res.data && res.data.loan_number) ? res.data.loan_number : @json((string) ($loanNumber ?? '')),
+                    balanceAmount: (res.data && res.data.balance_amount) ? res.data.balance_amount : @json((string) ($loanRow->balance_amount ?? ''))
                 };
                 var $loanSections = $modal.find('#loanShowSections');
                 var sectionReloadUrl = $loanSections.length ? ($loanSections.data('url') || '') : '';
@@ -524,7 +527,8 @@ $(function () {
                             : '<div class="text-center text-muted" style="padding:60px;">No invoice preview available.</div>') +
                     '</div>' +
                     '<div class="modal-footer">' +
-                        '<button type="button" class="btn btn-success lm-invoice-send-btn" data-cid="' + (customer.id || 0) + '" data-name="' + $('<div>').text(customer.name || 'Customer').html() + '" data-linked="' + (customer.telegramLinked ? '1' : '0') + '">' +
+                        '<span class="lm-invoice-send-status text-muted pull-left" style="display:none;margin-top:8px;"></span>' +
+                        '<button type="button" class="btn btn-success lm-invoice-send-btn" data-cid="' + (customer.id || 0) + '" data-loan-id="' + (customer.loanId || 0) + '" data-loan-number="' + $('<div>').text(customer.loanNumber || '').html() + '" data-balance="' + $('<div>').text(customer.balanceAmount || '').html() + '" data-name="' + $('<div>').text(customer.name || 'Customer').html() + '" data-linked="' + (customer.telegramLinked ? '1' : '0') + '">' +
                             '<i class="fa fa-paper-plane"></i> Send invoice to customer</button>' +
                         '<button type="button" class="btn btn-primary lm-invoice-done-btn"><i class="fa fa-check"></i> Done</button>' +
                     '</div>' +
@@ -532,28 +536,86 @@ $(function () {
             '</div>' +
         '</div>').appendTo('body');
 
+        function invoicePreviewStatus(message, type) {
+            var $status = $previewModal.find('.lm-invoice-send-status');
+            $status
+                .removeClass('text-muted text-success text-danger')
+                .addClass(type === 'success' ? 'text-success' : (type === 'error' ? 'text-danger' : 'text-muted'))
+                .text(message || '')
+                .toggle(!!message);
+        }
+
+        function notifyInvoicePreview(message, type) {
+            invoicePreviewStatus(message, type);
+            if (window.toastr) {
+                if (type === 'error') {
+                    toastr.error(message);
+                } else if (type === 'success') {
+                    toastr.success(message);
+                } else {
+                    toastr.info(message);
+                }
+            } else if (type === 'error') {
+                alert(message);
+            }
+        }
+
         $previewModal.on('click', '.lm-invoice-send-btn', function () {
             var $button = $(this);
             var cid = parseInt($button.data('cid'), 10) || 0;
+            var loanId = parseInt($button.data('loan-id'), 10) || 0;
+            var loanNumber = $button.data('loan-number') || '';
+            var balanceAmount = $button.data('balance') || '';
             var name = $button.data('name') || 'Customer';
             var linked = String($button.data('linked')) === '1';
 
             if (!cid) {
-                if (window.toastr) { toastr.error('This loan has no linked customer.'); }
+                notifyInvoicePreview('This loan has no linked customer.', 'error');
                 return;
             }
             if (!linked) {
-                if (window.toastr) { toastr.error('This customer is not connected to Telegram yet. Please link them in the loan details.'); }
+                notifyInvoicePreview('This customer is not connected to Telegram yet. Please link them in the loan details.', 'error');
                 return;
             }
-            if (typeof window.loanManagementOpenTelegramCustomer !== 'function') {
-                if (window.toastr) { toastr.error('Telegram chat is not available on this page.'); }
+            if (typeof window.loanManagementSendInvoiceToTelegramCustomer !== 'function' && typeof window.loanManagementOpenTelegramCustomer !== 'function') {
+                notifyInvoicePreview('Telegram chat is not available on this page.', 'error');
+                return;
+            }
+
+            var context = {
+                auto_action: 'invoice',
+                loan_id: loanId,
+                loan_number: loanNumber,
+                balance_amount: balanceAmount
+            };
+
+            if (typeof window.loanManagementSendInvoiceToTelegramCustomer === 'function') {
+                var originalHtml = $button.html();
+                $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Sending invoice...');
+                invoicePreviewStatus('Sending invoice to customer chat...', 'info');
+
+                function restoreSendButton() {
+                    $button.prop('disabled', false).html(originalHtml);
+                }
+
+                window.loanManagementSendInvoiceToTelegramCustomer(cid, name, linked, context)
+                    .then(function () {
+                        notifyInvoicePreview('Invoice sent to customer chat.', 'success');
+                        restoreSendButton();
+                        $previewModal.modal('hide');
+                    })
+                    .catch(function (error) {
+                        var message = error && error.message ? error.message : 'Unable to send invoice to customer chat.';
+                        notifyInvoicePreview(message, 'error');
+                        restoreSendButton();
+                    });
+
                 return;
             }
 
             $previewModal.modal('hide');
-            window.loanManagementOpenTelegramCustomer(cid, name, linked, { auto_action: 'invoice' });
-            if (window.toastr) { toastr.success('Opening Telegram chat to send invoice...'); }
+            window.loanManagementOpenTelegramCustomer(cid, name, linked, context);
+            notifyInvoicePreview('Opening Telegram chat to send invoice...', 'success');
         });
 
         $previewModal.on('hidden.bs.modal', function () {
@@ -806,6 +868,18 @@ $(function () {
         return deferred.promise();
     }
 
+    function formatLmExpiry(value) {
+        if (!value) {
+            return '';
+        }
+        var date = new Date(value);
+        if (isNaN(date.getTime())) {
+            return String(value);
+        }
+        var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
     $form.on('click', '.js-payment-telegram-link', function () {
         var $button = $(this);
         var url = $button.data('url') || telegramLinkUrl;
@@ -817,7 +891,7 @@ $(function () {
         $.post(url, {_token: $('meta[name="csrf-token"]').attr('content')})
             .done(function (res) {
                 var link = res && res.link ? res.link : '';
-                var expires = res && res.expires_at ? moment(res.expires_at).format('YYYY-MM-DD HH:mm') : '';
+                var expires = res && res.expires_at ? formatLmExpiry(res.expires_at) : '';
                 var qrUrl = link ? 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link) : '';
 
                 $('#paymentTelegramQr').attr('src', qrUrl);

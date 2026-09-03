@@ -146,8 +146,20 @@ $(document).ready(function(){
         return $('<div>').html(value || '').text().trim() || '-';
     }
 
-    function escapeHtml(value) {
+function escapeHtml(value) {
         return $('<div>').text(value || '').html();
+    }
+
+    function formatLmExpiry(value) {
+        if (!value) {
+            return '';
+        }
+        var date = new Date(value);
+        if (isNaN(date.getTime())) {
+            return String(value);
+        }
+        var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
     }
 
     function copyLoanText(text) {
@@ -270,6 +282,14 @@ $(document).ready(function(){
         $('#loanStatBalance').text(formatMoney(balance));
     }
 
+    var loanTable = null;
+
+    function reloadLoanTable() {
+        if (loanTable && loanTable.ajax) {
+            loanTable.ajax.reload();
+        }
+    }
+
     function setRange(s, e){
         $('#start_date').val(s.format('YYYY-MM-DD'));
         $('#end_date').val(e.format('YYYY-MM-DD'));
@@ -278,26 +298,75 @@ $(document).ready(function(){
 
     if (typeof moment !== 'undefined' && $.fn.daterangepicker) {
         var loanDrs = (typeof dateRangeSettings !== 'undefined') ? dateRangeSettings : {};
+        var fyStart = (typeof financial_year !== 'undefined' && financial_year.start && moment(financial_year.start).isValid())
+            ? moment(financial_year.start)
+            : moment().startOf('year');
+        var fyEnd = (typeof financial_year !== 'undefined' && financial_year.end && moment(financial_year.end).isValid())
+            ? moment(financial_year.end)
+            : moment().endOf('year');
+        var loanDateRanges = {
+            'Today': [moment(), moment()],
+            'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+            'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+            'This Month': [moment().startOf('month'), moment().endOf('month')],
+            'Last Month': [
+                moment().subtract(1, 'month').startOf('month'),
+                moment().subtract(1, 'month').endOf('month')
+            ],
+            'This month last year': [
+                moment().subtract(1, 'year').startOf('month'),
+                moment().subtract(1, 'year').endOf('month')
+            ],
+            'This Year': [moment().startOf('year'), moment().endOf('year')],
+            'Last Year': [
+                moment().subtract(1, 'year').startOf('year'),
+                moment().subtract(1, 'year').endOf('year')
+            ],
+            'Current financial year': [fyStart.clone(), fyEnd.clone()],
+            'Last financial year': [
+                fyStart.clone().subtract(1, 'year'),
+                fyEnd.clone().subtract(1, 'year')
+            ]
+        };
 
         $('#sell_list_filter_date_range').daterangepicker($.extend(true, {}, loanDrs, {
             autoUpdateInput: false,
+            showDropdowns: true,
+            linkedCalendars: false,
             startDate: moment().startOf('month'),
-            endDate: moment()
+            endDate: moment(),
+            ranges: loanDateRanges,
+            locale: $.extend(true, {}, loanDrs.locale || {}, {
+                format: loanDateFormat,
+                separator: ' ~ ',
+                applyLabel: @json($text('Apply', 'អនុវត្ត')),
+                cancelLabel: @json($text('Clear', 'សម្អាត')),
+                customRangeLabel: 'Custom Range',
+                toLabel: '~'
+            })
         }), function(s, e){
             setRange(s, e);
-            loanTable.ajax.reload();
+            reloadLoanTable();
         });
 
         $('#sell_list_filter_date_range').on('cancel.daterangepicker', function(){
             $(this).val('');
             $('#start_date').val('');
             $('#end_date').val('');
-            loanTable.ajax.reload();
+            reloadLoanTable();
         });
     } else {
         $('#sell_list_filter_date_range').prop('readonly', false).on('change', function(){
-            $('#start_date,#end_date').val('');
-            loanTable.ajax.reload();
+            var raw = String($(this).val() || '').trim();
+            var parts = raw.split(/\s*(?:~|\s-\s)\s*/);
+            if (parts.length >= 2) {
+                $('#start_date').val(parts[0]);
+                $('#end_date').val(parts[1]);
+            } else {
+                $('#start_date,#end_date').val('');
+            }
+            reloadLoanTable();
         });
     }
 
@@ -314,7 +383,7 @@ $(document).ready(function(){
         }
     });
 
-    var loanTable = $('#loan_list_table').DataTable({
+    loanTable = $('#loan_list_table').DataTable({
         processing: true,
         serverSide: true,
         autoWidth: false,
@@ -507,7 +576,7 @@ $(document).ready(function(){
                 var qrUrl = link ? 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link) : '';
                 var safeLink = escapeHtml(link);
                 var safeCustomer = escapeHtml(customer);
-                var safeExpires = escapeHtml(expires ? moment(expires).format('YYYY-MM-DD HH:mm') : '');
+                var safeExpires = escapeHtml(expires ? formatLmExpiry(expires) : '');
 
                 $('.view_modal').html(
                     '<div class="modal-dialog modal-sm" role="document">' +

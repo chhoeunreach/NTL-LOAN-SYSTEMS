@@ -861,9 +861,12 @@ class LoanInstallmentListController extends Controller
                 ($this->hasCol('collector_name_snapshot') ? 'l.collector_name_snapshot' : ($this->hasCol('collector_id') ? "CONCAT('Collector #', l.collector_id)" : 'NULL')).' as collector_name_snapshot'
             );
 
-        if ($this->hasCol('loan_date')) {
-            if ($request->filled('start_date')) $q->whereDate('l.loan_date', '>=', $request->start_date);
-            if ($request->filled('end_date')) $q->whereDate('l.loan_date', '<=', $request->end_date);
+        $listDateColumn = $this->hasCol('loan_date') ? 'loan_date' : ($this->hasCol('created_at') ? 'created_at' : null);
+        if ($listDateColumn) {
+            $startDate = $this->cleanLoanDateFilter($request->input('start_date'));
+            $endDate = $this->cleanLoanDateFilter($request->input('end_date'));
+            if ($startDate) $q->whereDate('l.'.$listDateColumn, '>=', $startDate);
+            if ($endDate) $q->whereDate('l.'.$listDateColumn, '<=', $endDate);
         }
         if ($request->filled('status') && $this->hasCol('status')) $q->where('l.status', $request->status);
         if ($request->filled('location_name')) {
@@ -1029,6 +1032,13 @@ class LoanInstallmentListController extends Controller
             })
             ->rawColumns(['status', 'principal_amount', 'paid_amount', 'balance_amount', 'action'])
             ->make(true);
+    }
+
+    protected function cleanLoanDateFilter($value): ?string
+    {
+        $value = trim((string) $value);
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
     }
 
     public function printModal(int $loan)
@@ -1657,11 +1667,12 @@ class LoanInstallmentListController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 $paymentId = $createdPaymentIds[0] ?? null;
                 $redirectUrl = $returnTo !== '' ? $returnTo : route('loan-management.dashboard');
+                $updatedLoanRow = DB::connection('mysql_loan')->table('loans')->where('id', $loan)->first() ?: $loanRow;
 
-                $customerId = (int) ($loanRow->customer_id ?? 0);
+                $customerId = (int) ($updatedLoanRow->customer_id ?? 0);
                 $telegramLinked = false;
-                $customerName = trim((string) ($loanRow->customer_khmer_name ?? ''))
-                    ?: trim((string) ($loanRow->customer_name_snapshot ?? ''));
+                $customerName = trim((string) ($updatedLoanRow->customer_khmer_name ?? ''))
+                    ?: trim((string) ($updatedLoanRow->customer_name_snapshot ?? ''));
                 if ($customerId > 0 && $this->loanTableExists('loan_customers')) {
                     $customerRow = DB::connection('mysql_loan')->table('loan_customers')->where('id', $customerId)->first();
                     if ($customerRow) {
@@ -1680,6 +1691,9 @@ class LoanInstallmentListController extends Controller
                         'payment_id' => $paymentId,
                         'print_url' => null,
                         'invoice_url' => route('loan-management.loans.print', ['loan' => $loan, 'auto_print' => 0]),
+                        'loan_id' => $loan,
+                        'loan_number' => $updatedLoanRow->loan_number ?? $loan,
+                        'balance_amount' => $updatedLoanRow->balance_amount ?? null,
                         'customer_id' => $customerId,
                         'customer_name' => $customerName,
                         'telegram_linked' => $telegramLinked,
