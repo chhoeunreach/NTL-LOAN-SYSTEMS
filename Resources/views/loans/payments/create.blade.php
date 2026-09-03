@@ -471,40 +471,28 @@ $(function () {
                 }
 
                 var $modal = $('.view_modal');
-                var printUrl = res.data && res.data.print_url ? res.data.print_url : '';
                 var redirectUrl = res.data && res.data.redirect_url ? res.data.redirect_url : defaultRedirectUrl;
+                var invoiceUrl = (res.data && res.data.invoice_url) ? res.data.invoice_url : (res.data && res.data.print_url ? res.data.print_url : '');
+                var invoiceCustomer = {
+                    id: res.data && res.data.customer_id ? res.data.customer_id : 0,
+                    name: (res.data && res.data.customer_name) ? res.data.customer_name : '',
+                    telegramLinked: !!(res.data && res.data.telegram_linked)
+                };
                 var $loanSections = $modal.find('#loanShowSections');
+                var sectionReloadUrl = $loanSections.length ? ($loanSections.data('url') || '') : '';
 
-                if ($loanSections.length && $loanSections.data('url')) {
-                    $modal.modal('hide');
-                    if (typeof window.loanManagementDirectPrintUrl === 'function' && printUrl) {
-                        window.loanManagementDirectPrintUrl(printUrl, function () {
-                            window.jQuery.ajax({
-                                url: $loanSections.data('url'),
-                                dataType: 'html',
-                                success: function (html) { $loanSections.html(html); }
-                            });
-                        });
-                    } else {
+                $modal.modal('hide');
+
+                showPaymentInvoicePreview(invoiceUrl, invoiceCustomer, function () {
+                    if (sectionReloadUrl) {
                         window.jQuery.ajax({
-                            url: $loanSections.data('url'),
+                            url: sectionReloadUrl,
                             dataType: 'html',
                             success: function (html) { $loanSections.html(html); }
                         });
                     }
-                    return;
-                }
-
-                $('.view_modal').modal('hide');
-
-                if (typeof window.loanManagementDirectPrintUrl === 'function' && printUrl) {
-                    window.loanManagementDirectPrintUrl(printUrl, function () {
-                        window.location.href = redirectUrl;
-                    });
-                    return;
-                }
-
-                window.location.href = redirectUrl;
+                    window.location.href = redirectUrl;
+                });
             },
             error: function (xhr) {
                 if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
@@ -521,6 +509,66 @@ $(function () {
             }
         });
     });
+
+    function showPaymentInvoicePreview(invoiceUrl, customer, onDone) {
+        customer = customer || {};
+        var $previewModal = $('<div class="modal fade lm-invoice-preview-modal">' +
+            '<div class="modal-dialog modal-xl" role="document" style="width:96%;max-width:1180px;">' +
+                '<div class="modal-content">' +
+                    '<div class="modal-header">' +
+                        '<h4 class="modal-title"><i class="fa fa-file-text-o"></i> Payment Saved - Invoice Preview</h4>' +
+                    '</div>' +
+                    '<div class="modal-body" style="padding:0;height:82vh;">' +
+                        (invoiceUrl
+                            ? '<iframe id="lmInvoicePreviewFrame" src="' + $('<div>').text(invoiceUrl).html() + '" style="width:100%;height:100%;border:0;"></iframe>'
+                            : '<div class="text-center text-muted" style="padding:60px;">No invoice preview available.</div>') +
+                    '</div>' +
+                    '<div class="modal-footer">' +
+                        '<button type="button" class="btn btn-success lm-invoice-send-btn" data-cid="' + (customer.id || 0) + '" data-name="' + $('<div>').text(customer.name || 'Customer').html() + '" data-linked="' + (customer.telegramLinked ? '1' : '0') + '">' +
+                            '<i class="fa fa-paper-plane"></i> Send invoice to customer</button>' +
+                        '<button type="button" class="btn btn-primary lm-invoice-done-btn"><i class="fa fa-check"></i> Done</button>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</div>').appendTo('body');
+
+        $previewModal.on('click', '.lm-invoice-send-btn', function () {
+            var $button = $(this);
+            var cid = parseInt($button.data('cid'), 10) || 0;
+            var name = $button.data('name') || 'Customer';
+            var linked = String($button.data('linked')) === '1';
+
+            if (!cid) {
+                if (window.toastr) { toastr.error('This loan has no linked customer.'); }
+                return;
+            }
+            if (!linked) {
+                if (window.toastr) { toastr.error('This customer is not connected to Telegram yet. Please link them in the loan details.'); }
+                return;
+            }
+            if (typeof window.loanManagementOpenTelegramCustomer !== 'function') {
+                if (window.toastr) { toastr.error('Telegram chat is not available on this page.'); }
+                return;
+            }
+
+            $previewModal.modal('hide');
+            window.loanManagementOpenTelegramCustomer(cid, name, linked, { auto_action: 'invoice' });
+            if (window.toastr) { toastr.success('Opening Telegram chat to send invoice...'); }
+        });
+
+        $previewModal.on('hidden.bs.modal', function () {
+            $previewModal.remove();
+        });
+
+        $previewModal.on('click', '.lm-invoice-done-btn', function () {
+            $previewModal.modal('hide');
+            if (typeof onDone === 'function') {
+                onDone();
+            }
+        });
+
+        $previewModal.modal({ backdrop: 'static', keyboard: false });
+    }
 
     try {
     var paymentTypes = @json($paymentTypes);

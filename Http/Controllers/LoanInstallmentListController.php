@@ -1658,12 +1658,31 @@ class LoanInstallmentListController extends Controller
                 $paymentId = $createdPaymentIds[0] ?? null;
                 $redirectUrl = $returnTo !== '' ? $returnTo : route('loan-management.dashboard');
 
+                $customerId = (int) ($loanRow->customer_id ?? 0);
+                $telegramLinked = false;
+                $customerName = trim((string) ($loanRow->customer_khmer_name ?? ''))
+                    ?: trim((string) ($loanRow->customer_name_snapshot ?? ''));
+                if ($customerId > 0 && $this->loanTableExists('loan_customers')) {
+                    $customerRow = DB::connection('mysql_loan')->table('loan_customers')->where('id', $customerId)->first();
+                    if ($customerRow) {
+                        if (trim((string) ($customerRow->telegram_chat_id ?? '')) !== '') {
+                            $telegramLinked = true;
+                        }
+                        $customerName = trim((string) ($customerRow->khmer_name ?? ''))
+                            ?: ($customerName ?: ((string) ($customerRow->name ?? ($customerRow->customer_name ?? ''))));
+                    }
+                }
+
                 return response()->json([
                     'success' => true,
                     'message' => 'Payment added successfully',
                     'data' => [
                         'payment_id' => $paymentId,
                         'print_url' => null,
+                        'invoice_url' => route('loan-management.loans.print', ['loan' => $loan, 'auto_print' => 0]),
+                        'customer_id' => $customerId,
+                        'customer_name' => $customerName,
+                        'telegram_linked' => $telegramLinked,
                         'redirect_url' => $redirectUrl,
                     ],
                 ]);
