@@ -7,7 +7,6 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
 
 class LoanDashboardService
 {
@@ -160,9 +159,7 @@ class LoanDashboardService
             return null;
         }
 
-        $disk = $file->disk ?? 'public';
-
-        return Storage::disk($disk)->exists($file->path) ? Storage::disk($disk)->url($file->path) : null;
+        return url('loan-management/chat-files/'.$fileId);
     }
 
     public function searchSellsForDashboard(string $term, int $limit = 10): array

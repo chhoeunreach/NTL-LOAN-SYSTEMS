@@ -144,6 +144,129 @@ class RoleController extends Controller
             ->with('status', ['success' => 1, 'msg' => 'Role deleted successfully.']);
     }
 
+    public function export()
+    {
+        $this->authorizeRoleAccess('roles.view');
+        $this->ensurePermissionTables();
+
+        $roles = Role::query()
+            ->with('permissions')
+            ->when(Schema::hasColumn('roles', 'business_id'), fn ($query) => $query->where('business_id', $this->businessId()))
+            ->orderBy('name')
+            ->get();
+
+        return response()->streamDownload(function () use ($roles) {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['name', 'guard_name', 'business_id', 'permissions']);
+
+            foreach ($roles as $role) {
+                fputcsv($output, [
+                    $role->name,
+                    $role->guard_name,
+                    $role->business_id ?? $this->businessId(),
+                    $role->permissions->pluck('name')->implode('|'),
+                ]);
+            }
+
+            fclose($output);
+        }, 'roles-export-'.date('Ymd-His').'.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function downloadTemplate()
+    {
+        $this->authorizeRoleAccess('roles.create');
+        $this->ensurePermissionTables();
+
+        return response()->streamDownload(function () {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['name', 'guard_name', 'business_id', 'permissions']);
+            fputcsv($output, ['Loan Staff', 'web', $this->businessId(), 'loan_management.view|loan_management.loans.view|loan_management.payments.view']);
+            fclose($output);
+        }, 'roles-import-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function import(Request $request)
+    {
+        $this->authorizeRoleAccess('roles.create');
+        $this->ensurePermissionTables();
+
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+            'mode' => 'required|in:insert,update,upsert',
+        ]);
+
+        $rows = $this->csvRows($request->file('file')->getRealPath());
+        if (empty($rows)) {
+            return back()->withErrors(['file' => 'The import file is empty or missing headers.']);
+        }
+
+        $mode = $request->input('mode', 'insert');
+        $imported = 0;
+        $updated = 0;
+        $skipped = 0;
+        $errors = [];
+
+        DB::transaction(function () use ($rows, $mode, &$imported, &$updated, &$skipped, &$errors) {
+            foreach ($rows as $index => $row) {
+                $line = $index + 2;
+                $name = trim((string) ($row['name'] ?? ''));
+
+                if ($name === '') {
+                    $skipped++;
+                    $errors[] = 'Row '.$line.': name is required.';
+                    continue;
+                }
+
+                $existing = Role::query()
+                    ->where('name', $name)
+                    ->where('guard_name', 'web')
+                    ->when(Schema::hasColumn('roles', 'business_id'), fn ($query) => $query->where('business_id', $this->businessId()))
+                    ->first();
+
+                if ($existing && $mode === 'insert') {
+                    $skipped++;
+                    continue;
+                }
+
+                if (! $existing && $mode === 'update') {
+                    $skipped++;
+                    continue;
+                }
+
+                $payload = [
+                    'name' => $name,
+                    'guard_name' => 'web',
+                ];
+
+                if (Schema::hasColumn('roles', 'business_id')) {
+                    $payload['business_id'] = (int) ($row['business_id'] ?? $this->businessId()) ?: $this->businessId();
+                }
+
+                $role = $existing ?: Role::create($payload);
+                if ($existing) {
+                    $role->update($payload);
+                }
+
+                $permissionNames = $this->permissionNamesFromCsv((string) ($row['permissions'] ?? ''));
+                $permissions = collect($permissionNames)->map(function ($permissionName) {
+                    return Permission::firstOrCreate(['name' => $permissionName, 'guard_name' => 'web']);
+                })->all();
+
+                $role->syncPermissions($permissions);
+                $existing ? $updated++ : $imported++;
+            }
+        });
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $message = 'Role import completed. Imported: '.$imported.', Updated: '.$updated.', Skipped: '.$skipped.'.';
+        if (! empty($errors)) {
+            $message .= ' '.count($errors).' row issue(s): '.implode(' ', array_slice($errors, 0, 3));
+        }
+
+        return redirect()->route('roles.index')->with('status', ['success' => empty($errors) ? 1 : 0, 'msg' => $message]);
+    }
+
     protected function authorizeRoleAccess(string $permission): void
     {
         abort_unless(auth()->check() && auth()->user()->can($permission), 403, 'Unauthorized action.');
@@ -304,5 +427,43 @@ class RoleController extends Controller
         if (Schema::hasColumn('roles', 'business_id')) {
             abort_unless((int) $role->business_id === $this->businessId(), 404);
         }
+    }
+
+    protected function csvRows(string $path): array
+    {
+        $handle = fopen($path, 'r');
+        if (! $handle) {
+            return [];
+        }
+
+        $headers = fgetcsv($handle);
+        if (! is_array($headers)) {
+            fclose($handle);
+            return [];
+        }
+
+        $headers = array_map(fn ($header) => strtolower(trim((string) $header)), $headers);
+        $rows = [];
+        while (($data = fgetcsv($handle)) !== false) {
+            if (count(array_filter($data, fn ($value) => trim((string) $value) !== '')) === 0) {
+                continue;
+            }
+
+            $rows[] = array_combine($headers, array_slice(array_pad($data, count($headers), ''), 0, count($headers)));
+        }
+
+        fclose($handle);
+
+        return $rows;
+    }
+
+    protected function permissionNamesFromCsv(string $permissions): array
+    {
+        return collect(preg_split('/[|,]/', $permissions) ?: [])
+            ->map(fn ($permission) => trim((string) $permission))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
     }
 }

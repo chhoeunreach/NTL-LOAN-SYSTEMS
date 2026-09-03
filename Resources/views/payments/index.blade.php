@@ -7,53 +7,69 @@
 </section>
 
 <section class="content">
-    <div class="row">
-        <div class="col-md-3 col-sm-6 col-xs-12">
-            <div class="info-box">
-                <span class="info-box-icon bg-green"><i class="fa fa-money"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Filtered Amount</span>
-                    <span class="info-box-number">$ {{ number_format($summary['amount'] ?? 0, 2) }}</span>
-                </div>
+    <div class="lm-payment-summary-grid">
+        <div class="lm-payment-summary-card tone-green">
+            <div class="lm-payment-summary-icon"><i class="fa fa-money"></i></div>
+            <div class="lm-payment-summary-copy">
+                <span>Filtered Amount</span>
+                <strong>$ {{ number_format($summary['amount'] ?? 0, 2) }}</strong>
+                <small>Total value for current filters</small>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 col-xs-12">
-            <div class="info-box">
-                <span class="info-box-icon bg-aqua"><i class="fa fa-list"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Payments</span>
-                    <span class="info-box-number">{{ number_format($summary['count'] ?? 0) }}</span>
-                </div>
+
+        <div class="lm-payment-summary-card tone-cyan">
+            <div class="lm-payment-summary-icon"><i class="fa fa-list"></i></div>
+            <div class="lm-payment-summary-copy">
+                <span>Payments</span>
+                <strong>{{ number_format($summary['count'] ?? 0) }}</strong>
+                <small>Matching payment records</small>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 col-xs-12">
-            <div class="info-box">
-                <span class="info-box-icon bg-blue"><i class="fa fa-bank"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Loan Payments</span>
-                    <span class="info-box-number">$ {{ number_format($summary['loan_amount'] ?? 0, 2) }}</span>
-                    <small>{{ number_format($summary['loan_count'] ?? 0) }} records</small>
-                </div>
+
+        <div class="lm-payment-summary-card tone-blue">
+            <div class="lm-payment-summary-icon"><i class="fa fa-bank"></i></div>
+            <div class="lm-payment-summary-copy">
+                <span>Loan Payments</span>
+                <strong>$ {{ number_format($summary['loan_amount'] ?? 0, 2) }}</strong>
+                <small>{{ number_format($summary['loan_count'] ?? 0) }} records</small>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6 col-xs-12">
-            <div class="info-box">
-                <span class="info-box-icon bg-purple"><i class="fa fa-calendar"></i></span>
-                <div class="info-box-content">
-                    <span class="info-box-text">Monthly Payments</span>
-                    <span class="info-box-number">$ {{ number_format($summary['monthly_amount'] ?? 0, 2) }}</span>
-                    <small>{{ number_format($summary['monthly_count'] ?? 0) }} records</small>
-                </div>
+
+        <div class="lm-payment-summary-card tone-violet">
+            <div class="lm-payment-summary-icon"><i class="fa fa-calendar"></i></div>
+            <div class="lm-payment-summary-copy">
+                <span>Monthly Payments</span>
+                <strong>$ {{ number_format($summary['monthly_amount'] ?? 0, 2) }}</strong>
+                <small>{{ number_format($summary['monthly_count'] ?? 0) }} records</small>
+            </div>
+        </div>
+
+        <div class="lm-payment-summary-card tone-orange">
+            <div class="lm-payment-summary-icon"><i class="fa fa-check-circle"></i></div>
+            <div class="lm-payment-summary-copy">
+                <span>Pay Off</span>
+                <strong>$ {{ number_format($summary['payoff_amount'] ?? 0, 2) }}</strong>
+                <small>{{ number_format($summary['payoff_count'] ?? 0) }} records</small>
             </div>
         </div>
     </div>
 
-    <div class="box box-primary">
+    <div class="box box-primary lm-payment-filter-panel is-collapsed" id="loanPaymentFilterPanel">
         <div class="box-header with-border">
-            <h3 class="box-title">Filters</h3>
+            <h3 class="box-title">
+                <button type="button" class="lm-payment-filter-title" id="loanPaymentFilterTitle" aria-expanded="false" aria-controls="loanPaymentFilterBody">
+                    <i class="fa fa-filter"></i> Filters
+                </button>
+            </h3>
+            <div class="box-tools pull-right">
+                <button type="button" class="btn btn-box-tool lm-payment-filter-toggle" id="loanPaymentFilterToggle" aria-expanded="false" aria-controls="loanPaymentFilterBody">
+                    <span id="loanPaymentFilterToggleText">Expand</span>
+                    <i class="fa fa-chevron-down" id="loanPaymentFilterToggleIcon" aria-hidden="true"></i>
+                </button>
+            </div>
         </div>
-        <div class="box-body">
-            <form method="GET" action="{{ route('loan-management.payments.index') }}">
+        <div class="box-body" id="loanPaymentFilterBody">
+            <form method="GET" action="{{ route('loan-management.payments.index') }}" id="loanPaymentFilterForm">
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
@@ -132,8 +148,8 @@
                         </div>
                     </div>
                     <div class="col-md-6 text-right" style="padding-top:25px;">
-                        <button type="submit" class="btn btn-primary"><i class="fa fa-filter"></i> Filter</button>
-                        <a href="{{ route('loan-management.payments.index') }}" class="btn btn-default"><i class="fa fa-refresh"></i> Reset</a>
+                        <button type="submit" class="btn btn-primary" id="loanPaymentFilterApply"><i class="fa fa-filter"></i> Filter</button>
+                        <a href="{{ route('loan-management.payments.index') }}" class="btn btn-default" id="loanPaymentFilterReset"><i class="fa fa-refresh"></i> Reset</a>
                     </div>
                 </div>
             </form>
@@ -217,4 +233,182 @@
         </div>
     </div>
 </section>
+@endsection
+
+@section('loan_css')
+    <style>
+        .lm-payment-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+        .lm-payment-summary-card {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            min-height: 112px;
+            padding: 18px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+        }
+        .lm-payment-summary-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 46px;
+            width: 46px;
+            height: 46px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 20px;
+        }
+        .lm-payment-summary-copy {
+            min-width: 0;
+        }
+        .lm-payment-summary-copy span,
+        .lm-payment-summary-copy small {
+            display: block;
+            color: #64748b;
+            line-height: 1.25;
+        }
+        .lm-payment-summary-copy span {
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .lm-payment-summary-copy strong {
+            display: block;
+            margin: 6px 0 4px;
+            color: #111827;
+            font-size: 22px;
+            font-weight: 900;
+            line-height: 1.1;
+            word-break: break-word;
+        }
+        .lm-payment-summary-copy small {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .lm-payment-summary-card.tone-green .lm-payment-summary-icon { background: #16a34a; }
+        .lm-payment-summary-card.tone-cyan .lm-payment-summary-icon { background: #0891b2; }
+        .lm-payment-summary-card.tone-blue .lm-payment-summary-icon { background: #2563eb; }
+        .lm-payment-summary-card.tone-violet .lm-payment-summary-icon { background: #7c3aed; }
+        .lm-payment-summary-card.tone-orange .lm-payment-summary-icon { background: #ea580c; }
+
+        .lm-payment-filter-panel .box-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .lm-payment-filter-title,
+        .lm-payment-filter-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .lm-payment-filter-title {
+            border: 0;
+            padding: 0;
+            background: transparent;
+            color: #111827;
+            font-weight: 700;
+        }
+        .lm-payment-filter-toggle {
+            min-height: 30px;
+            padding: 0 10px;
+            border: 1px solid #d8e0ea;
+            border-radius: 6px;
+            background: #fff;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .lm-payment-filter-toggle:hover,
+        .lm-payment-filter-toggle:focus {
+            border-color: var(--lm-primary-200, #bfdbfe);
+            background: var(--lm-primary-50, #eff6ff);
+            color: var(--lm-primary, #2563eb);
+            outline: 0;
+        }
+        .lm-payment-filter-panel.is-collapsed #loanPaymentFilterBody {
+            display: none;
+        }
+        @media (max-width: 1400px) {
+            .lm-payment-summary-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+        @media (max-width: 767px) {
+            .lm-payment-summary-grid {
+                grid-template-columns: 1fr;
+            }
+            .lm-payment-summary-card {
+                min-height: 94px;
+                padding: 14px;
+            }
+            .lm-payment-summary-copy strong {
+                font-size: 20px;
+            }
+        }
+    </style>
+@endsection
+
+@section('loan_js')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var panel = document.getElementById('loanPaymentFilterPanel');
+            var title = document.getElementById('loanPaymentFilterTitle');
+            var toggle = document.getElementById('loanPaymentFilterToggle');
+            var toggleText = document.getElementById('loanPaymentFilterToggleText');
+            var toggleIcon = document.getElementById('loanPaymentFilterToggleIcon');
+            var form = document.getElementById('loanPaymentFilterForm');
+            var reset = document.getElementById('loanPaymentFilterReset');
+            var storageKey = 'lm_payment_filters_collapsed_v1';
+
+            if (!panel || !toggle || !toggleText || !toggleIcon) {
+                return;
+            }
+
+            function setCollapsed(collapsed) {
+                panel.classList.toggle('is-collapsed', collapsed);
+                toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                if (title) {
+                    title.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                }
+                toggleText.textContent = collapsed ? 'Expand' : 'Collapse';
+                toggleIcon.classList.toggle('fa-chevron-down', collapsed);
+                toggleIcon.classList.toggle('fa-chevron-up', !collapsed);
+                try { window.localStorage.setItem(storageKey, collapsed ? '1' : '0'); } catch (e) {}
+            }
+
+            function togglePanel() {
+                setCollapsed(!panel.classList.contains('is-collapsed'));
+            }
+
+            try {
+                var savedState = window.localStorage.getItem(storageKey);
+                setCollapsed(savedState === null ? true : savedState === '1');
+            } catch (e) {
+                setCollapsed(true);
+            }
+
+            toggle.addEventListener('click', togglePanel);
+            if (title) {
+                title.addEventListener('click', togglePanel);
+            }
+            if (form) {
+                form.addEventListener('submit', function () { setCollapsed(true); });
+            }
+            if (reset) {
+                reset.addEventListener('click', function () {
+                    try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
+                });
+            }
+        });
+    </script>
 @endsection

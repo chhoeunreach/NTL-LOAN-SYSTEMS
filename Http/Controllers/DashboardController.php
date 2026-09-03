@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use App\Exports\ArrayExport;
 use Maatwebsite\Excel\Facades\Excel;
+use Modules\LoanManagement\Services\BusinessSettingsService;
 
 class DashboardController extends Controller
 {
@@ -40,6 +41,57 @@ class DashboardController extends Controller
         ]);
     }
 
+    public function collectionVisits(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $filters = [
+            'search' => trim((string) $request->input('search', '')),
+            'collector' => trim((string) $request->input('collector', '')),
+            'result' => trim((string) $request->input('result', '')),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+        ];
+
+        if (! Schema::connection('mysql_loan')->hasTable('loan_collection_visits')) {
+            return view('loanmanagement::collection_visits.index', [
+                'filters' => $filters,
+                'summary' => ['total' => 0, 'today' => 0, 'pending' => 0, 'completed' => 0],
+                'visits' => collect(),
+                'collectors' => [],
+                'results' => [],
+            ]);
+        }
+
+        $query = $this->collectionVisitsQuery();
+        $this->applyCollectionVisitFilters($query, $filters);
+
+        $summaryQuery = clone $query;
+        $dateColumn = $this->collectionVisitDateColumn();
+        $resultColumn = $this->collectionVisitResultColumn();
+
+        $summary = [
+            'total' => (int) (clone $summaryQuery)->count(),
+            'today' => $dateColumn ? (int) (clone $summaryQuery)->whereDate('v.'.$dateColumn, now()->toDateString())->count() : 0,
+            'pending' => $resultColumn ? (int) (clone $summaryQuery)->whereIn('v.'.$resultColumn, ['pending', 'scheduled', 'open'])->count() : 0,
+            'completed' => $resultColumn ? (int) (clone $summaryQuery)->whereIn('v.'.$resultColumn, ['visited', 'completed', 'success', 'paid', 'promise_to_pay'])->count() : 0,
+        ];
+
+        $visits = $query
+            ->orderByDesc($dateColumn ? 'v.'.$dateColumn : 'v.id')
+            ->orderByDesc('v.id')
+            ->paginate(25)
+            ->appends($request->query());
+
+        return view('loanmanagement::collection_visits.index', [
+            'filters' => $filters,
+            'summary' => $summary,
+            'visits' => $visits,
+            'collectors' => $this->collectionVisitCollectors(),
+            'results' => $this->collectionVisitResults(),
+        ]);
+    }
+
     public function overdue()
     {
         $this->allow('loan_management.overdue.view');
@@ -59,6 +111,48 @@ class DashboardController extends Controller
         }
 
         return view('loanmanagement::reports.yearly_loan_summary', [
+            'filters' => $filters,
+            'payload' => $payload,
+            'locations' => $this->loanReportLocationOptions(),
+            'isKhmer' => $this->loanReportIsKhmer(),
+        ]);
+    }
+
+    public function dailyLoanSummary(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $filters = $this->dailySummaryFilters($request);
+        $payload = $this->buildPeriodicLoanSummary($filters, 'daily');
+
+        if ($request->input('export') === 'csv') {
+            return $this->downloadPeriodicLoanSummaryCsv($payload, $filters, 'daily');
+        }
+
+        return view('loanmanagement::reports.periodic_loan_summary', [
+            'period' => 'daily',
+            'title' => 'Daily Loan Summary',
+            'filters' => $filters,
+            'payload' => $payload,
+            'locations' => $this->loanReportLocationOptions(),
+            'isKhmer' => $this->loanReportIsKhmer(),
+        ]);
+    }
+
+    public function monthlyLoanSummary(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $filters = $this->monthlySummaryFilters($request);
+        $payload = $this->buildPeriodicLoanSummary($filters, 'monthly');
+
+        if ($request->input('export') === 'csv') {
+            return $this->downloadPeriodicLoanSummaryCsv($payload, $filters, 'monthly');
+        }
+
+        return view('loanmanagement::reports.periodic_loan_summary', [
+            'period' => 'monthly',
+            'title' => 'Monthly Loan Summary',
             'filters' => $filters,
             'payload' => $payload,
             'locations' => $this->loanReportLocationOptions(),
@@ -92,6 +186,55 @@ class DashboardController extends Controller
             'filters' => $filters,
             'rows' => $this->dashboardPaymentMethodRows($filters),
             'locations' => $this->loanReportLocationOptions(),
+            'isKhmer' => $this->loanReportIsKhmer(),
+        ]);
+    }
+
+    public function installmentReports(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $filters = $this->installmentReportFilters($request);
+        $emptySummary = ['count' => 0, 'principal' => 0, 'paid' => 0, 'balance' => 0, 'overdue' => 0];
+
+        if (! Schema::connection('mysql_loan')->hasTable('loans')) {
+            return view('loanmanagement::reports.installment_index', [
+                'filters' => $filters,
+                'rows' => collect(),
+                'summary' => $emptySummary,
+                'locations' => $this->loanReportLocationOptions(),
+                'statusOptions' => [],
+                'paymentStatusOptions' => $this->installmentPaymentStatusOptions(),
+                'isKhmer' => $this->loanReportIsKhmer(),
+            ]);
+        }
+
+        $query = $this->installmentReportQuery();
+        $this->applyInstallmentReportFilters($query, $filters);
+
+        $summaryQuery = clone $query;
+        $amountExpressions = $this->installmentReportAmountExpressions();
+        $overdueExpression = $this->installmentScheduleExists('DATE(s.due_date) < CURDATE() AND '.$this->installmentScheduleOpenCondition('s'), $this->installmentScheduleBaseWhere());
+        $summary = [
+            'count' => (int) (clone $summaryQuery)->count(),
+            'principal' => (float) (clone $summaryQuery)->sum(DB::raw($amountExpressions['principal'])),
+            'paid' => (float) (clone $summaryQuery)->sum(DB::raw($amountExpressions['paid'])),
+            'balance' => (float) (clone $summaryQuery)->sum(DB::raw($amountExpressions['balance'])),
+            'overdue' => (int) (clone $summaryQuery)->whereRaw($overdueExpression.' = 1')->count(),
+        ];
+
+        $rows = $query
+            ->orderByDesc('loan_date')
+            ->orderByDesc('id')
+            ->get();
+
+        return view('loanmanagement::reports.installment_index', [
+            'filters' => $filters,
+            'rows' => $rows,
+            'summary' => $summary,
+            'locations' => $this->loanReportLocationOptions(),
+            'statusOptions' => $this->installmentStatusOptions(),
+            'paymentStatusOptions' => $this->installmentPaymentStatusOptions(),
             'isKhmer' => $this->loanReportIsKhmer(),
         ]);
     }
@@ -136,8 +279,12 @@ class DashboardController extends Controller
         }
 
         $filters = $this->yearlySummaryFilters($request);
+        $yearStart = \Carbon\Carbon::create($year, 1, 1)->toDateString();
+        $yearEnd = \Carbon\Carbon::create($year, 12, 31)->toDateString();
         $filters['start_year'] = $year;
         $filters['end_year'] = $year;
+        $filters['date_from'] = max($filters['date_from'], $yearStart);
+        $filters['date_to'] = min($filters['date_to'], $yearEnd);
         $month = $request->filled('month') ? (int) $request->input('month') : null;
         if ($month !== null && ($month < 1 || $month > 12)) {
             $month = null;
@@ -377,28 +524,291 @@ class DashboardController extends Controller
         return $data;
     }
 
+    protected function collectionVisitsQuery()
+    {
+        $query = DB::connection('mysql_loan')->table('loan_collection_visits as v');
+
+        if ($this->dashboardHasLoanColumn('id') && $this->dashboardHasVisitColumn('loan_id')) {
+            $query->leftJoin('loans as l', 'l.id', '=', 'v.loan_id');
+        }
+
+        if (Schema::connection('mysql_loan')->hasTable('loan_customers') && $this->dashboardHasVisitColumn('customer_id')) {
+            $query->leftJoin('loan_customers as c', 'c.id', '=', 'v.customer_id');
+        }
+
+        if ($this->dashboardHasVisitColumn('deleted_at')) {
+            $query->whereNull('v.deleted_at');
+        }
+
+        $dateColumn = $this->collectionVisitDateColumn();
+        $resultColumn = $this->collectionVisitResultColumn();
+        $collectorExpression = $this->collectionVisitCollectorExpression();
+        $loanNumberExpression = $this->dashboardHasLoanColumn('loan_number') ? 'l.loan_number' : 'CONCAT("Loan #", v.loan_id)';
+        $customerExpression = $this->dashboardHasCustomerColumn('name')
+            ? 'c.name'
+            : ($this->dashboardHasLoanColumn('customer_name_snapshot') ? 'l.customer_name_snapshot' : 'CONCAT("Customer #", v.customer_id)');
+        $phoneExpression = $this->dashboardHasCustomerColumn('phone')
+            ? 'c.phone'
+            : ($this->dashboardHasLoanColumn('customer_phone_snapshot') ? 'l.customer_phone_snapshot' : 'NULL');
+
+        return $query->selectRaw(
+            'v.id, v.loan_id, v.customer_id, '.
+            $loanNumberExpression.' as loan_number, '.
+            $customerExpression.' as customer_name, '.
+            $phoneExpression.' as customer_phone, '.
+            $collectorExpression.' as collector_name, '.
+            ($resultColumn ? 'v.'.$resultColumn : '"pending"').' as result, '.
+            ($this->dashboardHasVisitColumn('address_snapshot') ? 'v.address_snapshot' : 'NULL').' as address_snapshot, '.
+            ($this->dashboardHasVisitColumn('latitude') ? 'v.latitude' : 'NULL').' as latitude, '.
+            ($this->dashboardHasVisitColumn('longitude') ? 'v.longitude' : 'NULL').' as longitude, '.
+            ($this->dashboardHasVisitColumn('note') ? 'v.note' : 'NULL').' as note, '.
+            ($dateColumn ? 'v.'.$dateColumn : 'v.created_at').' as visited_at'
+        );
+    }
+
+    protected function applyCollectionVisitFilters($query, array $filters): void
+    {
+        $dateColumn = $this->collectionVisitDateColumn();
+        $resultColumn = $this->collectionVisitResultColumn();
+
+        if ($dateColumn && ! empty($filters['date_from'])) {
+            $query->whereDate('v.'.$dateColumn, '>=', $filters['date_from']);
+        }
+
+        if ($dateColumn && ! empty($filters['date_to'])) {
+            $query->whereDate('v.'.$dateColumn, '<=', $filters['date_to']);
+        }
+
+        if ($resultColumn && ! empty($filters['result'])) {
+            $query->where('v.'.$resultColumn, $filters['result']);
+        }
+
+        if (! empty($filters['collector'])) {
+            $collector = '%'.$filters['collector'].'%';
+            $query->whereRaw($this->collectionVisitCollectorExpression().' LIKE ?', [$collector]);
+        }
+
+        if (! empty($filters['search'])) {
+            $search = '%'.$filters['search'].'%';
+            $query->where(function ($q) use ($search) {
+                $hasCondition = false;
+                $addSearch = function (string $column) use ($q, $search, &$hasCondition) {
+                    $hasCondition ? $q->orWhere($column, 'like', $search) : $q->where($column, 'like', $search);
+                    $hasCondition = true;
+                };
+
+                if ($this->dashboardHasVisitColumn('loan_id')) {
+                    $addSearch('v.loan_id');
+                }
+                if ($this->dashboardHasVisitColumn('customer_id')) {
+                    $addSearch('v.customer_id');
+                }
+                if ($this->dashboardHasLoanColumn('loan_number')) {
+                    $addSearch('l.loan_number');
+                }
+                if ($this->dashboardHasLoanColumn('customer_name_snapshot')) {
+                    $addSearch('l.customer_name_snapshot');
+                }
+                if ($this->dashboardHasLoanColumn('customer_phone_snapshot')) {
+                    $addSearch('l.customer_phone_snapshot');
+                }
+                if ($this->dashboardHasCustomerColumn('name')) {
+                    $addSearch('c.name');
+                }
+                if ($this->dashboardHasCustomerColumn('phone')) {
+                    $addSearch('c.phone');
+                }
+                if ($this->dashboardHasVisitColumn('address_snapshot')) {
+                    $addSearch('v.address_snapshot');
+                }
+                if ($this->dashboardHasVisitColumn('note')) {
+                    $addSearch('v.note');
+                }
+            });
+        }
+    }
+
+    protected function collectionVisitCollectors(): array
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_collection_visits')) {
+            return [];
+        }
+
+        return DB::connection('mysql_loan')
+            ->table('loan_collection_visits as v')
+            ->selectRaw($this->collectionVisitCollectorExpression().' as collector_name')
+            ->whereRaw($this->collectionVisitCollectorExpression().' IS NOT NULL')
+            ->distinct()
+            ->orderBy('collector_name')
+            ->pluck('collector_name', 'collector_name')
+            ->filter()
+            ->all();
+    }
+
+    protected function collectionVisitResults(): array
+    {
+        $column = $this->collectionVisitResultColumn();
+        if (! $column) {
+            return [];
+        }
+
+        return DB::connection('mysql_loan')
+            ->table('loan_collection_visits')
+            ->whereNotNull($column)
+            ->distinct()
+            ->orderBy($column)
+            ->pluck($column, $column)
+            ->mapWithKeys(fn ($value) => [$value => ucwords(str_replace('_', ' ', (string) $value))])
+            ->all();
+    }
+
+    protected function collectionVisitDateColumn(): ?string
+    {
+        if ($this->dashboardHasVisitColumn('visited_at')) {
+            return 'visited_at';
+        }
+
+        return $this->dashboardHasVisitColumn('created_at') ? 'created_at' : null;
+    }
+
+    protected function collectionVisitResultColumn(): ?string
+    {
+        if ($this->dashboardHasVisitColumn('status')) {
+            return 'status';
+        }
+
+        return $this->dashboardHasVisitColumn('result') ? 'result' : null;
+    }
+
+    protected function collectionVisitCollectorExpression(): string
+    {
+        if ($this->dashboardHasVisitColumn('collector_name_snapshot')) {
+            return 'v.collector_name_snapshot';
+        }
+
+        if ($this->dashboardHasVisitColumn('staff_name_snapshot')) {
+            return 'v.staff_name_snapshot';
+        }
+
+        if ($this->dashboardHasVisitColumn('collector_id')) {
+            return 'CONCAT("Collector #", v.collector_id)';
+        }
+
+        if ($this->dashboardHasVisitColumn('staff_id')) {
+            return 'CONCAT("Staff #", v.staff_id)';
+        }
+
+        return '"Unassigned"';
+    }
+
+    protected function dashboardHasVisitColumn(string $column): bool
+    {
+        return Schema::connection('mysql_loan')->hasColumn('loan_collection_visits', $column);
+    }
+
+    protected function dashboardHasLoanColumn(string $column): bool
+    {
+        return Schema::connection('mysql_loan')->hasTable('loans')
+            && Schema::connection('mysql_loan')->hasColumn('loans', $column);
+    }
+
+    protected function dashboardHasCustomerColumn(string $column): bool
+    {
+        return Schema::connection('mysql_loan')->hasTable('loan_customers')
+            && Schema::connection('mysql_loan')->hasColumn('loan_customers', $column);
+    }
+
     protected function yearlySummaryFilters(Request $request): array
     {
         $currentYear = (int) now()->format('Y');
-        $startYear = (int) $request->input('start_year', $currentYear - 4);
-        $endYear = (int) $request->input('end_year', $currentYear);
+        $businessStartDate = BusinessSettingsService::get()['start_date'] ?? null;
+        $defaultDateFrom = $businessStartDate ?: ($currentYear - 4).'-01-01';
+        $dateFrom = $request->input('date_from', $request->filled('start_year') ? ((int) $request->input('start_year')).'-01-01' : $defaultDateFrom);
+        $dateTo = $request->input('date_to', $request->filled('end_year') ? ((int) $request->input('end_year')).'-12-31' : $currentYear.'-12-31');
+        $dateRange = trim((string) $request->input('date_range', ''));
+        if ($dateRange !== '' && (! $request->filled('date_from') || ! $request->filled('date_to')) && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$rangeFrom, $rangeTo] = $parsedRange;
+            $dateFrom = $rangeFrom;
+            $dateTo = $rangeTo;
+        }
 
-        if ($startYear < 2000 || $startYear > 2100) {
+        try {
+            $dateFrom = \Carbon\Carbon::parse($dateFrom)->toDateString();
+        } catch (\Throwable $e) {
+            $dateFrom = $defaultDateFrom;
+        }
+
+        try {
+            $dateTo = \Carbon\Carbon::parse($dateTo)->toDateString();
+        } catch (\Throwable $e) {
+            $dateTo = $currentYear.'-12-31';
+        }
+
+        if ($dateFrom > $dateTo) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
+
+        $startYear = (int) \Carbon\Carbon::parse($dateFrom)->format('Y');
+        $endYear = (int) \Carbon\Carbon::parse($dateTo)->format('Y');
+        if ($startYear < 2000 || $startYear > 2100 || $endYear < 2000 || $endYear > 2100) {
             $startYear = $currentYear - 4;
-        }
-        if ($endYear < 2000 || $endYear > 2100) {
             $endYear = $currentYear;
+            $dateFrom = $startYear.'-01-01';
+            $dateTo = $endYear.'-12-31';
         }
-        if ($startYear > $endYear) {
-            [$startYear, $endYear] = [$endYear, $startYear];
+        if (($endYear - $startYear) > 25) {
+            $endYear = $startYear + 25;
+            $dateTo = $endYear.'-12-31';
         }
 
         return [
             'start_year' => $startYear,
-            'end_year' => min($endYear, $startYear + 25),
+            'end_year' => $endYear,
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
             'location_id' => $request->filled('location_id') ? trim((string) $request->input('location_id')) : null,
             'search' => trim((string) $request->input('search', '')),
         ];
+    }
+
+    protected function dailySummaryFilters(Request $request): array
+    {
+        $filters = $this->dashboardReportFilters($request);
+        $filters['period'] = 'daily';
+
+        try {
+            $from = \Carbon\Carbon::parse($filters['date_from']);
+            $to = \Carbon\Carbon::parse($filters['date_to']);
+            if ($from->diffInDays($to) > 369) {
+                $filters['date_to'] = $from->copy()->addDays(369)->toDateString();
+            }
+        } catch (\Throwable $e) {
+            $filters['date_from'] = now()->toDateString();
+            $filters['date_to'] = now()->toDateString();
+        }
+
+        return $filters;
+    }
+
+    protected function monthlySummaryFilters(Request $request): array
+    {
+        if (
+            ! $request->filled('date_from')
+            && ! $request->filled('date_to')
+            && ! $request->filled('date_range')
+            && ! $request->filled('start_year')
+            && ! $request->filled('end_year')
+        ) {
+            $request->merge([
+                'date_from' => now()->startOfMonth()->toDateString(),
+                'date_to' => now()->endOfMonth()->toDateString(),
+            ]);
+        }
+
+        $filters = $this->yearlySummaryFilters($request);
+        $filters['period'] = 'monthly';
+
+        return $filters;
     }
 
     protected function dashboardReportFilters(Request $request): array
@@ -406,8 +816,8 @@ class DashboardController extends Controller
         $dateFrom = $request->input('date_from', now()->toDateString());
         $dateTo = $request->input('date_to', now()->toDateString());
         $dateRange = trim((string) $request->input('date_range', ''));
-        if ($dateRange !== '' && str_contains($dateRange, '~')) {
-            [$rangeFrom, $rangeTo] = array_map('trim', explode('~', $dateRange, 2));
+        if ($dateRange !== '' && (! $request->filled('date_from') || ! $request->filled('date_to')) && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$rangeFrom, $rangeTo] = $parsedRange;
             $dateFrom = $rangeFrom;
             $dateTo = $rangeTo;
         }
@@ -442,6 +852,27 @@ class DashboardController extends Controller
         ];
     }
 
+    protected function parseSummaryDateRange(string $dateRange): ?array
+    {
+        $normalized = trim(str_replace(['–', '—', ' to '], ['-', '-', ' - '], $dateRange));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        foreach ([' ~ ', '~', ' - '] as $separator) {
+            if (! str_contains($normalized, $separator)) {
+                continue;
+            }
+
+            [$from, $to] = array_map('trim', explode($separator, $normalized, 2));
+
+            return $from !== '' && $to !== '' ? [$from, $to] : null;
+        }
+
+        return null;
+    }
+
     protected function paymentSummaryFilters(Request $request): array
     {
         $dateFrom = $request->input('date_from', now()->toDateString());
@@ -470,6 +901,288 @@ class DashboardController extends Controller
             'location_id' => $request->filled('location_id') ? trim((string) $request->input('location_id')) : null,
             'search' => trim((string) $request->input('search', '')),
         ];
+    }
+
+    protected function installmentReportFilters(Request $request): array
+    {
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $dateRange = trim((string) $request->input('date_range', ''));
+
+        if ($dateRange !== '' && (! $request->filled('date_from') || ! $request->filled('date_to')) && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$dateFrom, $dateTo] = $parsedRange;
+        }
+
+        try {
+            $dateFrom = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->toDateString() : '';
+        } catch (\Throwable $e) {
+            $dateFrom = '';
+        }
+
+        try {
+            $dateTo = $dateTo ? \Carbon\Carbon::parse($dateTo)->toDateString() : '';
+        } catch (\Throwable $e) {
+            $dateTo = '';
+        }
+
+        if ($dateFrom > $dateTo) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
+
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'location_id' => trim((string) $request->input('location_id', '')),
+            'status' => trim((string) $request->input('status', '')),
+            'payment_status' => trim((string) $request->input('payment_status', '')),
+            'collector' => trim((string) $request->input('collector', '')),
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ];
+    }
+
+    protected function installmentReportQuery()
+    {
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loans');
+        $dateColumn = $this->firstLoanReportColumn('loans', ['loan_date', 'sale_date', 'created_at'], $columns) ?: 'created_at';
+        $amountExpressions = $this->installmentReportAmountExpressions();
+        $principalExpr = $amountExpressions['principal'];
+        $paidExpr = $amountExpressions['paid'];
+        $balanceExpr = $amountExpressions['balance'];
+        $totalExpr = $amountExpressions['total'];
+        $scheduleWhere = $this->installmentScheduleBaseWhere();
+        $paymentWhere = $this->installmentPaymentBaseWhere();
+        $scheduleOpenCondition = $this->installmentScheduleOpenCondition('s');
+
+        return DB::connection('mysql_loan')->table('loans as l')
+            ->selectRaw(
+                'l.id, '.
+                (in_array('loan_number', $columns, true) ? 'l.loan_number' : 'CONCAT("Loan #", l.id)').' as loan_number, '.
+                'l.'.$dateColumn.' as loan_date, '.
+                (in_array('source_invoice_no', $columns, true) ? 'l.source_invoice_no' : (in_array('invoice_number_snapshot', $columns, true) ? 'l.invoice_number_snapshot' : 'NULL')).' as invoice_no, '.
+                (in_array('customer_name_snapshot', $columns, true) ? 'l.customer_name_snapshot' : 'NULL').' as customer_name, '.
+                (in_array('customer_phone_snapshot', $columns, true) ? 'l.customer_phone_snapshot' : 'NULL').' as customer_phone, '.
+                (in_array('location_name_snapshot', $columns, true) ? 'l.location_name_snapshot' : (in_array('business_location_name_snapshot', $columns, true) ? 'l.business_location_name_snapshot' : 'NULL')).' as location_name, '.
+                (in_array('collector_name_snapshot', $columns, true) ? 'l.collector_name_snapshot' : 'NULL').' as collector_name, '.
+                (in_array('status', $columns, true) ? 'l.status' : '"pending"').' as status, '.
+                (in_array('payment_status', $columns, true) ? 'l.payment_status' : 'NULL').' as payment_status, '.
+                $principalExpr.' as principal_amount, '.
+                $paidExpr.' as paid_amount, '.
+                $balanceExpr.' as balance_amount, '.
+                $totalExpr.' as total_amount, '.
+                (in_array('currency', $columns, true) ? 'l.currency' : '"USD"').' as currency, '.
+                (in_array('duration_months', $columns, true) ? 'l.duration_months' : (in_array('installment_count', $columns, true) ? 'l.installment_count' : '0')).' as term_count, '.
+                (in_array('payment_frequency', $columns, true) ? 'l.payment_frequency' : 'NULL').' as payment_frequency, '.
+                (in_array('note', $columns, true) ? 'l.note' : 'NULL').' as note, '.
+                $this->installmentScheduleSubquery('COUNT(*)', $scheduleWhere).' as schedule_count, '.
+                $this->installmentScheduleSubquery($this->installmentPaidScheduleCountExpression(), $scheduleWhere).' as paid_schedule_count, '.
+                $this->installmentNextDueSubquery($scheduleWhere).' as next_due_date, '.
+                $this->installmentScheduleExists('DATE(s.due_date) < CURDATE() AND '.$scheduleOpenCondition, $scheduleWhere).' as is_overdue, '.
+                $this->installmentPaymentSubquery('MAX('.$this->installmentPaymentDateExpression().')', $paymentWhere).' as last_payment_at'
+            )
+            ->when(in_array('deleted_at', $columns, true), fn ($query) => $query->whereNull('l.deleted_at'));
+    }
+
+    protected function installmentReportAmountExpressions(): array
+    {
+        return [
+            'principal' => $this->coalesceSql('loans', 'l', ['principal_amount', 'financed_amount'], '0'),
+            'paid' => $this->coalesceSql('loans', 'l', ['paid_amount', 'total_paid', 'down_payment'], '0'),
+            'balance' => $this->coalesceSql('loans', 'l', ['balance_amount', 'amount_balance'], '0'),
+            'total' => $this->coalesceSql('loans', 'l', ['total_amount', 'total_payable_amount', 'principal_amount'], '0'),
+        ];
+    }
+
+    protected function applyInstallmentReportFilters($query, array $filters): void
+    {
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loans');
+        $dateColumn = $this->firstLoanReportColumn('loans', ['loan_date', 'sale_date', 'created_at'], $columns) ?: 'created_at';
+
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('l.'.$dateColumn, '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('l.'.$dateColumn, '<=', $filters['date_to']);
+        }
+        if (! empty($filters['status']) && in_array('status', $columns, true)) {
+            $query->where('l.status', $filters['status']);
+        }
+        if (! empty($filters['payment_status'])) {
+            $this->applyInstallmentPaymentStatusFilter($query, $filters['payment_status'], $columns);
+        }
+        if (! empty($filters['collector'])) {
+            foreach (['collector_name_snapshot', 'assigned_collector_id'] as $column) {
+                if (in_array($column, $columns, true)) {
+                    $query->where('l.'.$column, 'like', '%'.$filters['collector'].'%');
+                    break;
+                }
+            }
+        }
+        if (! empty($filters['location_id'])) {
+            $locationFilter = $this->parseYearlyLocationFilter((string) $filters['location_id']);
+            if (! empty($locationFilter)) {
+                $query->where(function ($where) use ($locationFilter, $columns) {
+                    if (! empty($locationFilter['loan_location_id']) && in_array('business_location_id', $columns, true)) {
+                        $where->orWhere('l.business_location_id', (int) $locationFilter['loan_location_id']);
+                    }
+                    if (! empty($locationFilter['main_location_id']) && in_array('main_location_id', $columns, true)) {
+                        $where->orWhere('l.main_location_id', (int) $locationFilter['main_location_id']);
+                    }
+                    if (! empty($locationFilter['legacy_id'])) {
+                        if (in_array('business_location_id', $columns, true)) {
+                            $where->orWhere('l.business_location_id', (int) $locationFilter['legacy_id']);
+                        }
+                        if (in_array('main_location_id', $columns, true)) {
+                            $where->orWhere('l.main_location_id', (int) $locationFilter['legacy_id']);
+                        }
+                    }
+                    if (! empty($locationFilter['name'])) {
+                        foreach (['location_name_snapshot', 'business_location_name_snapshot'] as $column) {
+                            if (in_array($column, $columns, true)) {
+                                $where->orWhere('l.'.$column, $locationFilter['name']);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        if (($filters['search'] ?? '') !== '') {
+            $like = '%'.$filters['search'].'%';
+            $searchColumns = array_values(array_filter(['loan_number', 'source_invoice_no', 'invoice_number_snapshot', 'customer_name_snapshot', 'customer_phone_snapshot', 'collector_name_snapshot', 'note'], fn ($column) => in_array($column, $columns, true)));
+            if (! empty($searchColumns)) {
+                $query->where(function ($where) use ($searchColumns, $like) {
+                    foreach ($searchColumns as $column) {
+                        $where->orWhere('l.'.$column, 'like', $like);
+                    }
+                });
+            }
+        }
+    }
+
+    protected function applyInstallmentPaymentStatusFilter($query, string $status, array $columns): void
+    {
+        if (in_array('payment_status', $columns, true)) {
+            $query->where('l.payment_status', $status);
+            return;
+        }
+
+        $paidExpr = $this->coalesceSql('loans', 'l', ['paid_amount', 'total_paid', 'down_payment'], '0');
+        $balanceExpr = $this->coalesceSql('loans', 'l', ['balance_amount', 'amount_balance'], '0');
+
+        match ($status) {
+            'paid', 'completed' => $query->whereRaw('('.$balanceExpr.') <= 0'),
+            'partial' => $query->whereRaw('('.$paidExpr.') > 0 AND ('.$balanceExpr.') > 0'),
+            'unpaid' => $query->whereRaw('('.$paidExpr.') <= 0 AND ('.$balanceExpr.') > 0'),
+            'overdue' => $query->whereRaw($this->installmentScheduleExists('DATE(s.due_date) < CURDATE() AND '.$this->installmentScheduleOpenCondition('s'), $this->installmentScheduleBaseWhere()).' = 1'),
+            default => null,
+        };
+    }
+
+    protected function installmentStatusOptions(): array
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loans') || ! Schema::connection('mysql_loan')->hasColumn('loans', 'status')) {
+            return [];
+        }
+
+        return DB::connection('mysql_loan')->table('loans')
+            ->whereNotNull('status')
+            ->where('status', '!=', '')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status', 'status')
+            ->mapWithKeys(fn ($value) => [$value => ucwords(str_replace('_', ' ', (string) $value))])
+            ->all();
+    }
+
+    protected function installmentPaymentStatusOptions(): array
+    {
+        return ['unpaid' => 'Unpaid', 'partial' => 'Partial', 'paid' => 'Paid', 'completed' => 'Completed', 'overdue' => 'Overdue'];
+    }
+
+    protected function installmentScheduleBaseWhere(): string
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payment_schedules') || ! Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'loan_id')) {
+            return '1 = 0';
+        }
+
+        return Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'deleted_at') ? 's.deleted_at IS NULL' : '1 = 1';
+    }
+
+    protected function installmentPaymentBaseWhere(): string
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payments') || ! Schema::connection('mysql_loan')->hasColumn('loan_payments', 'loan_id')) {
+            return '1 = 0';
+        }
+
+        return Schema::connection('mysql_loan')->hasColumn('loan_payments', 'deleted_at') ? 'p.deleted_at IS NULL' : '1 = 1';
+    }
+
+    protected function installmentScheduleSubquery(string $select, string $where): string
+    {
+        if ($where === '1 = 0') {
+            return '0';
+        }
+
+        return '(SELECT COALESCE('.$select.', 0) FROM loan_payment_schedules s WHERE s.loan_id = l.id AND '.$where.')';
+    }
+
+    protected function installmentNextDueSubquery(string $where): string
+    {
+        if ($where === '1 = 0' || ! Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'due_date')) {
+            return 'NULL';
+        }
+
+        return '(SELECT MIN(CASE WHEN DATE(s.due_date) >= CURDATE() AND '.$this->installmentScheduleOpenCondition('s').' THEN s.due_date ELSE NULL END) FROM loan_payment_schedules s WHERE s.loan_id = l.id AND '.$where.')';
+    }
+
+    protected function installmentScheduleExists(string $condition, string $where): string
+    {
+        if ($where === '1 = 0' || ! Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'due_date')) {
+            return '0';
+        }
+
+        return 'EXISTS(SELECT 1 FROM loan_payment_schedules s WHERE s.loan_id = l.id AND '.$where.' AND '.$condition.')';
+    }
+
+    protected function installmentPaymentSubquery(string $select, string $where): string
+    {
+        if ($where === '1 = 0') {
+            return 'NULL';
+        }
+
+        return '(SELECT '.$select.' FROM loan_payments p WHERE p.loan_id = l.id AND '.$where.')';
+    }
+
+    protected function installmentPaidScheduleCountExpression(): string
+    {
+        if (Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'status')) {
+            return 'SUM(CASE WHEN COALESCE(s.status, "") IN ("paid", "confirmed", "completed") THEN 1 ELSE 0 END)';
+        }
+
+        if (Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'paid_amount')) {
+            return 'SUM(CASE WHEN COALESCE(s.paid_amount, 0) > 0 THEN 1 ELSE 0 END)';
+        }
+
+        return '0';
+    }
+
+    protected function installmentScheduleOpenCondition(string $alias): string
+    {
+        if (Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'status')) {
+            return 'COALESCE('.$alias.'.status, "") NOT IN ("paid", "confirmed", "completed", "cancelled")';
+        }
+
+        return '1 = 1';
+    }
+
+    protected function installmentPaymentDateExpression(): string
+    {
+        foreach (['paid_date', 'paid_at', 'created_at'] as $column) {
+            if (Schema::connection('mysql_loan')->hasColumn('loan_payments', $column)) {
+                return 'p.'.$column;
+            }
+        }
+
+        return 'NULL';
     }
 
     protected function recentActivityFilters(Request $request): array
@@ -1521,6 +2234,211 @@ class DashboardController extends Controller
         ];
     }
 
+    protected function buildPeriodicLoanSummary(array $filters, string $period): array
+    {
+        $rows = $this->periodicLoanSummaryRows($filters, $period);
+
+        foreach ($this->periodicLoanAggregates($filters, $period) as $row) {
+            $key = (string) $row->report_key;
+            if (! isset($rows[$key])) {
+                $rows[$key] = $this->emptyPeriodicLoanSummaryRow($key, $this->periodicLoanSummaryLabel($key, $period));
+            }
+
+            $rows[$key]['loan_count'] = (int) ($row->loan_count ?? 0);
+            $rows[$key]['principal_total'] = (float) ($row->principal_total ?? 0);
+            $rows[$key]['interest_total'] = (float) ($row->interest_total ?? 0);
+            $rows[$key]['loan_total'] = (float) ($row->loan_total ?? 0);
+            $rows[$key]['loan_paid_total'] = (float) ($row->loan_paid_total ?? 0);
+            $rows[$key]['loan_balance_total'] = (float) ($row->loan_balance_total ?? 0);
+            $rows[$key]['paid_customer_count'] = (int) ($row->paid_customer_count ?? 0);
+            $rows[$key]['closed_count'] = (int) ($row->closed_count ?? 0);
+            $rows[$key]['closed_principal_total'] = (float) ($row->closed_principal_total ?? 0);
+            $rows[$key]['closed_interest_total'] = (float) ($row->closed_interest_total ?? 0);
+            $rows[$key]['closed_loan_total'] = (float) ($row->closed_loan_total ?? 0);
+            $rows[$key]['closed_paid_total'] = (float) ($row->closed_paid_total ?? 0);
+            $rows[$key]['closed_balance_total'] = (float) ($row->closed_balance_total ?? 0);
+            $rows[$key]['bad_count'] = (int) ($row->bad_count ?? 0);
+            $rows[$key]['bad_principal_total'] = (float) ($row->bad_principal_total ?? 0);
+            $rows[$key]['bad_interest_total'] = (float) ($row->bad_interest_total ?? 0);
+            $rows[$key]['bad_loan_total'] = (float) ($row->bad_loan_total ?? 0);
+            $rows[$key]['bad_paid_total'] = (float) ($row->bad_paid_total ?? 0);
+            $rows[$key]['bad_balance_total'] = (float) ($row->bad_balance_total ?? 0);
+        }
+
+        foreach ($this->periodicScheduleAggregates($filters, $period) as $row) {
+            $key = (string) $row->report_key;
+            if (! isset($rows[$key])) {
+                $rows[$key] = $this->emptyPeriodicLoanSummaryRow($key, $this->periodicLoanSummaryLabel($key, $period));
+            }
+
+            $rows[$key]['schedule_count'] = (int) ($row->schedule_count ?? 0);
+            $rows[$key]['schedule_due_total'] = (float) ($row->schedule_due_total ?? 0);
+            $rows[$key]['schedule_paid_total'] = (float) ($row->schedule_paid_total ?? 0);
+            $rows[$key]['schedule_balance_total'] = (float) ($row->schedule_balance_total ?? 0);
+            $rows[$key]['overdue_count'] = (int) ($row->overdue_count ?? 0);
+            $rows[$key]['overdue_balance_total'] = (float) ($row->overdue_balance_total ?? 0);
+        }
+
+        foreach ($this->periodicPaymentAggregates($filters, $period) as $row) {
+            $key = (string) $row->report_key;
+            if (! isset($rows[$key])) {
+                $rows[$key] = $this->emptyPeriodicLoanSummaryRow($key, $this->periodicLoanSummaryLabel($key, $period));
+            }
+
+            $rows[$key]['payment_count'] = (int) ($row->payment_count ?? 0);
+            $rows[$key]['collection_payment_total'] = (float) ($row->collection_payment_total ?? 0);
+            $rows[$key]['deposit_payment_total'] = (float) ($row->deposit_payment_total ?? 0);
+            $rows[$key]['payment_total'] = (float) ($row->payment_total ?? 0);
+        }
+
+        $rows = array_filter($rows, fn ($row) => $this->periodicLoanSummaryRowHasData($row));
+
+        ksort($rows);
+        $totals = $this->sumPeriodicLoanSummaryRows($rows);
+
+        return [
+            'rows' => array_values($rows),
+            'totals' => $totals,
+            'cards' => [
+                ['label' => 'Periods', 'value' => count($rows), 'type' => 'number', 'icon' => 'fa fa-calendar', 'tone' => 'teal'],
+                ['label' => 'Loans', 'value' => $totals['loan_count'], 'type' => 'number', 'icon' => 'fa fa-file-text-o', 'tone' => 'blue'],
+                ['label' => 'Principal', 'value' => $totals['principal_total'], 'type' => 'money', 'icon' => 'fa fa-money', 'tone' => 'green'],
+                ['label' => 'Collected', 'value' => $totals['payment_total'], 'type' => 'money', 'icon' => 'fa fa-check-circle', 'tone' => 'purple'],
+                ['label' => 'Balance', 'value' => $totals['loan_balance_total'], 'type' => 'money', 'icon' => 'fa fa-balance-scale', 'tone' => 'orange'],
+                ['label' => 'Overdue', 'value' => $totals['overdue_count'], 'type' => 'number', 'icon' => 'fa fa-warning', 'tone' => 'red'],
+            ],
+        ];
+    }
+
+    protected function periodicLoanSummaryRows(array $filters, string $period): array
+    {
+        $rows = [];
+
+        if ($period === 'monthly') {
+            try {
+                $start = \Carbon\Carbon::parse($filters['date_from'])->startOfMonth();
+                $end = \Carbon\Carbon::parse($filters['date_to'])->startOfMonth();
+            } catch (\Throwable $e) {
+                $start = now()->startOfYear();
+                $end = now()->startOfMonth();
+            }
+
+            if ($start->gt($end)) {
+                [$start, $end] = [$end, $start];
+            }
+
+            while ($start->lte($end) && count($rows) < 312) {
+                $key = $start->format('Y-m');
+                $rows[$key] = $this->emptyPeriodicLoanSummaryRow($key, $this->periodicLoanSummaryLabel($key, $period));
+                $start->addMonth();
+            }
+
+            return $rows;
+        }
+
+        try {
+            $start = \Carbon\Carbon::parse($filters['date_from'])->startOfDay();
+            $end = \Carbon\Carbon::parse($filters['date_to'])->startOfDay();
+        } catch (\Throwable $e) {
+            $start = now()->startOfDay();
+            $end = now()->startOfDay();
+        }
+
+        if ($start->gt($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        while ($start->lte($end) && count($rows) < 370) {
+            $key = $start->toDateString();
+            $rows[$key] = $this->emptyPeriodicLoanSummaryRow($key, $this->periodicLoanSummaryLabel($key, $period));
+            $start->addDay();
+        }
+
+        return $rows;
+    }
+
+    protected function emptyPeriodicLoanSummaryRow(string $key, string $label): array
+    {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'loan_count' => 0,
+            'principal_total' => 0.0,
+            'interest_total' => 0.0,
+            'loan_total' => 0.0,
+            'loan_paid_total' => 0.0,
+            'loan_balance_total' => 0.0,
+            'paid_customer_count' => 0,
+            'closed_count' => 0,
+            'closed_principal_total' => 0.0,
+            'closed_interest_total' => 0.0,
+            'closed_loan_total' => 0.0,
+            'closed_paid_total' => 0.0,
+            'closed_balance_total' => 0.0,
+            'bad_count' => 0,
+            'bad_principal_total' => 0.0,
+            'bad_interest_total' => 0.0,
+            'bad_loan_total' => 0.0,
+            'bad_paid_total' => 0.0,
+            'bad_balance_total' => 0.0,
+            'schedule_count' => 0,
+            'schedule_due_total' => 0.0,
+            'schedule_paid_total' => 0.0,
+            'schedule_balance_total' => 0.0,
+            'payment_count' => 0,
+            'collection_payment_total' => 0.0,
+            'deposit_payment_total' => 0.0,
+            'payment_total' => 0.0,
+            'overdue_count' => 0,
+            'overdue_balance_total' => 0.0,
+        ];
+    }
+
+    protected function periodicLoanSummaryRowHasData(array $row): bool
+    {
+        foreach ([
+            'loan_count', 'principal_total', 'interest_total', 'loan_total', 'loan_paid_total', 'loan_balance_total',
+            'paid_customer_count',
+            'closed_count', 'closed_principal_total', 'closed_interest_total', 'closed_loan_total', 'closed_paid_total', 'closed_balance_total',
+            'bad_count', 'bad_principal_total', 'bad_interest_total', 'bad_loan_total', 'bad_paid_total', 'bad_balance_total',
+            'schedule_count', 'schedule_due_total', 'schedule_paid_total', 'schedule_balance_total',
+            'payment_count', 'collection_payment_total', 'deposit_payment_total', 'payment_total',
+            'overdue_count', 'overdue_balance_total',
+        ] as $field) {
+            if ((float) ($row[$field] ?? 0) != 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    protected function sumPeriodicLoanSummaryRows(array $rows): array
+    {
+        $totals = $this->emptyPeriodicLoanSummaryRow('total', 'Total');
+
+        foreach ($rows as $row) {
+            foreach ($totals as $key => $value) {
+                if (is_numeric($value) && isset($row[$key])) {
+                    $totals[$key] += $row[$key];
+                }
+            }
+        }
+
+        return $totals;
+    }
+
+    protected function periodicLoanSummaryLabel(string $key, string $period): string
+    {
+        try {
+            return $period === 'monthly'
+                ? \Carbon\Carbon::createFromFormat('Y-m', $key)->format('M Y')
+                : \Carbon\Carbon::parse($key)->format('d M Y');
+        } catch (\Throwable $e) {
+            return $key;
+        }
+    }
+
     protected function emptyYearlySummaryRow(int $year): array
     {
         return [
@@ -1777,13 +2695,170 @@ class DashboardController extends Controller
             ->get();
     }
 
+    protected function periodicLoanAggregates(array $filters, string $period)
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loans')) {
+            return collect();
+        }
+
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loans');
+        $dateColumn = $this->firstLoanReportColumn('loans', ['loan_date', 'created_at'], $columns);
+        if (! $dateColumn) {
+            return collect();
+        }
+
+        $principalExpr = $this->coalesceSql('loans', 'l', ['principal_amount', 'financed_amount']);
+        $interestExpr = $this->coalesceSql('loans', 'l', ['interest_amount']);
+        $loanTotalExpr = $this->coalesceSql('loans', 'l', ['total_amount', 'total_payable_amount', 'principal_amount']);
+        $paidExpr = $this->coalesceSql('loans', 'l', ['paid_amount', 'total_paid', 'down_payment']);
+        $balanceExpr = $this->coalesceSql('loans', 'l', ['balance_amount', 'amount_balance']);
+        $closedCondition = $this->closedLoanConditionSql('l');
+        $periodExpr = $this->periodicReportSql('l', $dateColumn, $period);
+
+        $joinCustomers = Schema::connection('mysql_loan')->hasTable('loan_customers')
+            && in_array('customer_id', $columns, true)
+            && Schema::connection('mysql_loan')->hasColumn('loan_customers', 'id');
+        $customerBlacklist = $joinCustomers && Schema::connection('mysql_loan')->hasColumn('loan_customers', 'blacklist_status');
+        $badCondition = $this->badLoanConditionSql('l', $columns, $customerBlacklist ? 'c' : null);
+
+        $query = DB::connection('mysql_loan')->table('loans as l');
+        if ($joinCustomers) {
+            $query->leftJoin('loan_customers as c', 'c.id', '=', 'l.customer_id');
+        }
+        $this->applyPeriodicLoanFilters($query, $filters, $period, 'l', $dateColumn);
+
+        return $query
+            ->selectRaw($periodExpr.' as report_key')
+            ->selectRaw('COUNT(*) as loan_count')
+            ->selectRaw('COALESCE(SUM('.$principalExpr.'), 0) as principal_total')
+            ->selectRaw('COALESCE(SUM('.$interestExpr.'), 0) as interest_total')
+            ->selectRaw('COALESCE(SUM('.$loanTotalExpr.'), 0) as loan_total')
+            ->selectRaw('COALESCE(SUM('.$paidExpr.'), 0) as loan_paid_total')
+            ->selectRaw('COALESCE(SUM('.$balanceExpr.'), 0) as loan_balance_total')
+            ->selectRaw('SUM(CASE WHEN '.$paidExpr.' > 0 THEN 1 ELSE 0 END) as paid_customer_count')
+            ->selectRaw('SUM(CASE WHEN '.$closedCondition.' THEN 1 ELSE 0 END) as closed_count')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$closedCondition.' THEN '.$principalExpr.' ELSE 0 END), 0) as closed_principal_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$closedCondition.' THEN '.$interestExpr.' ELSE 0 END), 0) as closed_interest_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$closedCondition.' THEN '.$loanTotalExpr.' ELSE 0 END), 0) as closed_loan_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$closedCondition.' THEN '.$paidExpr.' ELSE 0 END), 0) as closed_paid_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$closedCondition.' THEN '.$balanceExpr.' ELSE 0 END), 0) as closed_balance_total')
+            ->selectRaw('SUM(CASE WHEN '.$badCondition.' THEN 1 ELSE 0 END) as bad_count')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$badCondition.' THEN '.$principalExpr.' ELSE 0 END), 0) as bad_principal_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$badCondition.' THEN '.$interestExpr.' ELSE 0 END), 0) as bad_interest_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$badCondition.' THEN '.$loanTotalExpr.' ELSE 0 END), 0) as bad_loan_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$badCondition.' THEN '.$paidExpr.' ELSE 0 END), 0) as bad_paid_total')
+            ->selectRaw('COALESCE(SUM(CASE WHEN '.$badCondition.' THEN '.$balanceExpr.' ELSE 0 END), 0) as bad_balance_total')
+            ->groupByRaw($periodExpr)
+            ->get();
+    }
+
+    protected function periodicScheduleAggregates(array $filters, string $period)
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payment_schedules')) {
+            return collect();
+        }
+
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loan_payment_schedules');
+        $dateColumn = $this->firstLoanReportColumn('loan_payment_schedules', ['due_date', 'created_at'], $columns);
+        if (! $dateColumn) {
+            return collect();
+        }
+
+        $balanceExpr = $this->coalesceSql('loan_payment_schedules', 's', ['balance_amount', 'amount_balance'], '0');
+        $statusExpr = in_array('status', $columns, true) ? 'LOWER(COALESCE(s.status, ""))' : '""';
+        $overdueCase = 'CASE WHEN ('.$balanceExpr.' > 0 AND ('.$statusExpr.' IN ("late", "overdue") OR s.'.$dateColumn.' < CURDATE())) THEN 1 ELSE 0 END';
+        $periodExpr = $this->periodicReportSql('s', $dateColumn, $period);
+
+        $query = DB::connection('mysql_loan')->table('loan_payment_schedules as s')
+            ->join('loans as l', 'l.id', '=', 's.loan_id');
+        $loanDateColumn = $this->firstLoanReportColumn('loans', ['loan_date', 'created_at']) ?: 'id';
+        $this->applyPeriodicLoanFilters($query, $filters, $period, 'l', $loanDateColumn, 's', $dateColumn);
+
+        return $query
+            ->selectRaw($periodExpr.' as report_key')
+            ->selectRaw('COUNT(*) as schedule_count')
+            ->selectRaw($this->sumSql('loan_payment_schedules', 's', ['schedule_amount', 'amount_due', 'total']).' as schedule_due_total')
+            ->selectRaw($this->sumSql('loan_payment_schedules', 's', ['paid_amount', 'amount_paid', 'paid_value']).' as schedule_paid_total')
+            ->selectRaw($this->sumSql('loan_payment_schedules', 's', ['balance_amount', 'amount_balance']).' as schedule_balance_total')
+            ->selectRaw('SUM('.$overdueCase.') as overdue_count')
+            ->selectRaw('SUM(CASE WHEN '.$overdueCase.' = 1 THEN '.$balanceExpr.' ELSE 0 END) as overdue_balance_total')
+            ->groupByRaw($periodExpr)
+            ->get();
+    }
+
+    protected function periodicPaymentAggregates(array $filters, string $period)
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payments')) {
+            return collect();
+        }
+
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loan_payments');
+        $dateColumn = $this->firstLoanReportColumn('loan_payments', ['paid_date', 'paid_on', 'payment_date', 'paid_at', 'created_at'], $columns);
+        if (! $dateColumn) {
+            return collect();
+        }
+
+        $amountExpr = $this->coalesceSql('loan_payments', 'p', ['total_paid_base', 'total_paid', 'amount_base', 'amount'], '0');
+        $typeExpr = in_array('payment_type', $columns, true) ? 'LOWER(COALESCE(p.payment_type, ""))' : '""';
+        $collectionCase = 'CASE WHEN '.$typeExpr.' = "monthly" OR ('.$typeExpr.' = "" AND '.(in_array('schedule_id', $columns, true) ? 'p.schedule_id IS NOT NULL' : '0').') THEN '.$amountExpr.' ELSE 0 END';
+        $depositCase = 'CASE WHEN '.$typeExpr.' IN ("loan", "initial", "down_payment", "downpayment", "deposit") OR ('.$typeExpr.' = "" AND '.(in_array('schedule_id', $columns, true) ? 'p.schedule_id IS NULL' : '0').') THEN '.$amountExpr.' ELSE 0 END';
+        $periodExpr = $this->periodicReportSql('p', $dateColumn, $period);
+
+        $query = DB::connection('mysql_loan')->table('loan_payments as p')
+            ->join('loans as l', 'l.id', '=', 'p.loan_id');
+        $loanDateColumn = $this->firstLoanReportColumn('loans', ['loan_date', 'created_at']) ?: 'id';
+        $this->applyPeriodicLoanFilters($query, $filters, $period, 'l', $loanDateColumn, 'p', $dateColumn);
+
+        if (in_array('status', $columns, true)) {
+            $query->whereRaw('LOWER(COALESCE(p.status, "")) NOT IN ("cancelled", "canceled", "failed", "void", "deleted", "rejected")');
+        }
+
+        return $query
+            ->selectRaw($periodExpr.' as report_key')
+            ->selectRaw('COUNT(*) as payment_count')
+            ->selectRaw('SUM('.$collectionCase.') as collection_payment_total')
+            ->selectRaw('SUM('.$depositCase.') as deposit_payment_total')
+            ->selectRaw('SUM('.$amountExpr.') as payment_total')
+            ->groupByRaw($periodExpr)
+            ->get();
+    }
+
+    protected function periodicReportSql(string $alias, string $dateColumn, string $period): string
+    {
+        return $period === 'monthly'
+            ? 'DATE_FORMAT('.$alias.'.'.$dateColumn.', "%Y-%m")'
+            : 'DATE('.$alias.'.'.$dateColumn.')';
+    }
+
+    protected function applyPeriodicLoanFilters($query, array $filters, string $period, string $loanAlias, string $loanDateColumn, ?string $dataAlias = null, ?string $dataDateColumn = null): void
+    {
+        if ($period === 'monthly') {
+            $this->applyYearlyLoanFilters($query, $filters, $loanAlias, $loanDateColumn, $dataAlias, $dataDateColumn);
+            return;
+        }
+
+        $dateAlias = $dataAlias ?: $loanAlias;
+        $dateColumn = $dataDateColumn ?: $loanDateColumn;
+        $query->whereDate($dateAlias.'.'.$dateColumn, '>=', $filters['date_from'])
+            ->whereDate($dateAlias.'.'.$dateColumn, '<=', $filters['date_to']);
+
+        if (Schema::connection('mysql_loan')->hasColumn('loans', 'deleted_at')) {
+            $query->whereNull($loanAlias.'.deleted_at');
+        }
+        if ($dataAlias && Schema::connection('mysql_loan')->hasColumn($dataAlias === 's' ? 'loan_payment_schedules' : 'loan_payments', 'deleted_at')) {
+            $query->whereNull($dataAlias.'.deleted_at');
+        }
+
+        $this->applyDashboardLoanLocationAndSearchFilters($query, $filters, $loanAlias);
+    }
+
     protected function applyYearlyLoanFilters($query, array $filters, string $loanAlias, string $loanDateColumn, ?string $dataAlias = null, ?string $dataDateColumn = null): void
     {
         $dateAlias = $dataAlias ?: $loanAlias;
         $dateColumn = $dataDateColumn ?: $loanDateColumn;
 
-        $query->whereYear($dateAlias.'.'.$dateColumn, '>=', (int) $filters['start_year'])
-            ->whereYear($dateAlias.'.'.$dateColumn, '<=', (int) $filters['end_year']);
+        $query->whereDate($dateAlias.'.'.$dateColumn, '>=', $filters['date_from'])
+            ->whereDate($dateAlias.'.'.$dateColumn, '<=', $filters['date_to']);
 
         if (Schema::connection('mysql_loan')->hasColumn('loans', 'deleted_at')) {
             $query->whereNull($loanAlias.'.deleted_at');
@@ -2041,10 +3116,21 @@ class DashboardController extends Controller
     protected function adminLoanMonthlyRows(array $filters): array
     {
         $rows = [];
-        for ($year = (int) $filters['start_year']; $year <= (int) $filters['end_year']; $year++) {
-            for ($month = 1; $month <= 12; $month++) {
-                $rows[$this->adminLoanMonthKey($year, $month)] = $this->emptyAdminLoanMonthlyRow($year, $month);
-            }
+        try {
+            $start = \Carbon\Carbon::parse($filters['date_from'])->startOfMonth();
+            $end = \Carbon\Carbon::parse($filters['date_to'])->startOfMonth();
+        } catch (\Throwable $e) {
+            $start = \Carbon\Carbon::create((int) $filters['start_year'], 1, 1)->startOfMonth();
+            $end = \Carbon\Carbon::create((int) $filters['end_year'], 12, 1)->startOfMonth();
+        }
+
+        if ($start->gt($end)) {
+            [$start, $end] = [$end, $start];
+        }
+
+        while ($start->lte($end) && count($rows) < 312) {
+            $rows[$this->adminLoanMonthKey((int) $start->format('Y'), (int) $start->format('m'))] = $this->emptyAdminLoanMonthlyRow((int) $start->format('Y'), (int) $start->format('m'));
+            $start->addMonth();
         }
 
         foreach ($this->monthlyLoanAggregates($filters) as $row) {
@@ -2515,7 +3601,49 @@ class DashboardController extends Controller
         $csv = stream_get_contents($handle);
         fclose($handle);
 
-        $filename = 'yearly-loan-summary-'.$filters['start_year'].'-'.$filters['end_year'].'.csv';
+        $filename = 'yearly-loan-summary-'.$filters['date_from'].'-'.$filters['date_to'].'.csv';
+
+        return Response::make($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    protected function downloadPeriodicLoanSummaryCsv(array $payload, array $filters, string $period)
+    {
+        $periodHeader = $period === 'monthly'
+            ? $this->loanReportText('Month', 'ខែ')
+            : $this->loanReportText('Date', 'ថ្ងៃ');
+
+        $columns = [
+            $periodHeader,
+            $this->loanReportText('Registered Count', 'ចំនួនចុះឈ្មោះ'), $this->loanReportText('Registered Principal', 'ប្រាក់ដើមចុះឈ្មោះ'), $this->loanReportText('Registered Interest', 'ការប្រាក់ចុះឈ្មោះ'), $this->loanReportText('Registered Total', 'សរុបចុះឈ្មោះ'),
+            $this->loanReportText('Paid Customer Count', 'ចំនួនអតិថិជនបានបង់'), $this->loanReportText('Collection Payments', 'បង់ប្រចាំខែ'), $this->loanReportText('Deposit Payments', 'ប្រាក់កក់'), $this->loanReportText('Paid Total', 'បានបង់ទូរទៅ'),
+            $this->loanReportText('Paid Off Count', 'ចំនួនបង់ផ្ដាច់'), $this->loanReportText('Paid Off Principal', 'ប្រាក់ដើមបង់ផ្ដាច់'), $this->loanReportText('Paid Off Interest', 'ការប្រាក់បង់ផ្ដាច់'), $this->loanReportText('Paid Off Total', 'សរុបបង់ផ្ដាច់'), $this->loanReportText('Paid Off Paid', 'បានបង់ផ្ដាច់'), $this->loanReportText('Paid Off Balance', 'សមតុល្យបង់ផ្ដាច់'),
+            $this->loanReportText('Bad Count', 'ចំនួនអតិថិជនខូច'), $this->loanReportText('Bad Principal', 'ប្រាក់ដើមអតិថិជនខូច'), $this->loanReportText('Bad Interest', 'ការប្រាក់អតិថិជនខូច'), $this->loanReportText('Bad Total', 'សរុបអតិថិជនខូច'), $this->loanReportText('Bad Paid', 'បានបង់អតិថិជនខូច'), $this->loanReportText('Bad Balance', 'សមតុល្យអតិថិជនខូច'),
+        ];
+        $lines = [$columns];
+        foreach ($payload['rows'] as $row) {
+            $lines[] = [
+                $row['label'] ?? $row['key'],
+                $row['loan_count'], $row['principal_total'], $row['interest_total'], $row['loan_total'],
+                $row['paid_customer_count'], $row['collection_payment_total'], $row['deposit_payment_total'], $row['payment_total'],
+                $row['closed_count'], $row['closed_principal_total'], $row['closed_interest_total'], $row['closed_loan_total'], $row['closed_paid_total'], $row['closed_balance_total'],
+                $row['bad_count'], $row['bad_principal_total'], $row['bad_interest_total'], $row['bad_loan_total'], $row['bad_paid_total'], $row['bad_balance_total'],
+            ];
+        }
+
+        $handle = fopen('php://temp', 'r+');
+        foreach ($lines as $line) {
+            fputcsv($handle, $line);
+        }
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        $filename = $period === 'monthly'
+            ? 'monthly-loan-summary-'.$filters['date_from'].'-'.$filters['date_to'].'.csv'
+            : 'daily-loan-summary-'.$filters['date_from'].'-'.$filters['date_to'].'.csv';
 
         return Response::make($csv, 200, [
             'Content-Type' => 'text/csv; charset=UTF-8',

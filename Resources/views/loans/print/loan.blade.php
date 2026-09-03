@@ -1212,11 +1212,18 @@
         };
     }
 
-    async function buildLoanPrintImageBlob() {
+    async function buildLoanPrintImageBlob(scale, mimeType, quality) {
         var target = document.querySelector('.page');
         if (!target) {
             throw new Error('Loan print page was not found.');
         }
+
+        scale = parseFloat(scale || 2);
+        if (!isFinite(scale) || scale <= 0) {
+            scale = 2;
+        }
+        mimeType = mimeType || 'image/png';
+        quality = typeof quality === 'number' ? quality : 0.72;
 
         await waitForLoanPrintAssets();
         var payload = buildLoanImageSvg(target);
@@ -1230,14 +1237,14 @@
         });
 
         var canvas = document.createElement('canvas');
-        canvas.width = payload.width * 2;
-        canvas.height = payload.height * 2;
+        canvas.width = Math.ceil(payload.width * scale);
+        canvas.height = Math.ceil(payload.height * scale);
         var context = canvas.getContext('2d');
-        context.scale(2, 2);
+        context.scale(scale, scale);
         context.drawImage(image, 0, 0, payload.width, payload.height);
 
         var blob = await new Promise(function(resolve) {
-            canvas.toBlob(resolve, 'image/png');
+            canvas.toBlob(resolve, mimeType, quality);
         });
 
         if (!blob) {

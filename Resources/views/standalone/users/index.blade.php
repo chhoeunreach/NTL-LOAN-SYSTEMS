@@ -18,6 +18,13 @@
                 <a href="{{ route('roles.index') }}" class="btn btn-default btn-sm"><i class="fa fa-shield"></i> Roles</a>
             @endcan
             @can('user.create')
+                <a href="{{ route('users.import-template') }}" class="btn btn-default btn-sm"><i class="fa fa-download"></i> Template</a>
+                <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#usersImportModal"><i class="fa fa-upload"></i> Import</button>
+            @endcan
+            @can('user.view')
+                <a href="{{ route('users.export') }}" class="btn btn-default btn-sm"><i class="fa fa-file-excel-o"></i> Export</a>
+            @endcan
+            @can('user.create')
                 <a href="{{ route('users.create') }}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Add User</a>
             @endcan
         </div>
@@ -39,11 +46,27 @@
         @if($errors->any())
             <div class="alert alert-danger">{{ $errors->first() }}</div>
         @endif
+        @php
+            $status = session('status');
+            $statusMessage = is_array($status) ? data_get($status, 'msg') : $status;
+            $statusSuccess = is_array($status) ? data_get($status, 'success', 1) : 1;
+        @endphp
+        @if($statusMessage)
+            <div class="alert alert-{{ $statusSuccess ? 'success' : 'warning' }}">{{ $statusMessage }}</div>
+        @endif
 
-        <form method="GET" action="{{ route('users.index') }}" class="pos-filter-grid">
+        <form method="GET" action="{{ route('users.index') }}" class="pos-filter-grid pos-filter-grid-users">
             <div><input class="form-control" name="name" placeholder="Search name" value="{{ request('name') }}"></div>
             <div><input class="form-control" name="username" placeholder="Username" value="{{ request('username') }}"></div>
             <div><input class="form-control" name="email" placeholder="Email address" value="{{ request('email') }}"></div>
+            <div>
+                <select class="form-control" name="role">
+                    <option value="">All Roles</option>
+                    @foreach($roles as $id => $name)
+                        <option value="{{ $id }}" {{ (string) request('role') === (string) $id ? 'selected' : '' }}>{{ $name }}</option>
+                    @endforeach
+                </select>
+            </div>
             <div>
                 <select class="form-control" name="status">
                     <option value="">All Status</option>
@@ -128,5 +151,50 @@
         {{ $users->links() }}
         </div>
     </div>
+
+    @can('user.create')
+        <div class="modal fade" id="usersImportModal" tabindex="-1" role="dialog" aria-labelledby="usersImportModalLabel">
+            <div class="modal-dialog" role="document">
+                <form method="POST" action="{{ route('users.import') }}" enctype="multipart/form-data" class="modal-content">
+                    @csrf
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="usersImportModalLabel"><i class="fa fa-upload"></i> Import Users</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            Upload a CSV file using the downloaded template. Roles are matched by role name.
+                        </div>
+                        <div class="form-group">
+                            <label>CSV File</label>
+                            <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label>Import Mode</label>
+                                    <select name="mode" class="form-control">
+                                        <option value="insert">Insert Only</option>
+                                        <option value="update">Update Existing</option>
+                                        <option value="upsert">Insert &amp; Update</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label>Default Password</label>
+                                    <input type="text" name="default_password" class="form-control" value="12345678" minlength="6">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Import Users</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
 </div>
 @endsection

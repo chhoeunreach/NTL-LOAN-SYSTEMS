@@ -94,6 +94,8 @@
     $adminLoanFilterPayload = [
         'start_year' => $filters['start_year'],
         'end_year' => $filters['end_year'],
+        'date_from' => $filters['date_from'] ?? null,
+        'date_to' => $filters['date_to'] ?? null,
         'location_id' => $filters['location_id'],
         'search' => $filters['search'],
     ];
@@ -840,20 +842,12 @@
                 <form method="GET" action="{{ route('loan-management.admin-loan') }}" id="adminLoanFilter">
                     <div class="admin-loan-filter-grid">
                         <div>
-                            <label>{{ $text('Start Year', 'ឆ្នាំចាប់ផ្តើម') }}</label>
-                            <select name="start_year">
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ (int) $filters['start_year'] === (int) $year ? 'selected' : '' }}>{{ $year }}</option>
-                                @endforeach
-                            </select>
+                            <label>{{ $text('Date From', 'ពីថ្ងៃ') }}</label>
+                            <input type="date" name="date_from" value="{{ $filters['date_from'] ?? ($filters['start_year'].'-01-01') }}">
                         </div>
                         <div>
-                            <label>{{ $text('End Year', 'ឆ្នាំបញ្ចប់') }}</label>
-                            <select name="end_year">
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ (int) $filters['end_year'] === (int) $year ? 'selected' : '' }}>{{ $year }}</option>
-                                @endforeach
-                            </select>
+                            <label>{{ $text('Date To', 'ដល់ថ្ងៃ') }}</label>
+                            <input type="date" name="date_to" value="{{ $filters['date_to'] ?? ($filters['end_year'].'-12-31') }}">
                         </div>
                         <div>
                             <label>{{ $text('Location', 'សាខា') }}</label>
@@ -1104,7 +1098,7 @@
             var form = document.getElementById('adminLoanFilter');
             if (form) {
                 form.addEventListener('change', function (event) {
-                    if (event.target && event.target.tagName === 'SELECT' && event.target.name !== 'language') {
+                    if (event.target && (event.target.tagName === 'SELECT' || event.target.type === 'date') && event.target.name !== 'language') {
                         form.submit();
                     }
                 });

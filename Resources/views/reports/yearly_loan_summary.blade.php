@@ -7,15 +7,21 @@
     $money = fn ($value) => '$'.number_format((float) ($value ?? 0), 2);
     $number = fn ($value) => number_format((float) ($value ?? 0), 0);
     $yearOptions = range((int) now()->format('Y'), 2000);
+    $dateFrom = $filters['date_from'] ?? ($filters['start_year'].'-01-01');
+    $dateTo = $filters['date_to'] ?? ($filters['end_year'].'-12-31');
+    $dateRangeDisplay = \Carbon\Carbon::parse($dateFrom)->format('m-d-Y').' - '.\Carbon\Carbon::parse($dateTo)->format('m-d-Y');
     $yearlyLoanDetailFilterPayload = [
         'start_year' => $filters['start_year'],
         'end_year' => $filters['end_year'],
+        'date_from' => $dateFrom,
+        'date_to' => $dateTo,
         'location_id' => $filters['location_id'],
         'search' => $filters['search'],
     ];
 @endphp
 
 @section('loan_css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
 <style>
     .yls-wrap {
         color: #1f2937;
@@ -104,7 +110,7 @@
     }
     .yls-filter-row {
         display: grid;
-        grid-template-columns: 130px 130px minmax(190px, 260px) auto;
+        grid-template-columns: minmax(240px, 320px) minmax(190px, 260px) minmax(180px, 1fr) auto;
         gap: 6px;
         align-items: end;
     }
@@ -326,20 +332,10 @@
         <form method="GET" action="{{ route('loan-management.reports.yearly-loan-summary') }}" id="ylsFilterForm">
             <div class="yls-filter-row">
                 <div class="form-group" style="margin:0;">
-                    <label>{{ $bi('Start Year', 'ឆ្នាំចាប់ផ្តើម') }}</label>
-                    <select name="start_year" class="form-control">
-                        @foreach($yearOptions as $year)
-                            <option value="{{ $year }}" {{ (int) $filters['start_year'] === (int) $year ? 'selected' : '' }}>{{ $year }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group" style="margin:0;">
-                    <label>{{ $bi('End Year', 'ឆ្នាំបញ្ចប់') }}</label>
-                    <select name="end_year" class="form-control">
-                        @foreach($yearOptions as $year)
-                            <option value="{{ $year }}" {{ (int) $filters['end_year'] === (int) $year ? 'selected' : '' }}>{{ $year }}</option>
-                        @endforeach
-                    </select>
+                    <label>{{ $bi('Date Range', 'ចន្លោះថ្ងៃ') }}</label>
+                    <input type="text" name="date_range" id="ylsDateRange" class="form-control" value="{{ $dateRangeDisplay }}" placeholder="{{ $bi('Select date range', 'ជ្រើសរើសចន្លោះថ្ងៃ') }}" autocomplete="off">
+                    <input type="hidden" name="date_from" value="{{ $dateFrom }}">
+                    <input type="hidden" name="date_to" value="{{ $dateTo }}">
                 </div>
                 <div class="form-group" style="margin:0;">
                     <label>{{ $bi('Location', 'សាខា') }}</label>
@@ -349,6 +345,10 @@
                             <option value="{{ $id }}" {{ (string) $filters['location_id'] === (string) $id ? 'selected' : '' }}>{{ $name }}</option>
                         @endforeach
                     </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label>{{ $bi('Search', 'ស្វែងរក') }}</label>
+                    <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $bi('Loan, customer, phone', 'កម្ចី អតិថិជន ទូរស័ព្ទ') }}">
                 </div>
                 <div class="yls-filter-actions">
                     <button type="submit" class="btn btn-primary">{{ $bi('Filter', 'ចម្រោះ') }}</button>
@@ -467,12 +467,86 @@
 @endsection
 
 @section('loan_js')
+<script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
 <script>
     (function ($) {
         var $form = $('#ylsFilterForm');
         $form.on('change', 'select', function () {
             $form.trigger('submit');
         });
+
+        var displayDateFormat = window.moment_date_format || 'MM-DD-YYYY';
+        var dateRangeSettings = window.dateRangeSettings ? $.extend(true, {}, window.dateRangeSettings) : {};
+
+        if (window.moment && $.fn.daterangepicker) {
+            var startDate = moment(@json($dateFrom));
+            var endDate = moment(@json($dateTo));
+            var fyStart = (typeof financial_year !== 'undefined' && financial_year.start && moment(financial_year.start).isValid())
+                ? moment(financial_year.start)
+                : moment().startOf('year');
+            var fyEnd = (typeof financial_year !== 'undefined' && financial_year.end && moment(financial_year.end).isValid())
+                ? moment(financial_year.end)
+                : moment().endOf('year');
+
+            $('#ylsDateRange').daterangepicker($.extend(true, {}, dateRangeSettings, {
+                autoUpdateInput: false,
+                showDropdowns: true,
+                linkedCalendars: false,
+                startDate: startDate,
+                endDate: endDate,
+                parentEl: 'body',
+                opens: 'right',
+                drops: 'auto',
+                ranges: {
+                    'Today': [moment(), moment()],
+                    'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                    'This Month': [moment().startOf('month'), moment().endOf('month')],
+                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                    'This month last year': [moment().subtract(1, 'year').startOf('month'), moment().subtract(1, 'year').endOf('month')],
+                    'This Year': [moment().startOf('year'), moment().endOf('year')],
+                    'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+                    'Current financial year': [fyStart.clone(), fyEnd.clone()],
+                    'Last financial year': [fyStart.clone().subtract(1, 'year'), fyEnd.clone().subtract(1, 'year')]
+                },
+                locale: $.extend(true, {}, dateRangeSettings.locale || {}, {
+                    format: displayDateFormat,
+                    separator: ' - ',
+                    applyLabel: @json($bi('Apply', 'អនុវត្ត')),
+                    cancelLabel: @json($bi('Clear', 'សម្អាត')),
+                    customRangeLabel: @json($bi('Custom Range', 'ជ្រើសរើសផ្ទាល់')),
+                    toLabel: '~'
+                })
+            }), function (start, end) {
+                $('#ylsDateRange').val(start.format(displayDateFormat) + ' - ' + end.format(displayDateFormat));
+                $form.find('[name="date_from"]').val(start.format('YYYY-MM-DD'));
+                $form.find('[name="date_to"]').val(end.format('YYYY-MM-DD'));
+                $form.trigger('submit');
+            });
+
+            $('#ylsDateRange')
+                .on('apply.daterangepicker', function (event, picker) {
+                    $(this).val(picker.startDate.format(displayDateFormat) + ' - ' + picker.endDate.format(displayDateFormat));
+                    $form.find('[name="date_from"]').val(picker.startDate.format('YYYY-MM-DD'));
+                    $form.find('[name="date_to"]').val(picker.endDate.format('YYYY-MM-DD'));
+                    $form.trigger('submit');
+                })
+                .on('cancel.daterangepicker', function () {
+                    $(this).val('');
+                    $form.find('[name="date_from"], [name="date_to"]').val('');
+                    $form.trigger('submit');
+                });
+        } else {
+            $('#ylsDateRange').prop('readonly', false).on('change', function () {
+                var parts = String($(this).val()).split(/\s+-\s+|\s+~\s+/);
+                if (parts.length === 2) {
+                    $form.find('[name="date_from"]').val(parts[0]);
+                    $form.find('[name="date_to"]').val(parts[1]);
+                }
+            });
+        }
 
         var detailUrl = @json(route('loan-management.admin-loan.details'));
         var filters = @json($yearlyLoanDetailFilterPayload);

@@ -379,7 +379,7 @@ class LoanCustomerController extends Controller
             return null;
         }
 
-        return Storage::disk($file->disk ?? 'public')->url($file->path);
+        return url('loan-management/chat-files/'.(int) $customer->customer_photo_file_id);
     }
 
     protected function attachFileToCustomer(int $fileId, int $customerId): void

@@ -86,6 +86,9 @@
         align-items: end;
         margin-bottom: 14px;
     }
+    .pos-filter-grid-users {
+        grid-template-columns: repeat(5, minmax(140px, 1fr)) auto auto;
+    }
     .pos-filter-grid .form-control,
     .pos-form-grid .form-control {
         height: 40px;

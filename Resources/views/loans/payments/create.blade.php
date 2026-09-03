@@ -586,13 +586,14 @@ $(function () {
                 auto_action: 'invoice',
                 loan_id: loanId,
                 loan_number: loanNumber,
-                balance_amount: balanceAmount
+                balance_amount: balanceAmount,
+                preview_frame_id: 'lmInvoicePreviewFrame'
             };
 
             if (typeof window.loanManagementSendInvoiceToTelegramCustomer === 'function') {
                 var originalHtml = $button.html();
-                $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Sending invoice...');
-                invoicePreviewStatus('Sending invoice to customer chat...', 'info');
+                $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Previewing invoice...');
+                invoicePreviewStatus('Opening invoice send preview...', 'info');
 
                 function restoreSendButton() {
                     $button.prop('disabled', false).html(originalHtml);
@@ -605,6 +606,12 @@ $(function () {
                         $previewModal.modal('hide');
                     })
                     .catch(function (error) {
+                        if (error && error.cancelled) {
+                            invoicePreviewStatus('Invoice sending cancelled.', 'info');
+                            restoreSendButton();
+                            return;
+                        }
+
                         var message = error && error.message ? error.message : 'Unable to send invoice to customer chat.';
                         notifyInvoicePreview(message, 'error');
                         restoreSendButton();

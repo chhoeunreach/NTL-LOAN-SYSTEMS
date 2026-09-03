@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
@@ -37,9 +38,14 @@ class UserController extends Controller
             }
         }
 
-        $users = $query->paginate(20)->appends($request->query());
+        if ($hasRoleTables && $request->filled('role')) {
+            $query->whereHas('roles', fn ($roleQuery) => $roleQuery->whereKey((int) $request->input('role')));
+        }
 
-        return view('standalone.users.index', compact('users', 'stats'));
+        $users = $query->paginate(20)->appends($request->query());
+        $roles = $this->rolesForSelect();
+
+        return view('standalone.users.index', compact('users', 'stats', 'roles'));
     }
 
     public function create()
@@ -176,6 +182,136 @@ class UserController extends Controller
         return back()->with('status', ['success' => 1, 'msg' => 'Password reset successfully.']);
     }
 
+    public function export(Request $request)
+    {
+        $this->authorizeUserAccess('user.view');
+
+        $hasRoleTables = Schema::hasTable('roles') && Schema::hasTable('model_has_roles');
+        $users = User::query()
+            ->when($hasRoleTables, fn ($q) => $q->with('roles'))
+            ->when(Schema::hasColumn('users', 'business_id'), fn ($q) => $q->where('business_id', $this->businessId()))
+            ->orderBy('id')
+            ->get();
+
+        return response()->streamDownload(function () use ($users) {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['first_name', 'last_name', 'username', 'email', 'status', 'allow_login', 'business_id', 'role']);
+
+            foreach ($users as $user) {
+                fputcsv($output, [
+                    $user->first_name,
+                    $user->last_name,
+                    $user->username,
+                    $user->email,
+                    $user->status ?? 'active',
+                    ! empty($user->allow_login) ? 1 : 0,
+                    $user->business_id ?? $this->businessId(),
+                    $user->relationLoaded('roles') ? $user->roles->pluck('name')->implode('|') : '',
+                ]);
+            }
+
+            fclose($output);
+        }, 'users-export-'.date('Ymd-His').'.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function downloadTemplate()
+    {
+        $this->authorizeUserAccess('user.create');
+
+        return response()->streamDownload(function () {
+            $output = fopen('php://output', 'w');
+            fputcsv($output, ['first_name', 'last_name', 'username', 'email', 'password', 'status', 'allow_login', 'business_id', 'role']);
+            fputcsv($output, ['Sok', 'Dara', 'sokdara', 'sokdara@example.com', '12345678', 'active', 1, $this->businessId(), 'Admin']);
+            fclose($output);
+        }, 'users-import-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    public function import(Request $request)
+    {
+        $this->authorizeUserAccess('user.create');
+
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt|max:5120',
+            'mode' => 'required|in:insert,update,upsert',
+            'default_password' => 'nullable|string|min:6|max:100',
+        ]);
+
+        $rows = $this->csvRows($request->file('file')->getRealPath());
+        if (empty($rows)) {
+            return back()->withErrors(['file' => 'The import file is empty or missing headers.']);
+        }
+
+        $mode = $request->input('mode', 'insert');
+        $defaultPassword = $request->input('default_password') ?: '12345678';
+        $imported = 0;
+        $updated = 0;
+        $skipped = 0;
+        $errors = [];
+
+        DB::transaction(function () use ($rows, $mode, $defaultPassword, &$imported, &$updated, &$skipped, &$errors) {
+            foreach ($rows as $index => $row) {
+                $line = $index + 2;
+                $username = trim((string) ($row['username'] ?? ''));
+                $email = trim((string) ($row['email'] ?? ''));
+                $firstName = trim((string) ($row['first_name'] ?? ''));
+
+                if ($username === '' || $email === '' || $firstName === '') {
+                    $skipped++;
+                    $errors[] = 'Row '.$line.': first_name, username, and email are required.';
+                    continue;
+                }
+
+                $existing = User::query()
+                    ->when(Schema::hasColumn('users', 'business_id'), fn ($q) => $q->where('business_id', $this->businessId()))
+                    ->where(function ($query) use ($username, $email) {
+                        $query->where('username', $username)->orWhere('email', $email);
+                    })
+                    ->first();
+
+                if ($existing && $mode === 'insert') {
+                    $skipped++;
+                    continue;
+                }
+
+                if (! $existing && $mode === 'update') {
+                    $skipped++;
+                    continue;
+                }
+
+                $payload = [
+                    'name' => trim($firstName.' '.trim((string) ($row['last_name'] ?? ''))),
+                    'first_name' => $firstName,
+                    'last_name' => trim((string) ($row['last_name'] ?? '')),
+                    'username' => $username,
+                    'email' => $email,
+                    'business_id' => (int) ($row['business_id'] ?? $this->businessId()) ?: $this->businessId(),
+                    'allow_login' => $this->truthy($row['allow_login'] ?? true),
+                    'status' => in_array(strtolower(trim((string) ($row['status'] ?? 'active'))), ['active', 'inactive'], true)
+                        ? strtolower(trim((string) ($row['status'] ?? 'active')))
+                        : 'active',
+                ];
+
+                if (! $existing || trim((string) ($row['password'] ?? '')) !== '') {
+                    $payload['password'] = Hash::make(trim((string) ($row['password'] ?? '')) ?: $defaultPassword);
+                }
+
+                $user = $existing ?: new User();
+                $user->fill($payload);
+                $user->save();
+                $this->syncRoleByName($user, trim((string) ($row['role'] ?? '')));
+
+                $existing ? $updated++ : $imported++;
+            }
+        });
+
+        $message = 'Import completed. Imported: '.$imported.', Updated: '.$updated.', Skipped: '.$skipped.'.';
+        if (! empty($errors)) {
+            $message .= ' '.count($errors).' row issue(s): '.implode(' ', array_slice($errors, 0, 3));
+        }
+
+        return redirect()->route('users.index')->with('status', ['success' => empty($errors) ? 1 : 0, 'msg' => $message]);
+    }
+
     protected function authorizeUserAccess(string $permission): void
     {
         abort_unless(auth()->check() && auth()->user()->can($permission), 403, 'Unauthorized action.');
@@ -210,6 +346,56 @@ class UserController extends Controller
         if ($role) {
             $user->syncRoles([$role]);
         }
+    }
+
+    protected function syncRoleByName(User $user, string $roleName): void
+    {
+        if ($roleName === '' || ! Schema::hasTable('roles') || ! Schema::hasTable('model_has_roles')) {
+            return;
+        }
+
+        $roleName = trim(explode('|', $roleName)[0]);
+        $role = Role::query()
+            ->where('name', $roleName)
+            ->when(Schema::hasColumn('roles', 'business_id'), fn ($query) => $query->where('business_id', $this->businessId()))
+            ->first();
+
+        if ($role) {
+            $user->syncRoles([$role]);
+        }
+    }
+
+    protected function csvRows(string $path): array
+    {
+        $handle = fopen($path, 'r');
+        if (! $handle) {
+            return [];
+        }
+
+        $headers = fgetcsv($handle);
+        if (! is_array($headers)) {
+            fclose($handle);
+            return [];
+        }
+
+        $headers = array_map(fn ($header) => strtolower(trim((string) $header)), $headers);
+        $rows = [];
+        while (($data = fgetcsv($handle)) !== false) {
+            if (count(array_filter($data, fn ($value) => trim((string) $value) !== '')) === 0) {
+                continue;
+            }
+
+            $rows[] = array_combine($headers, array_slice(array_pad($data, count($headers), ''), 0, count($headers)));
+        }
+
+        fclose($handle);
+
+        return $rows;
+    }
+
+    protected function truthy($value): bool
+    {
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'yes', 'active', 'allowed', 'on'], true);
     }
 
     protected function businessId(): int

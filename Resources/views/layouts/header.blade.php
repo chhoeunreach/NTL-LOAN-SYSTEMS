@@ -46,9 +46,11 @@
             </button>
         @endif
 
-        <a href="{{ config('loanmanagement.website_url') ?: url('/') }}" class="btn btn-info btn-sm lm-header-action" target="_blank" rel="noopener" title="Open home page">
-            <i class="fa fa-globe"></i> <span class="hidden-xs">Website</span><span class="visible-xs-inline">Web</span>
-        </a>
+        @if(\Modules\LoanManagement\Services\BusinessSettingsService::isCmsEnabled())
+            <a href="{{ config('loanmanagement.website_url') ?: url('/') }}" class="btn btn-info btn-sm lm-header-action" target="_blank" rel="noopener" title="Open home page">
+                <i class="fa fa-globe"></i> <span class="hidden-xs">Website</span><span class="visible-xs-inline">Web</span>
+            </a>
+        @endif
 
         @if(Route::has('loan-management.language.switch'))
             <div class="lm-language-switch" title="Loan language">

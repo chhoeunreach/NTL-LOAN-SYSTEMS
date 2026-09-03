@@ -12,6 +12,22 @@
         return Route::has($route) ? route($route, $params) : '#';
     };
 
+    $lmRouteParamMatches = function (array $item): bool {
+        $route = request()->route();
+        if (! $route || empty($item['route']) || $route->getName() !== $item['route']) {
+            return false;
+        }
+
+        foreach (($item['params'] ?? []) as $key => $value) {
+            $current = $route->parameter($key, request()->query($key));
+            if ((string) $current !== (string) $value) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
     $menuSections = [
         [
             'items' => [
@@ -33,7 +49,6 @@
                     ['label' => $lmText('Closed Accounts', 'គណនីបិទរួច'), 'route' => 'loan-management.operations.page', 'params' => ['page' => 'closed-accounts'], 'can' => 'loan_management.view'],
                 ]],
                 ['label' => $lmText('Loan Schedule', 'កាលវិភាគកម្ចី'), 'icon' => 'fa fa-calendar', 'route' => 'loan-management.schedules.index', 'can' => 'loan_management.view', 'tone' => 'slate'],
-                ['label' => $lmText('Closed Loans', 'កម្ចីបានបិទ'), 'icon' => 'fa fa-archive', 'route' => 'loan-management.operations.page', 'params' => ['page' => 'closed-accounts'], 'can' => 'loan_management.view', 'tone' => 'slate'],
             ],
         ],
         [
@@ -47,7 +62,7 @@
         [
             'label' => $lmText('Collections', 'ការប្រមូលប្រាក់'),
             'items' => [
-                ['label' => $lmText("Today's Collection", 'ប្រមូលប្រាក់ថ្ងៃនេះ'), 'icon' => 'fa fa-usd', 'route' => 'loan-management.operations.page', 'params' => ['page' => 'due-today'], 'can' => 'loan_management.view', 'tone' => 'violet'],
+                ['label' => $lmText("Today's Collection", 'ប្រមូលប្រាក់ថ្ងៃនេះ'), 'icon' => 'fa fa-usd', 'route' => 'loan-management.operations.page', 'params' => ['page' => 'today-collection'], 'can' => 'loan_management.view', 'tone' => 'violet'],
                 ['label' => $lmText('Payments', 'ការបង់ប្រាក់'), 'icon' => 'fa fa-money', 'route' => 'loan-management.payments.index', 'can' => 'loan_management.view', 'tone' => 'violet'],
                 ['label' => $lmText('Overdue', 'ហួសកំណត់'), 'icon' => 'fa fa-exclamation-triangle', 'route' => 'loan-management.collection.page', 'params' => ['page' => 'overdue-accounts'], 'can' => 'loan_management.view', 'badge' => $badgeCounts['overdue'] ?? 0, 'tone' => 'red'],
                 ['label' => $lmText('Collection Cases', 'ករណីប្រមូលប្រាក់'), 'icon' => 'fa fa-shield', 'tone' => 'violet', 'children' => [
@@ -74,6 +89,8 @@
             'items' => [
                 ['label' => $lmText('Loan Reports', 'របាយការណ៍កម្ចី'), 'icon' => 'fa fa-pie-chart', 'tone' => 'blue', 'children' => [
                     ['label' => $lmText('Installment Reports', 'របាយការណ៍រំលស់'), 'route' => 'loan-management.reports.index', 'can' => 'loan_management.reports.view|loan_management.view'],
+                    ['label' => $lmText('Daily Loan Summary', 'សង្ខេបកម្ចីប្រចាំថ្ងៃ'), 'route' => 'loan-management.reports.daily-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],
+                    ['label' => $lmText('Monthly Loan Summary', 'សង្ខេបកម្ចីប្រចាំខែ'), 'route' => 'loan-management.reports.monthly-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],
                     ['label' => $lmText('Yearly Loan Summary', 'សង្ខេបកម្ចីប្រចាំឆ្នាំ'), 'route' => 'loan-management.reports.yearly-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],
                 ]],
                 ['label' => $lmText('Collection Reports', 'របាយការណ៍ប្រមូលប្រាក់'), 'icon' => 'fa fa-bar-chart', 'route' => 'loan-management.collection.reports', 'can' => 'loan_management.reports.view|loan_management.view', 'tone' => 'blue'],
@@ -151,10 +168,9 @@
                 @foreach($visibleItems as $item)
                     @php
                         $children = collect($item['children'] ?? [])->filter(fn ($child) => \Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan($child['can'] ?? 'loan_management.view'))->values();
-                        $routes = $children->isEmpty()
-                            ? [$item['route'] ?? '']
-                            : $children->flatMap(fn ($child) => $child['active_routes'] ?? [$child['route']])->all();
-                        $isActive = LoanMenuHelper::activeRoute($routes, false);
+                        $isActive = $children->isEmpty()
+                            ? (empty($item['suppress_active']) && $lmRouteParamMatches($item))
+                            : $children->contains(fn ($child) => $lmRouteParamMatches($child));
                         $tone = $item['tone'] ?? 'blue';
                     @endphp
 
@@ -183,7 +199,7 @@
 
                             <div class="lm-submenu" style="{{ $isActive ? 'display:block;' : '' }}">
                                 @foreach($children as $child)
-                                    @php $childActive = LoanMenuHelper::activeRoute($child['active_routes'] ?? [$child['route']], false); @endphp
+                                    @php $childActive = $lmRouteParamMatches($child); @endphp
                                     <a href="{{ $sidebarUrl($child['route'], $child['params'] ?? []) }}"
                                        class="lm-submenu-link {{ $childActive ? 'active' : '' }} {{ !empty($child['meta']) ? 'has-meta' : '' }}"
                                        title="{{ $child['label'] }}"

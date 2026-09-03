@@ -11,9 +11,23 @@ class BusinessSettingsService
         'business_name' => 'KY Store',
         'system_name' => 'Loan Management',
         'system_subtitle' => 'Dedicated loan operation workspace',
+        'start_date' => null,
+        'default_profit_percent' => '25.00',
+        'currency_code' => 'USD',
+        'currency_symbol' => '$',
+        'currency_symbol_placement' => 'before',
+        'time_zone' => 'Asia/Phnom_Penh',
+        'fy_start_month' => 1,
+        'stock_accounting_method' => 'fifo',
+        'transaction_edit_days' => 365,
+        'date_format' => 'd-m-Y',
+        'time_format' => 24,
+        'currency_precision' => 2,
+        'quantity_precision' => 2,
         'theme_color' => '#6366f1',
         'logo_path' => null,
         'login_background_path' => null,
+        'cms_enabled' => true,
         'home_headline' => 'Simple loan service for customers',
         'home_subtitle' => 'Register with NTL CO.LTD and our team will contact you about your loan request.',
         'home_body' => 'Fast customer registration, clear payment schedules, Telegram updates, and easy support from our branch team.',
@@ -34,9 +48,23 @@ class BusinessSettingsService
             'business_name' => self::cleanText($data['business_name'] ?? $current['business_name'], 80),
             'system_name' => self::cleanText($data['system_name'] ?? $current['system_name'], 80),
             'system_subtitle' => self::cleanText($data['system_subtitle'] ?? $current['system_subtitle'], 120),
+            'start_date' => self::cleanDate($data['start_date'] ?? $current['start_date']),
+            'default_profit_percent' => self::cleanDecimal($data['default_profit_percent'] ?? $current['default_profit_percent'], 0, 1000, 2),
+            'currency_code' => self::cleanText($data['currency_code'] ?? $current['currency_code'], 10) ?: self::DEFAULTS['currency_code'],
+            'currency_symbol' => self::cleanText($data['currency_symbol'] ?? $current['currency_symbol'], 10) ?: self::DEFAULTS['currency_symbol'],
+            'currency_symbol_placement' => self::cleanChoice($data['currency_symbol_placement'] ?? $current['currency_symbol_placement'], ['before', 'after'], self::DEFAULTS['currency_symbol_placement']),
+            'time_zone' => self::cleanText($data['time_zone'] ?? $current['time_zone'], 80) ?: self::DEFAULTS['time_zone'],
+            'fy_start_month' => self::cleanInteger($data['fy_start_month'] ?? $current['fy_start_month'], 1, 12, self::DEFAULTS['fy_start_month']),
+            'stock_accounting_method' => self::cleanChoice($data['stock_accounting_method'] ?? $current['stock_accounting_method'], ['fifo', 'lifo', 'avco'], self::DEFAULTS['stock_accounting_method']),
+            'transaction_edit_days' => self::cleanInteger($data['transaction_edit_days'] ?? $current['transaction_edit_days'], 0, 3650, self::DEFAULTS['transaction_edit_days']),
+            'date_format' => self::cleanChoice($data['date_format'] ?? $current['date_format'], ['d-m-Y', 'm-d-Y', 'Y-m-d', 'd/m/Y', 'm/d/Y'], self::DEFAULTS['date_format']),
+            'time_format' => (int) self::cleanChoice($data['time_format'] ?? $current['time_format'], ['12', '24'], (string) self::DEFAULTS['time_format']),
+            'currency_precision' => self::cleanInteger($data['currency_precision'] ?? $current['currency_precision'], 0, 4, self::DEFAULTS['currency_precision']),
+            'quantity_precision' => self::cleanInteger($data['quantity_precision'] ?? $current['quantity_precision'], 0, 4, self::DEFAULTS['quantity_precision']),
             'theme_color' => self::cleanColor($data['theme_color'] ?? $current['theme_color']),
             'logo_path' => $data['logo_path'] ?? $current['logo_path'],
             'login_background_path' => $data['login_background_path'] ?? $current['login_background_path'],
+            'cms_enabled' => filter_var($data['cms_enabled'] ?? $current['cms_enabled'], FILTER_VALIDATE_BOOLEAN),
             'home_headline' => self::cleanText($data['home_headline'] ?? $current['home_headline'], 140),
             'home_subtitle' => self::cleanText($data['home_subtitle'] ?? $current['home_subtitle'], 220),
             'home_body' => self::cleanMultilineText($data['home_body'] ?? $current['home_body'], 1200, ''),
@@ -73,9 +101,36 @@ class BusinessSettingsService
         return self::get()['theme_color'];
     }
 
+    public static function isCmsEnabled(): bool
+    {
+        return (bool) self::get()['cms_enabled'];
+    }
+
     public static function invoiceMessageTemplate(): string
     {
         return self::get()['invoice_message_template'];
+    }
+
+    public static function sessionPayload(): array
+    {
+        $settings = self::get();
+
+        return [
+            'business.name' => $settings['business_name'],
+            'business.start_date' => $settings['start_date'],
+            'business.default_profit_percent' => $settings['default_profit_percent'],
+            'business.currency_symbol_placement' => $settings['currency_symbol_placement'],
+            'business.time_zone' => $settings['time_zone'],
+            'business.fy_start_month' => $settings['fy_start_month'],
+            'business.stock_accounting_method' => $settings['stock_accounting_method'],
+            'business.transaction_edit_days' => $settings['transaction_edit_days'],
+            'business.date_format' => $settings['date_format'],
+            'business.time_format' => $settings['time_format'],
+            'business.currency_precision' => $settings['currency_precision'],
+            'business.quantity_precision' => $settings['quantity_precision'],
+            'currency.code' => $settings['currency_code'],
+            'currency.symbol' => $settings['currency_symbol'],
+        ];
     }
 
     public static function invoiceMessage(string $customerName = ''): string
@@ -216,6 +271,36 @@ class BusinessSettingsService
         $color = strtolower(trim((string) $value));
 
         return preg_match('/^#[0-9a-f]{6}$/', $color) ? $color : self::DEFAULTS['theme_color'];
+    }
+
+    protected static function cleanChoice($value, array $allowed, string $default): string
+    {
+        $clean = trim((string) $value);
+
+        return in_array($clean, $allowed, true) ? $clean : $default;
+    }
+
+    protected static function cleanDate($value): ?string
+    {
+        $clean = trim((string) $value);
+
+        return preg_match('/^\d{4}-\d{2}-\d{2}$/', $clean) ? $clean : null;
+    }
+
+    protected static function cleanDecimal($value, float $min, float $max, int $precision): string
+    {
+        $number = max($min, min($max, (float) $value));
+
+        return number_format($number, $precision, '.', '');
+    }
+
+    protected static function cleanInteger($value, int $min, int $max, int $default): int
+    {
+        if (! is_numeric($value)) {
+            return $default;
+        }
+
+        return max($min, min($max, (int) $value));
     }
 
     protected static function hexToRgb(string $hex): array

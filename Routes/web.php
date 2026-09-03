@@ -17,6 +17,7 @@ use Modules\LoanManagement\Http\Controllers\LoanLocationController;
 use Modules\LoanManagement\Http\Controllers\LoanPaymentController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramChatController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramWebhookController;
+use Modules\LoanManagement\Http\Controllers\PublicAppController;
 use Modules\LoanManagement\Http\Controllers\SettingsController;
 
 Route::middleware(['web'])
@@ -30,6 +31,17 @@ Route::middleware(['web'])
 Route::middleware(['web'])
     ->get('/loan-management/settings/business/public-logo', [SettingsController::class, 'businessPublicLogo'])
     ->name('loan-management.settings.business.public-logo');
+
+Route::middleware(['web'])->group(function () {
+    Route::get('/', [PublicAppController::class, 'home'])->name('loan-management.public.home');
+    Route::get('/register', [PublicAppController::class, 'register'])->name('loan-management.public.register');
+    Route::post('/register', [PublicAppController::class, 'storeRegistration'])->name('loan-management.public.register.store');
+    Route::get('/customer/login', [PublicAppController::class, 'customerLogin'])->name('loan-management.public.customer-login');
+    Route::post('/customer/login', [PublicAppController::class, 'customerLoginStore'])->name('loan-management.public.customer-login.store');
+    Route::post('/customer/logout', [PublicAppController::class, 'customerLogout'])->name('loan-management.public.customer-logout');
+
+    Route::get('/customer/dashboard', [PublicAppController::class, 'customerDashboard'])->name('loan-management.public.customer-dashboard');
+});
 
 Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu', 'CheckUserLogin', 'loan.activity'])
     ->prefix('loan-management')
@@ -46,7 +58,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/admin-loan/details', [DashboardController::class, 'adminLoanDetails'])->name('loan-management.admin-loan.details');
         Route::post('/admin-loan/details/{loan}/update', [DashboardController::class, 'adminLoanInlineUpdate'])->where(['loan' => '[0-9]+'])->name('loan-management.admin-loan.details.update');
 
-        Route::get('/operations/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['new-loans', 'active-loans', 'due-today', 'partial-payments', 'closed-accounts'])->name('loan-management.operations.page');
+        Route::get('/operations/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['new-loans', 'active-loans', 'due-today', 'today-collection', 'partial-payments', 'closed-accounts'])->name('loan-management.operations.page');
         Route::get('/collection/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['overdue-accounts', 'promise-to-pay', 'broken-promise', 'field-visit-required', 'skip-customers', 'delinquent-accounts', 'recovery-management', 'debt-collection'])->name('loan-management.collection.page');
         Route::get('/risk/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['high-risk-customers', 'fraud-risk', 'legal-cases', 'blacklisted-customers', 'repossessions'])->name('loan-management.risk.page');
         Route::get('/communication/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['voice-calls', 'notifications', 'sms-telegram-logs'])->name('loan-management.communication.page');
@@ -152,6 +164,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
 
         Route::get('/live-chat', [LoanChatController::class, 'webInbox'])->name('loan-management.live-chat');
         Route::get('/live-chat/{thread}', [LoanChatController::class, 'webDetail'])->name('loan-management.live-chat.detail');
+        Route::get('/chat-files/{file}', [LoanTelegramChatController::class, 'file'])->where(['file' => '[0-9]+'])->name('loan-management.chat-files.show');
         Route::get('/chat', [LoanChatController::class, 'webInbox'])->name('loan-management.chat.index');
         Route::get('/chat/{thread}', [LoanChatController::class, 'webDetail'])->name('loan-management.chat.detail');
         Route::delete('/chat/{thread}', [LoanChatController::class, 'destroy'])->name('loan-management.chat.destroy');
@@ -190,6 +203,8 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/settings/business', [SettingsController::class, 'business'])->name('loan-management.settings.business');
         Route::get('/settings/business/logo', [SettingsController::class, 'businessLogo'])->name('loan-management.settings.business.logo');
         Route::post('/settings/business', [SettingsController::class, 'updateBusiness'])->name('loan-management.settings.business.update');
+        Route::get('/settings/cms', [SettingsController::class, 'cms'])->name('loan-management.settings.cms');
+        Route::post('/settings/cms', [SettingsController::class, 'updateCms'])->name('loan-management.settings.cms.update');
         Route::post('/settings/invoice-prefix', fn () => redirect()->route('loan-management.locations.index'))->name('loan-management.settings.invoice-prefix');
         Route::get('/settings/payment-methods', [SettingsController::class, 'paymentMethods'])->name('loan-management.settings.payment-methods');
         Route::post('/settings/payment-methods', [SettingsController::class, 'updatePaymentMethods'])->name('loan-management.settings.payment-methods.update');
@@ -217,14 +232,17 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/schedules', [DashboardController::class, 'placeholder'])->defaults('page', 'Installment Schedules')->name('loan-management.schedules.index');
         Route::get('/monthly-payments', [DashboardController::class, 'placeholder'])->defaults('page', 'Monthly Payments')->name('loan-management.monthly-payments.index');
         Route::get('/overdue', [DashboardController::class, 'overdue'])->name('loan-management.overdue.index');
-        Route::get('/collection-visits', [DashboardController::class, 'placeholder'])->defaults('page', 'Collection Visits')->name('loan-management.collection-visits.index');
+        Route::get('/collection-visits', [DashboardController::class, 'collectionVisits'])->name('loan-management.collection-visits.index');
         Route::get('/gps', [AdminCustomerTrackingController::class, 'index'])->name('loan-management.gps.index');
         Route::get('/finance/aba-transactions', [DashboardController::class, 'placeholder'])->defaults('page', 'ABA Transactions')->name('loan-management.aba.index');
         Route::get('/aba', [DashboardController::class, 'placeholder'])->defaults('page', 'ABA Transactions')->name('loan-management.aba');
         Route::get('/reports', [DashboardController::class, 'placeholder'])->defaults('page', 'Reports')->name('loan-management.reports');
-        Route::get('/reports/index', [DashboardController::class, 'placeholder'])->defaults('page', 'Reports')->name('loan-management.reports.index');
+        Route::get('/reports/index', [DashboardController::class, 'installmentReports'])->name('loan-management.reports.index');
         Route::get('/reports/dashboard', [DashboardController::class, 'dashboardReports'])->name('loan-management.reports.dashboard');
+        Route::get('/reports/daily-loan-summary', [DashboardController::class, 'dailyLoanSummary'])->name('loan-management.reports.daily-loan-summary');
+        Route::get('/reports/monthly-loan-summary', [DashboardController::class, 'monthlyLoanSummary'])->name('loan-management.reports.monthly-loan-summary');
         Route::get('/reports/yearly-loan-summary', [DashboardController::class, 'yearlyLoanSummary'])->name('loan-management.reports.yearly-loan-summary');
+        Route::get('/reports/payment-summary-by-type', [DashboardController::class, 'paymentSummaryByType'])->name('loan-management.reports.payment-summary-by-type');
         Route::get('/reports/payments', [DashboardController::class, 'paymentSummaryByType'])->name('loan-management.reports.payments');
         Route::get('/guarantors', [DashboardController::class, 'placeholder'])->defaults('page', 'Guarantors')->name('loan-management.guarantors.index');
         Route::get('/blacklist', [DashboardController::class, 'placeholder'])->defaults('page', 'Blacklist')->name('loan-management.blacklist.index');

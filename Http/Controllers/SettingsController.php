@@ -2,6 +2,7 @@
 
 namespace Modules\LoanManagement\Http\Controllers;
 
+use DateTimeZone;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Modules\LoanManagement\Services\BusinessSettingsService;
 use Modules\LoanManagement\Services\TelegramSettingsService;
+use Throwable;
 
 class SettingsController extends Controller
 {
@@ -22,8 +24,10 @@ class SettingsController extends Controller
         }
 
         $settings = BusinessSettingsService::get();
+        $currencies = $this->businessCurrencyOptions();
+        $timezones = DateTimeZone::listIdentifiers();
 
-        return view('loanmanagement::settings.business', compact('settings'));
+        return view('loanmanagement::settings.business', compact('settings', 'currencies', 'timezones'));
     }
 
     public function updateBusiness(Request $request)
@@ -36,9 +40,24 @@ class SettingsController extends Controller
             'business_name' => 'required|string|max:80',
             'system_name' => 'required|string|max:80',
             'system_subtitle' => 'nullable|string|max:120',
+            'start_date' => 'nullable|date',
+            'default_profit_percent' => 'required|numeric|min:0|max:1000',
+            'currency_code' => 'required|string|max:10',
+            'currency_symbol' => 'nullable|string|max:10',
+            'currency_symbol_placement' => 'required|in:before,after',
+            'time_zone' => 'required|string|max:80',
+            'fy_start_month' => 'required|integer|min:1|max:12',
+            'stock_accounting_method' => 'required|in:fifo,lifo,avco',
+            'transaction_edit_days' => 'required|integer|min:0|max:3650',
+            'date_format' => 'required|in:d-m-Y,m-d-Y,Y-m-d,d/m/Y,m/d/Y',
+            'time_format' => 'required|in:12,24',
+            'currency_precision' => 'required|integer|min:0|max:4',
+            'quantity_precision' => 'required|integer|min:0|max:4',
             'theme_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'invoice_message_template' => 'required|string|max:2000',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
             'login_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'cms_enabled' => 'nullable|boolean',
             'remove_logo' => 'nullable|boolean',
             'remove_login_background' => 'nullable|boolean',
         ]);
@@ -71,14 +90,68 @@ class SettingsController extends Controller
             'business_name' => $data['business_name'],
             'system_name' => $data['system_name'],
             'system_subtitle' => $data['system_subtitle'] ?: 'Dedicated loan operation workspace',
+            'start_date' => $data['start_date'] ?? null,
+            'default_profit_percent' => $data['default_profit_percent'],
+            'currency_code' => strtoupper($data['currency_code']),
+            'currency_symbol' => $data['currency_symbol'] ?: $this->currencySymbolFor(strtoupper($data['currency_code'])),
+            'currency_symbol_placement' => $data['currency_symbol_placement'],
+            'time_zone' => $data['time_zone'],
+            'fy_start_month' => $data['fy_start_month'],
+            'stock_accounting_method' => $data['stock_accounting_method'],
+            'transaction_edit_days' => $data['transaction_edit_days'],
+            'date_format' => $data['date_format'],
+            'time_format' => $data['time_format'],
+            'currency_precision' => $data['currency_precision'],
+            'quantity_precision' => $data['quantity_precision'],
             'theme_color' => strtolower($data['theme_color']),
+            'cms_enabled' => $request->boolean('cms_enabled'),
+            'home_headline' => $current['home_headline'],
+            'home_subtitle' => $current['home_subtitle'],
+            'home_body' => $current['home_body'],
+            'invoice_message_template' => $data['invoice_message_template'],
             'logo_path' => $logoPath,
             'login_background_path' => $loginBackgroundPath,
         ]);
 
+        $request->session()->put(BusinessSettingsService::sessionPayload());
+
         return redirect()
             ->route('loan-management.settings.business')
             ->with('status', ['success' => 1, 'msg' => 'Business settings updated successfully.']);
+    }
+
+    public function cms()
+    {
+        if (! auth()->user()->can('loan_management.view')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $settings = BusinessSettingsService::get();
+
+        return view('loanmanagement::settings.cms', compact('settings'));
+    }
+
+    public function updateCms(Request $request)
+    {
+        if (! auth()->user()->can('loan_management.view')) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $data = $request->validate([
+            'home_headline' => 'required|string|max:140',
+            'home_subtitle' => 'required|string|max:220',
+            'home_body' => 'nullable|string|max:1200',
+        ]);
+
+        BusinessSettingsService::save(array_merge(BusinessSettingsService::get(), [
+            'home_headline' => $data['home_headline'],
+            'home_subtitle' => $data['home_subtitle'],
+            'home_body' => $data['home_body'] ?? '',
+        ]));
+
+        return redirect()
+            ->route('loan-management.settings.cms')
+            ->with('status', ['success' => 1, 'msg' => 'CMS updated successfully.']);
     }
 
     public function businessLogo()
@@ -581,5 +654,42 @@ class SettingsController extends Controller
     protected function currencyPayload(array $payload): array
     {
         return array_intersect_key($payload, array_flip(Schema::connection($this->connection)->getColumnListing('loan_currencies')));
+    }
+
+    protected function businessCurrencyOptions()
+    {
+        try {
+            $this->ensureCurrencySettingsColumns();
+
+            $currencies = DB::connection($this->connection)
+                ->table('loan_currencies')
+                ->where(function ($query) {
+                    $query->where('is_active', 1)->orWhereNull('is_active');
+                })
+                ->orderByDesc('is_default')
+                ->orderBy('code')
+                ->get(['code', 'name']);
+
+            if ($currencies->isNotEmpty()) {
+                return $currencies;
+            }
+        } catch (Throwable $exception) {
+            // Fall back to common currencies if the loan connection is unavailable.
+        }
+
+        return collect([
+            (object) ['code' => 'USD', 'name' => 'United States of America - Dollars'],
+            (object) ['code' => 'KHR', 'name' => 'Cambodian Riel'],
+            (object) ['code' => 'THB', 'name' => 'Thai Baht'],
+        ]);
+    }
+
+    protected function currencySymbolFor(string $code): string
+    {
+        return [
+            'USD' => '$',
+            'KHR' => '៛',
+            'THB' => '฿',
+        ][$code] ?? $code;
     }
 }

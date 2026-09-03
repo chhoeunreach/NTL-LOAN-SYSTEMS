@@ -40,7 +40,12 @@
                     <h3 class="lm-dashboard-panel__title">Quick Actions</h3>
                     <p class="lm-dashboard-panel__hint">Search loans, collect payment, create new loans.</p>
                 </div>
-                <span class="lm-dashboard-panel__badge"><i class="fa fa-bolt"></i> 1 smart tool</span>
+                <div class="lm-dashboard-panel__actions">
+                    <span class="lm-dashboard-panel__badge"><i class="fa fa-bolt"></i> 2 smart tools</span>
+                    <a href="{{ route('loan-management.settings.cms') }}" class="btn btn-default btn-sm">
+                        <i class="fa fa-newspaper-o"></i> CMS Manager
+                    </a>
+                </div>
             </div>
             <div class="lm-dashboard-panel__body lm-dashboard-panel__body--quick-actions">
                 <div class="lm-quick-grid">

@@ -33,6 +33,7 @@ class LoanCollectionService
             'new-loans' => ['title' => 'New Loans', 'where' => ['status' => ['draft', 'pending']]],
             'active-loans' => ['title' => 'Active Loans', 'where' => ['collection_status' => ['active', 'due_today', 'partial_payment']]],
             'due-today' => ['title' => 'Due Today', 'where' => ['collection_status' => ['due_today']]],
+            'today-collection' => ['title' => "Today's Collection", 'where' => ['paid_today' => [true]]],
             'partial-payments' => ['title' => 'Partial Payments', 'where' => ['collection_status' => ['partial_payment']]],
             'closed-accounts' => ['title' => 'Closed Accounts', 'where' => ['collection_status' => ['closed']]],
             'overdue-accounts' => ['title' => 'Overdue Accounts', 'where' => ['collection_status' => ['overdue']]],
@@ -218,6 +219,7 @@ class LoanCollectionService
         match ($slug) {
             'active-loans' => $this->whereActiveLoans($query),
             'closed-accounts' => $this->whereClosedAccounts($query),
+            'today-collection' => $this->wherePaidToday($query),
             default => null,
         };
     }
@@ -229,6 +231,7 @@ class LoanCollectionService
             'closed-accounts' => $this->orWhereClosedAccounts($query),
             'overdue-accounts', 'delinquent-accounts', 'recovery-management', 'debt-collection' => $this->orWhereHasSchedule($query, '<', Carbon::today()->toDateString()),
             'due-today' => $this->orWhereHasSchedule($query, '=', Carbon::today()->toDateString()),
+            'today-collection' => $this->orWherePaidToday($query),
             'partial-payments' => $this->orWherePartialPayment($query),
             'promise-to-pay' => $this->orWherePromiseToPay($query, false),
             'broken-promise' => $this->orWherePromiseToPay($query, true),
@@ -248,6 +251,13 @@ class LoanCollectionService
     {
         $query->orWhere(function ($q) {
             $this->whereClosedAccounts($q);
+        });
+    }
+
+    protected function orWherePaidToday($query): void
+    {
+        $query->orWhere(function ($q) {
+            $this->wherePaidToday($q);
         });
     }
 
@@ -281,6 +291,30 @@ class LoanCollectionService
 
             if ($this->hasLoanColumn('balance_amount')) {
                 $q->orWhere('l.balance_amount', '<=', 0);
+            }
+        });
+    }
+
+    protected function wherePaidToday($query): void
+    {
+        if (! $this->canReadLoanPayments()) {
+            return;
+        }
+
+        $dateColumn = $this->loanPaymentDateColumn();
+
+        $query->whereExists(function ($payment) use ($dateColumn) {
+            $payment->selectRaw('1')
+                ->from('loan_payments as p')
+                ->whereColumn('p.loan_id', 'l.id')
+                ->whereDate('p.'.$dateColumn, Carbon::today()->toDateString());
+
+            if ($this->hasPaymentColumn('deleted_at')) {
+                $payment->whereNull('p.deleted_at');
+            }
+
+            if ($this->hasPaymentColumn('status')) {
+                $payment->whereNotIn('p.status', ['failed', 'cancelled', 'void']);
             }
         });
     }
@@ -433,11 +467,40 @@ class LoanCollectionService
         return $this->hasColumn('loan_payment_schedules', $column);
     }
 
+    protected function hasPaymentColumn(string $column): bool
+    {
+        return $this->hasColumn('loan_payments', $column);
+    }
+
     protected function canReadSchedules(): bool
     {
         return $this->hasTable('loan_payment_schedules')
             && $this->hasScheduleColumn('loan_id')
             && $this->hasScheduleColumn('due_date');
+    }
+
+    protected function canReadLoanPayments(): bool
+    {
+        return $this->hasTable('loan_payments')
+            && $this->hasPaymentColumn('loan_id')
+            && $this->loanPaymentDateColumn() !== null;
+    }
+
+    protected function loanPaymentDateColumn(): ?string
+    {
+        if ($this->hasPaymentColumn('paid_date')) {
+            return 'paid_date';
+        }
+
+        if ($this->hasPaymentColumn('paid_at')) {
+            return 'paid_at';
+        }
+
+        if ($this->hasPaymentColumn('created_at')) {
+            return 'created_at';
+        }
+
+        return null;
     }
 
     protected function hasTable(string $table): bool
@@ -505,11 +568,11 @@ class LoanCollectionService
 
     protected function collectionAmountToday(): float
     {
-        if (! Schema::connection($this->connection)->hasTable('loan_payments')) {
+        if (! $this->canReadLoanPayments()) {
             return 0.0;
         }
 
-        $dateColumn = Schema::connection($this->connection)->hasColumn('loan_payments', 'paid_date') ? 'paid_date' : 'paid_at';
+        $dateColumn = $this->loanPaymentDateColumn();
         $amountColumn = Schema::connection($this->connection)->hasColumn('loan_payments', 'total_paid_base') ? 'total_paid_base' : 'amount';
 
         return (float) DB::connection($this->connection)->table('loan_payments')

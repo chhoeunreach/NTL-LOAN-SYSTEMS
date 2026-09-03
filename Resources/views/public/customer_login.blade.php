@@ -2,7 +2,7 @@
     $businessLogoUrl = \Modules\LoanManagement\Services\BusinessSettingsService::publicLogoUrl();
     $businessName = \Modules\LoanManagement\Services\BusinessSettingsService::businessName();
     $themeColor = $settings['theme_color'] ?? '#2563eb';
-    $themeDark = \Modules\LoanManagement\Services\BusinessSettingsService::themeColor();
+    $loginBackgroundUrl = \Modules\LoanManagement\Services\BusinessSettingsService::loginBackgroundUrl();
 @endphp
 <!doctype html>
 <html lang="en">
@@ -19,6 +19,24 @@
             background: radial-gradient(1200px 600px at 15% -10%, rgba(37,99,235,.12), transparent 60%),
                         radial-gradient(1000px 500px at 110% 110%, {{ $themeColor }}1c, transparent 55%), var(--soft);
         }
+        @if ($loginBackgroundUrl)
+        .page-bg {
+            position: fixed; inset: 0; z-index: -1;
+            background-image: url('{{ $loginBackgroundUrl }}');
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+        }
+        .page-bg::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(180deg, {{ $themeColor }}33, rgba(15,23,42,.72));
+            backdrop-filter: blur(2px);
+        }
+        @else
+        .page-bg::after {
+            content: ""; position: fixed; inset: 0; z-index: -1;
+            background: radial-gradient(1200px 600px at 15% -10%, rgba(37,99,235,.14), transparent 60%),
+                        radial-gradient(1000px 500px at 110% 110%, {{ $themeColor }}22, transparent 55%), var(--soft);
+        }
+        @endif
         .shell { width: min(440px, 100%); }
         .card {
             background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
@@ -85,6 +103,7 @@
     </style>
 </head>
 <body>
+    <div class="page-bg"></div>
     <div class="shell">
         <div class="card">
             <div class="brand-row">

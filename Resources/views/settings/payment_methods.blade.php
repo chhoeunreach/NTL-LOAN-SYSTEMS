@@ -277,6 +277,7 @@
     $totalAmount = $methodUsage->sum('total_amount');
     $settingsTabs = [
         'Business' => route('loan-management.settings.business'),
+        'CMS' => route('loan-management.settings.cms'),
         'Payment' => route('loan-management.settings.payment-methods'),
     ];
 @endphp

@@ -174,6 +174,9 @@ class TelegramChatService
                 'location_id' => $profile['location_id'],
                 'location_name' => $profile['location_name'],
                 'avatar_url' => $profile['avatar_url'],
+                'loan_id' => $profile['loan_id'],
+                'loan_number' => $profile['loan_number'],
+                'balance_amount' => $profile['balance_amount'],
                 'last_message' => (string) ($thread->last_message ?? ''),
                 'last_message_type' => (string) ($thread->last_message_type ?? 'text'),
                 'last_message_at' => $thread->last_message_at?->format('Y-m-d H:i:s'),
@@ -226,6 +229,9 @@ class TelegramChatService
                 'location_id' => $profile['location_id'],
                 'location_name' => $profile['location_name'],
                 'avatar_url' => $profile['avatar_url'],
+                'loan_id' => $profile['loan_id'],
+                'loan_number' => $profile['loan_number'],
+                'balance_amount' => $profile['balance_amount'],
                 'last_message' => '',
                 'last_message_type' => 'text',
                 'last_message_at' => null,
@@ -254,6 +260,9 @@ class TelegramChatService
             'location_name' => $profile['location_name'],
             'telegram_linked' => $profile['telegram_linked'],
             'avatar_url' => $profile['avatar_url'],
+            'loan_id' => $profile['loan_id'],
+            'loan_number' => $profile['loan_number'],
+            'balance_amount' => $profile['balance_amount'],
             'customer_profile' => $profile,
             'status' => (string) $thread->status,
             'messages' => $thread->messages->map(fn ($m) => $this->formatMessage($m))->values()->all(),
@@ -265,7 +274,7 @@ class TelegramChatService
         $file = null;
         if (! empty($message->file_id)) {
             $file = [
-                'url' => (string) ($message->file_url ?? ''),
+                'url' => url('loan-management/chat-files/'.(int) $message->file_id),
                 'name' => (string) ($message->file_name ?? ''),
             ];
         }
@@ -435,7 +444,11 @@ class TelegramChatService
         }
 
         try {
-            RelayChatMessageToTelegramJob::dispatch((int) $message->id, (string) $customer->telegram_chat_id);
+            if (method_exists(RelayChatMessageToTelegramJob::class, 'dispatchAfterResponse')) {
+                RelayChatMessageToTelegramJob::dispatchAfterResponse((int) $message->id, (string) $customer->telegram_chat_id);
+            } else {
+                RelayChatMessageToTelegramJob::dispatch((int) $message->id, (string) $customer->telegram_chat_id);
+            }
         } catch (\Throwable $e) {
             Log::warning('Failed to dispatch Telegram chat relay job', ['error' => $e->getMessage()]);
         }
@@ -521,6 +534,7 @@ class TelegramChatService
         $code = trim((string) ($customer->customer_code ?? ''));
         $locationName = $this->customerLocationName($customer);
         $subtitle = collect([$phone, $code, $locationName])->filter()->implode(' · ');
+        $loan = $this->currentLoanForCustomer((int) ($customer->id ?? 0));
 
         return [
             'id' => (int) ($customer->id ?? 0),
@@ -533,7 +547,36 @@ class TelegramChatService
             'telegram_username' => trim((string) ($customer->telegram_username ?? '')),
             'telegram_linked' => ! empty($customer->telegram_chat_id),
             'avatar_url' => $this->customerAvatarUrl($customer),
+            'loan_id' => $loan ? (int) $loan->id : null,
+            'loan_number' => $loan ? (string) ($loan->loan_number ?? $loan->id) : '',
+            'balance_amount' => $loan ? (string) ($loan->balance_amount ?? '') : '',
         ];
+    }
+
+    protected function currentLoanForCustomer(int $customerId)
+    {
+        if ($customerId <= 0
+            || ! Schema::connection('mysql_loan')->hasTable('loans')
+            || ! Schema::connection('mysql_loan')->hasColumn('loans', 'customer_id')) {
+            return null;
+        }
+
+        $query = DB::connection('mysql_loan')->table('loans')->where('customer_id', $customerId);
+        if (Schema::connection('mysql_loan')->hasColumn('loans', 'deleted_at')) {
+            $query->whereNull('deleted_at');
+        }
+        if (Schema::connection('mysql_loan')->hasColumn('loans', 'status')) {
+            $query->orderByRaw("CASE WHEN LOWER(COALESCE(status, '')) IN ('active', 'overdue', 'late', 'partial') THEN 0 ELSE 1 END");
+        }
+
+        $columns = ['id'];
+        foreach (['loan_number', 'balance_amount'] as $column) {
+            if (Schema::connection('mysql_loan')->hasColumn('loans', $column)) {
+                $columns[] = $column;
+            }
+        }
+
+        return $query->orderByDesc('id')->first($columns);
     }
 
     protected function passesTelegramStatus(bool $linked, string $status): bool

@@ -2,6 +2,266 @@
 @section('title', 'Installment List')
 @section('hide_breadcrumb', '1')
 
+@section('loan_css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
+<style>
+    .lm-loan-list-hero {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 14px 16px;
+        border: 1px solid #dfe7f1;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, .06);
+    }
+    .lm-loan-list-hero h1 {
+        margin: 0;
+        color: #111827;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 0;
+    }
+    .lm-loan-list-hero p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .lm-loan-list-hero-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+    .lm-loan-list-hero-actions .btn {
+        border-radius: 7px;
+        font-weight: 800;
+    }
+    .lm-loan-list-stats {
+        grid-template-columns: repeat(4, minmax(190px, 1fr));
+    }
+    .lm-loan-list-stat {
+        position: relative;
+        min-height: 108px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 52px;
+        gap: 14px;
+        align-items: start;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, .28);
+        border-radius: 12px;
+        padding: 16px;
+        background:
+            linear-gradient(135deg, rgba(255, 255, 255, .98), rgba(248, 250, 252, .92)),
+            radial-gradient(circle at 100% 0%, var(--stat-glow, rgba(37, 99, 235, .14)), transparent 34%);
+        box-shadow: 0 14px 30px rgba(15, 23, 42, .08);
+        transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .lm-loan-list-stat:hover {
+        transform: translateY(-2px);
+        border-color: rgba(37, 99, 235, .28);
+        box-shadow: 0 18px 38px rgba(15, 23, 42, .12);
+    }
+    .lm-loan-list-stat::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: var(--stat-color, var(--lm-primary, #2563eb));
+    }
+    .lm-loan-list-stat::after {
+        content: "";
+        position: absolute;
+        right: -28px;
+        top: -34px;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: var(--stat-glow, rgba(37, 99, 235, .12));
+        pointer-events: none;
+    }
+    .lm-loan-list-stat-icon {
+        position: relative;
+        z-index: 1;
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 14px;
+        background: var(--stat-bg, #eff6ff);
+        color: var(--stat-color, #2563eb);
+        font-size: 20px;
+        border: 1px solid rgba(255, 255, 255, .72);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75), 0 10px 20px rgba(15, 23, 42, .08);
+    }
+    .lm-loan-list-stat-body {
+        position: relative;
+        z-index: 1;
+        min-width: 0;
+    }
+    .lm-loan-list-stat span:not(.lm-loan-list-stat-icon) {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 900;
+        letter-spacing: .02em;
+        text-transform: uppercase;
+    }
+    .lm-loan-list-stat strong {
+        margin-top: 7px;
+        color: #0f172a;
+        font-size: 26px;
+        line-height: 1.05;
+        letter-spacing: 0;
+    }
+    .lm-loan-list-stat small {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 100%;
+        margin-top: 10px;
+        padding: 4px 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .78);
+        color: #94a3b8;
+        font-size: 11px;
+        font-weight: 800;
+        white-space: nowrap;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, .16);
+    }
+    .lm-loan-list-stat small::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        flex: 0 0 6px;
+        border-radius: 50%;
+        background: var(--stat-color, #2563eb);
+    }
+    .lm-loan-list-stat.stat-total {
+        --stat-color: #2563eb;
+        --stat-bg: #eff6ff;
+        --stat-glow: rgba(37, 99, 235, .16);
+    }
+    .lm-loan-list-stat.stat-showing {
+        --stat-color: #0891b2;
+        --stat-bg: #ecfeff;
+        --stat-glow: rgba(8, 145, 178, .16);
+    }
+    .lm-loan-list-stat.stat-active {
+        --stat-color: #16a34a;
+        --stat-bg: #f0fdf4;
+        --stat-glow: rgba(22, 163, 74, .16);
+    }
+    .lm-loan-list-stat.stat-balance {
+        --stat-color: #ea580c;
+        --stat-bg: #fff7ed;
+        --stat-glow: rgba(234, 88, 12, .17);
+    }
+    .lm-loan-list-filter,
+    .lm-loan-list-table-card {
+        border-color: #dbe4ef;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+    }
+    .lm-loan-list-filter-toggle-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .lm-loan-list-filter-toggle-label::before {
+        content: "\f0b0";
+        font-family: FontAwesome;
+        color: var(--lm-primary, #2563eb);
+    }
+    .lm-loan-list-filter-body {
+        grid-template-columns: minmax(260px, 1.5fr) repeat(5, minmax(150px, 1fr)) minmax(120px, .7fr);
+    }
+    .lm-loan-list-field.date-range-field {
+        min-width: 260px;
+    }
+    .lm-loan-list-field .form-control,
+    .lm-loan-list-field .select2-container .select2-selection--single {
+        border-radius: 6px;
+    }
+    .lm-loan-list-field-actions .btn {
+        min-height: 38px;
+        border-radius: 7px;
+        box-shadow: 0 8px 18px rgba(37, 99, 235, .18);
+    }
+    .lm-loan-list-table-card .lm-dt-top {
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .lm-loan-list-table-card .dt-buttons {
+        display: inline-flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        float: none;
+    }
+    .lm-loan-list-table-card .dt-buttons .btn,
+    .lm-loan-list-table-card .dt-button {
+        border: 1px solid #b8c3d3 !important;
+        border-radius: 8px !important;
+        background: #fff !important;
+        color: #64748b !important;
+        font-weight: 800;
+        padding: 6px 12px !important;
+        box-shadow: none !important;
+    }
+    .lm-loan-list-table-card .dataTables_filter {
+        text-align: right;
+    }
+    .lm-loan-list-table-card .dataTables_filter input {
+        width: 240px !important;
+        border-radius: 0;
+    }
+    .lm-loan-list-table-card #loan_list_table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
+    .lm-loan-list-table-card #loan_list_table thead th {
+        background: #0f172a !important;
+        color: #fff !important;
+    }
+    .lm-loan-list-table-card #loan_list_table tbody tr:nth-child(even) td {
+        background: #fbfdff;
+    }
+    .lm-loan-list-table-card #loan_list_table tbody tr:hover td {
+        background: #eef6ff !important;
+    }
+    @media (max-width: 1200px) {
+        .lm-loan-list-stats {
+            grid-template-columns: repeat(2, minmax(180px, 1fr));
+        }
+        .lm-loan-list-filter-body {
+            grid-template-columns: repeat(2, minmax(180px, 1fr));
+        }
+    }
+    @media (max-width: 768px) {
+        .lm-loan-list-hero {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+        .lm-loan-list-hero-actions {
+            justify-content: flex-start;
+            width: 100%;
+        }
+        .lm-loan-list-stats {
+            grid-template-columns: 1fr;
+        }
+        .lm-loan-list-filter-body {
+            grid-template-columns: 1fr;
+        }
+        .lm-loan-list-table-card .dataTables_filter {
+            text-align: left;
+        }
+    }
+</style>
+@endsection
+
 @section('content_body')
 @php
     $isKhmer = session('user.language', config('app.locale')) === 'km';
@@ -18,30 +278,52 @@
     </div>
 
     <div class="lm-loan-list-shell">
+        <div class="lm-loan-list-hero">
+            <div>
+                <h1>{{ $text('All Loans', 'កម្ចីទាំងអស់') }}</h1>
+                <p>{{ $text('Monitor installment accounts, collection progress, and customer balances in one workspace.', 'តាមដានគណនីរំលស់ ការប្រមូលប្រាក់ និងសមតុល្យអតិថិជននៅកន្លែងតែមួយ។') }}</p>
+            </div>
+            <div class="lm-loan-list-hero-actions">
+                <a href="{{ route('loan-management.loans.create') }}" class="btn btn-primary">
+                    <i class="fa fa-plus-circle"></i> {{ $text('New Loan', 'កម្ចីថ្មី') }}
+                </a>
+                <button type="button" class="btn btn-default" onclick="window.print()">
+                    <i class="fa fa-print"></i> {{ $text('Print', 'បោះពុម្ព') }}
+                </button>
+            </div>
+        </div>
         <div class="lm-loan-list-stats">
-            <div class="lm-loan-list-stat"><span>{{ $text('Total Records', 'ចំនួនសរុប') }}</span><strong id="loanStatTotal">0</strong></div>
-            <div class="lm-loan-list-stat"><span>{{ $text('Showing', 'កំពុងបង្ហាញ') }}</span><strong id="loanStatShowing">0</strong></div>
-            <div class="lm-loan-list-stat"><span>{{ $text('Active Page', 'សកម្មលើទំព័រ') }}</span><strong id="loanStatActive">0</strong></div>
-            <div class="lm-loan-list-stat"><span>{{ $text('Balance Page', 'សមតុល្យលើទំព័រ') }}</span><strong id="loanStatBalance">$0.00</strong></div>
+            <div class="lm-loan-list-stat stat-total">
+                <span class="lm-loan-list-stat-icon"><i class="fa fa-database"></i></span>
+                <div class="lm-loan-list-stat-body"><span>{{ $text('Total Records', 'ចំនួនសរុប') }}</span><strong id="loanStatTotal">0</strong><small>{{ $text('matching current filters', 'ត្រូវតាមតម្រង') }}</small></div>
+            </div>
+            <div class="lm-loan-list-stat stat-showing">
+                <span class="lm-loan-list-stat-icon"><i class="fa fa-list"></i></span>
+                <div class="lm-loan-list-stat-body"><span>{{ $text('Showing', 'កំពុងបង្ហាញ') }}</span><strong id="loanStatShowing">0</strong><small>{{ $text('records on this page', 'ទិន្នន័យលើទំព័រនេះ') }}</small></div>
+            </div>
+            <div class="lm-loan-list-stat stat-active">
+                <span class="lm-loan-list-stat-icon"><i class="fa fa-check-circle"></i></span>
+                <div class="lm-loan-list-stat-body"><span>{{ $text('Active Page', 'សកម្មលើទំព័រ') }}</span><strong id="loanStatActive">0</strong><small>{{ $text('active or approved loans', 'កម្ចីសកម្ម ឬអនុម័ត') }}</small></div>
+            </div>
+            <div class="lm-loan-list-stat stat-balance">
+                <span class="lm-loan-list-stat-icon"><i class="fa fa-balance-scale"></i></span>
+                <div class="lm-loan-list-stat-body"><span>{{ $text('Balance Page', 'សមតុល្យលើទំព័រ') }}</span><strong id="loanStatBalance">$0.00</strong><small>{{ $text('outstanding on visible rows', 'សមតុល្យលើជួរដែលឃើញ') }}</small></div>
+            </div>
         </div>
 
-        <div class="lm-loan-list-filter">
-            <div class="lm-loan-list-filter-toggle" id="loanFilterToggle">
+        <div class="lm-loan-list-filter collapsed" id="loanFilterPanel">
+            <div class="lm-loan-list-filter-toggle">
                 <span class="lm-loan-list-filter-toggle-label">{{ $text('Filters', 'តម្រង') }}</span>
                 <span class="lm-loan-list-filter-toggle-actions">
                     <a href="javascript:void(0)" id="loanFilterReset" class="lm-loan-list-reset">{{ $text('Reset', 'កំណត់ឡើងវិញ') }}</a>
-                    <i class="fa fa-chevron-up" id="loanFilterToggleIcon"></i>
+                    <button type="button" class="lm-loan-list-collapse-btn" id="loanFilterToggle" aria-expanded="false" aria-controls="loanFilterBody">
+                        <span id="loanFilterToggleText">{{ $text('Expand', 'ពង្រីក') }}</span>
+                        <i class="fa fa-chevron-down" id="loanFilterToggleIcon" aria-hidden="true"></i>
+                    </button>
                 </span>
             </div>
-            <div class="lm-loan-list-filter-body">
-            <div class="lm-loan-list-field wide">
-                <label for="loan_global_search">{{ $text('Search', 'ស្វែងរក') }}</label>
-                <div class="lm-loan-list-input-icon">
-                    <i class="fa fa-search"></i>
-                    <input type="search" id="loan_global_search" class="form-control" placeholder="{{ $text('Loan #, invoice, customer, phone...', 'លេខកម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ...') }}">
-                </div>
-            </div>
-            <div class="lm-loan-list-field">
+            <div class="lm-loan-list-filter-body" id="loanFilterBody">
+            <div class="lm-loan-list-field date-range-field">
                 {!! Form::label('sell_list_filter_date_range', $text('Date Range', 'ចន្លោះកាលបរិច្ឆេទ')) !!}
                 {!! Form::text('sell_list_filter_date_range', null, ['placeholder' => $text('Select date range', 'ជ្រើសរើសចន្លោះកាលបរិច្ឆេទ'), 'class' => 'form-control', 'readonly']) !!}
                 <input type="hidden" id="start_date">
@@ -72,6 +354,11 @@
             <div class="lm-loan-list-field">
                 <label for="customer">{{ $text('Customer', 'អតិថិជន') }}</label>
                 <input id="customer" class="form-control" placeholder="{{ $text('Customer name', 'ឈ្មោះអតិថិជន') }}">
+            </div>
+            <div class="lm-loan-list-field lm-loan-list-field-actions">
+                <button type="button" class="btn btn-primary btn-block" id="loanFilterApply">
+                    <i class="fa fa-filter"></i> {{ $text('Apply', 'អនុវត្ត') }}
+                </button>
             </div>
             </div>
         </div>
@@ -105,6 +392,16 @@
 @endsection
 
 @section('loan_js')
+<script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 <script>
 $(document).ready(function(){
     if ($.fn.select2) {
@@ -283,6 +580,55 @@ function escapeHtml(value) {
     }
 
     var loanTable = null;
+    var exportTitle = @json($text('All Loans', 'កម្ចីទាំងអស់'));
+    var tableButtons = [];
+    if ($.fn.dataTable && $.fn.dataTable.Buttons) {
+        tableButtons = [
+            {
+                extend: 'copy',
+                text: '<i class="fa fa-copy" aria-hidden="true"></i> Copy',
+                className: 'btn btn-default btn-sm',
+                title: exportTitle,
+                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+            },
+            {
+                extend: 'csv',
+                text: '<i class="fa fa-file-text-o" aria-hidden="true"></i> Export CSV',
+                className: 'btn btn-default btn-sm',
+                title: exportTitle,
+                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+            },
+            {
+                extend: 'excel',
+                text: '<i class="fa fa-file-excel-o" aria-hidden="true"></i> Export Excel',
+                className: 'btn btn-default btn-sm',
+                title: exportTitle,
+                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+            },
+            {
+                extend: 'print',
+                text: '<i class="fa fa-print" aria-hidden="true"></i> Print',
+                className: 'btn btn-default btn-sm',
+                title: exportTitle,
+                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+            },
+            {
+                extend: 'colvis',
+                text: '<i class="fa fa-columns" aria-hidden="true"></i> Column visibility',
+                className: 'btn btn-default btn-sm',
+                columns: ':not(:last-child)'
+            },
+            {
+                extend: 'pdf',
+                text: '<i class="fa fa-file-pdf-o" aria-hidden="true"></i> Export PDF',
+                className: 'btn btn-default btn-sm',
+                title: exportTitle,
+                orientation: 'landscape',
+                pageSize: 'A4',
+                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+            }
+        ];
+    }
 
     function reloadLoanTable() {
         if (loanTable && loanTable.ajax) {
@@ -298,6 +644,8 @@ function escapeHtml(value) {
 
     if (typeof moment !== 'undefined' && $.fn.daterangepicker) {
         var loanDrs = (typeof dateRangeSettings !== 'undefined') ? dateRangeSettings : {};
+        var defaultStartDate = moment().startOf('month');
+        var defaultEndDate = moment();
         var fyStart = (typeof financial_year !== 'undefined' && financial_year.start && moment(financial_year.start).isValid())
             ? moment(financial_year.start)
             : moment().startOf('year');
@@ -334,8 +682,8 @@ function escapeHtml(value) {
             autoUpdateInput: false,
             showDropdowns: true,
             linkedCalendars: false,
-            startDate: moment().startOf('month'),
-            endDate: moment(),
+            startDate: defaultStartDate,
+            endDate: defaultEndDate,
             ranges: loanDateRanges,
             locale: $.extend(true, {}, loanDrs.locale || {}, {
                 format: loanDateFormat,
@@ -390,12 +738,14 @@ function escapeHtml(value) {
         scrollX: true,
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        dom: "<'row lm-dt-top'<'col-sm-12'l>>" +
+        dom: "<'row lm-dt-top'<'col-sm-2'l><'col-sm-8 text-center'B><'col-sm-2'f>>" +
              "<'row'<'col-sm-12'tr>>" +
              "<'row lm-dt-bottom'<'col-sm-5'i><'col-sm-7'p>>",
+        buttons: tableButtons,
         language: {
             processing: loanListText.processing,
             search: loanListText.search + ':',
+            searchPlaceholder: @json($text('Search ...', 'ស្វែងរក ...')),
             lengthMenu: loanListText.lengthMenu,
             info: loanListText.info,
             infoEmpty: loanListText.infoEmpty,
@@ -448,10 +798,6 @@ function escapeHtml(value) {
         }
     });
 
-    $('#loan_global_search').on('input', debounce(function(){
-        loanTable.search(this.value || '').draw();
-    }, 300));
-
     $(document).on('change', '#status,#location_name,#collector_name', function(){
         loanTable.ajax.reload();
     });
@@ -461,23 +807,53 @@ function escapeHtml(value) {
     }, 300));
 
     $(document).on('click', '#loanFilterReset', function(){
-        $('#sell_list_filter_date_range,#start_date,#end_date,#customer,#loan_global_search').val('');
+        $('#sell_list_filter_date_range,#start_date,#end_date,#customer').val('');
         $('#status,#location_name,#collector_name').val('').trigger('change.select2');
-        loanTable.search('').ajax.reload();
+        loanTable.search('');
+        $('#loan_list_table_filter input[type="search"]').val('');
+        loanTable.ajax.reload();
+        setLoanFilterCollapsed(true);
     });
 
-    var $loanFilter = $('.lm-loan-list-filter');
-    var loanFilterStateKey = 'lm_loan_filter_collapsed';
-    if ($loanFilter.length && localStorage) {
-        if (localStorage.getItem(loanFilterStateKey) === '1') {
-            $loanFilter.addClass('collapsed');
+    var $loanFilter = $('#loanFilterPanel');
+    var $loanFilterToggle = $('#loanFilterToggle');
+    var $loanFilterToggleText = $('#loanFilterToggleText');
+    var $loanFilterToggleIcon = $('#loanFilterToggleIcon');
+    var loanFilterStateKey = 'lm_loan_filter_collapsed_v2';
+
+    function setLoanFilterCollapsed(isCollapsed) {
+        $loanFilter.toggleClass('collapsed', isCollapsed);
+        $loanFilterToggle.attr('aria-expanded', isCollapsed ? 'false' : 'true');
+        $loanFilterToggleText.text(isCollapsed ? @json($text('Expand', 'ពង្រីក')) : @json($text('Collapse', 'បង្រួម')));
+        $loanFilterToggleIcon
+            .toggleClass('fa-chevron-down', isCollapsed)
+            .toggleClass('fa-chevron-up', ! isCollapsed);
+        try { window.localStorage.setItem(loanFilterStateKey, isCollapsed ? '1' : '0'); } catch(err){}
+    }
+
+    if ($loanFilter.length) {
+        var initialCollapsed = true;
+        try {
+            var savedLoanFilterState = window.localStorage.getItem(loanFilterStateKey);
+            initialCollapsed = savedLoanFilterState === null ? true : savedLoanFilterState === '1';
+        } catch(err){}
+        setLoanFilterCollapsed(initialCollapsed);
+
+        function toggleLoanFilterPanel() {
+            setLoanFilterCollapsed(! $loanFilter.hasClass('collapsed'));
         }
-        $('#loanFilterToggle').on('click', function(e){
-            if ($(e.target).closest('#loanFilterReset').length) {
-                return;
-            }
-            var isCollapsed = $loanFilter.toggleClass('collapsed').hasClass('collapsed');
-            try { localStorage.setItem(loanFilterStateKey, isCollapsed ? '1' : '0'); } catch(err){}
+
+        $loanFilterToggle.on('click', function(){
+            toggleLoanFilterPanel();
+        });
+
+        $loanFilter.find('.lm-loan-list-filter-toggle-label').on('click', function(){
+            toggleLoanFilterPanel();
+        });
+
+        $('#loanFilterApply').on('click', function(){
+            loanTable.ajax.reload();
+            setLoanFilterCollapsed(true);
         });
     }
 

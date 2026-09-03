@@ -18,6 +18,13 @@
                 <a href="{{ route('users.index') }}" class="btn btn-default btn-sm"><i class="fa fa-users"></i> Users</a>
             @endcan
             @can('roles.create')
+                <a href="{{ route('roles.import-template') }}" class="btn btn-default btn-sm"><i class="fa fa-download"></i> Template</a>
+                <button type="button" class="btn btn-default btn-sm" data-toggle="modal" data-target="#rolesImportModal"><i class="fa fa-upload"></i> Import</button>
+            @endcan
+            @can('roles.view')
+                <a href="{{ route('roles.export') }}" class="btn btn-default btn-sm"><i class="fa fa-file-excel-o"></i> Export</a>
+            @endcan
+            @can('roles.create')
                 <a href="{{ route('roles.create') }}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Add Role</a>
             @endcan
         </div>
@@ -37,6 +44,14 @@
         <div class="pos-panel-body">
         @if($errors->any())
             <div class="alert alert-danger">{{ $errors->first() }}</div>
+        @endif
+        @php
+            $status = session('status');
+            $statusMessage = is_array($status) ? data_get($status, 'msg') : $status;
+            $statusSuccess = is_array($status) ? data_get($status, 'success', 1) : 1;
+        @endphp
+        @if($statusMessage)
+            <div class="alert alert-{{ $statusSuccess ? 'success' : 'warning' }}">{{ $statusMessage }}</div>
         @endif
 
         <div class="table-responsive">
@@ -86,5 +101,40 @@
         {{ $roles->links() }}
         </div>
     </div>
+
+    @can('roles.create')
+        <div class="modal fade" id="rolesImportModal" tabindex="-1" role="dialog" aria-labelledby="rolesImportModalLabel">
+            <div class="modal-dialog" role="document">
+                <form method="POST" action="{{ route('roles.import') }}" enctype="multipart/form-data" class="modal-content">
+                    @csrf
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="rolesImportModalLabel"><i class="fa fa-upload"></i> Import Roles</h4>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            Upload a CSV file using the downloaded template. Permissions can be separated by comma or pipe.
+                        </div>
+                        <div class="form-group">
+                            <label>CSV File</label>
+                            <input type="file" name="file" class="form-control" accept=".csv,.txt" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Import Mode</label>
+                            <select name="mode" class="form-control">
+                                <option value="insert">Insert Only</option>
+                                <option value="update">Update Existing</option>
+                                <option value="upsert">Insert &amp; Update</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> Import Roles</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
 </div>
 @endsection
