@@ -1,0 +1,482 @@
+<?php
+
+namespace Modules\LoanManagement\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
+use Modules\LoanManagement\Entities\LoanChatThread;
+use Modules\LoanManagement\Http\Requests\Chat\MarkChatReadRequest;
+use Modules\LoanManagement\Http\Requests\Chat\MarkChatTypingRequest;
+use Modules\LoanManagement\Http\Requests\Chat\SendChatMessageRequest;
+use Modules\LoanManagement\Http\Resources\ChatMessageResource;
+use Modules\LoanManagement\Http\Resources\ChatThreadResource;
+use Modules\LoanManagement\Services\LoanChatService;
+
+class LoanChatController extends Controller
+{
+    use ApiResponseTrait;
+
+    public function __construct(protected LoanChatService $chatService)
+    {
+    }
+
+    protected function isAdmin(): bool
+    {
+        $u = auth()->user();
+        return $u && $u->can('loan_management.chat.admin');
+    }
+
+    protected function canViewThread(LoanChatThread $thread): bool
+    {
+        if ($this->isAdmin()) return true;
+        if (auth()->user() && auth()->user()->can('loan_management.chat.view')) return true;
+
+        $userId = (int) auth()->id();
+        return (int) ($thread->staff_id ?? 0) === $userId
+            || (int) ($thread->assigned_staff_id ?? 0) === $userId
+            || empty($thread->staff_id)
+            || empty($thread->assigned_staff_id);
+    }
+
+    protected function canReply(Request $request): bool
+    {
+        $user = auth()->user();
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->can('loan_management.chat.reply')) {
+            return true;
+        }
+
+        $webSupportInbox = $request->is('loan-management/chat-api/*') || $request->is('loan-management/chat-api/chats');
+
+        return $webSupportInbox && $user->can('loan_management.chat.view');
+    }
+
+    public function index(Request $request)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.view'), 403);
+
+        $webSupportInbox = $request->is('loan-management/chat-api/*') || $request->is('loan-management/chat-api/chats');
+        $adminInbox = $this->isAdmin() || $webSupportInbox;
+        $filters = $request->all();
+        if (empty($filters['location_id'])) {
+            $bankBranchLocationIds = $this->userBankBranchLoanLocationIds(auth()->user());
+            if (count($bankBranchLocationIds) === 1) {
+                $filters['location_id'] = $bankBranchLocationIds[0];
+                $request->merge(['location_id' => $bankBranchLocationIds[0]]);
+            } elseif (count($bankBranchLocationIds) > 1) {
+                $filters['location_ids'] = $bankBranchLocationIds;
+                $request->merge(['location_ids' => $bankBranchLocationIds]);
+            }
+        }
+        $rows = $this->chatService->getStaffInbox((int) auth()->id(), $adminInbox, $filters)->take(200);
+        $request->attributes->set('loan_chat_viewer_type', $this->isAdmin() ? 'admin' : 'staff');
+        $request->attributes->set('loan_chat_viewer_id', (int) auth()->id());
+        $data = ChatThreadResource::collection($rows)->resolve();
+
+        if ($webSupportInbox && (string) $request->input('view', 'all') === 'all') {
+            $data = $this->appendCustomerChatTargets($data, $request);
+        }
+
+        return $this->ok('Chats loaded', $data);
+    }
+
+    public function store(Request $request)
+    {
+        abort_unless($this->canReply($request), 403);
+        $data = $request->validate([
+            'customer_id' => 'nullable|integer',
+            'staff_id' => 'nullable|integer',
+            'loan_id' => 'nullable|integer',
+            'subject' => 'nullable|string|max:255',
+            'type' => 'nullable|in:customer_staff,customer_collector,customer_admin,staff_admin',
+            'priority' => 'nullable|in:low,normal,high,urgent',
+            'assigned_team' => 'nullable|string|max:80',
+            'avatar_url' => 'nullable|string|max:2048',
+            'is_pinned' => 'nullable|boolean',
+            'is_muted' => 'nullable|boolean',
+        ]);
+        if (! $this->isAdmin()) {
+            $data['staff_id'] = (int) auth()->id();
+        }
+
+        if (! empty($data['customer_id'])) {
+            $existing = LoanChatThread::query()
+                ->where('customer_id', (int) $data['customer_id'])
+                ->whereIn('status', ['open', 'pending', 'active'])
+                ->orderByDesc('last_message_at')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existing) {
+                $request->attributes->set('loan_chat_viewer_type', $this->isAdmin() ? 'admin' : 'staff');
+                $request->attributes->set('loan_chat_viewer_id', (int) auth()->id());
+                return $this->ok('Thread loaded', (new ChatThreadResource($existing))->resolve());
+            }
+        }
+
+        $thread = $this->chatService->createThread(array_merge($data, [
+            'created_by_type' => $this->isAdmin() ? 'admin' : 'staff',
+            'created_by_id' => (int) auth()->id(),
+            'participants' => [
+                ['type' => $this->isAdmin() ? 'admin' : 'staff', 'id' => (int) auth()->id(), 'name' => trim((string) (auth()->user()->first_name ?? auth()->user()->username ?? ''))],
+            ],
+        ]));
+        return $this->ok('Thread created', (new ChatThreadResource($thread))->resolve());
+    }
+
+    public function show(Request $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.view'), 403);
+        $row = LoanChatThread::query()->find($thread);
+        if (! $row || ! $this->canViewThread($row)) return $this->fail('Thread not found', 404, (object) []);
+        $row = $this->chatService->showThread($row, true);
+        $request->attributes->set('loan_chat_viewer_type', $this->isAdmin() ? 'admin' : 'staff');
+        $request->attributes->set('loan_chat_viewer_id', (int) auth()->id());
+        $this->chatService->markSeen($row, 'staff');
+        foreach ($row->messages as $message) {
+            if ($message->sender_type === 'customer') {
+                $this->chatService->markDelivered($message);
+            }
+        }
+        $data = (new ChatThreadResource($row))->resolve();
+        $data['sidebar'] = $this->chatService->getCustomerSidebarData($row);
+        return $this->ok('Thread loaded', $data);
+    }
+
+    public function sendMessage(SendChatMessageRequest $request, int $thread)
+    {
+        abort_unless($this->canReply($request), 403);
+        $row = LoanChatThread::query()->find($thread);
+        if (! $row || ! $this->canViewThread($row)) return $this->fail('Thread not found', 404, (object) []);
+        $data = $request->validated();
+        $senderType = $this->isAdmin() ? 'admin' : 'staff';
+        $senderName = trim((string) ((auth()->user()->first_name ?? '').' '.(auth()->user()->last_name ?? '')));
+        $metadata = (array) ($data['metadata'] ?? []);
+        if (! empty($data['reply_to_message_id'])) {
+            $metadata['reply_to_message_id'] = (int) $data['reply_to_message_id'];
+        }
+
+        $type = $data['message_type'];
+        if (in_array($type, ['image', 'file'], true)) {
+            $request->validate([
+                'file' => $type === 'image'
+                    ? 'required|file|mimes:jpg,jpeg,png,webp|max:51200'
+                    : 'required|file|mimes:pdf,doc,docx,xls,xlsx,txt,zip|max:51200',
+            ]);
+            $msg = $this->chatService->sendFileMessage(
+                $row,
+                $senderType,
+                (int) auth()->id(),
+                $request->file('file'),
+                $type,
+                $data['message'] ?? null,
+                $metadata,
+                $data['local_uuid'] ?? null
+            );
+        } elseif ($type === 'audio') {
+            $msg = $this->chatService->sendAudioMessage(
+                $row,
+                $senderType,
+                (int) auth()->id(),
+                $request->file('file'),
+                $data['audio_duration_seconds'] ?? null,
+                $data['message'] ?? null,
+                $metadata,
+                $data['local_uuid'] ?? null
+            );
+        } elseif ($type === 'location') {
+            $request->validate([
+                'latitude' => 'required|numeric|between:-90,90',
+                'longitude' => 'required|numeric|between:-180,180',
+            ]);
+            $msg = $this->chatService->sendLocationMessage(
+                $row,
+                $senderType,
+                (int) auth()->id(),
+                (float) $data['latitude'],
+                (float) $data['longitude'],
+                $data['address'] ?? null,
+                $metadata,
+                $data['local_uuid'] ?? null
+            );
+        } else {
+            $request->validate(['message' => 'required|string']);
+            $msg = $this->chatService->sendTextMessage(
+                $row,
+                $senderType,
+                (int) auth()->id(),
+                (string) $data['message'],
+                $metadata,
+                $data['local_uuid'] ?? null
+            );
+            $msg->sender_name_snapshot = $msg->sender_name_snapshot ?: $senderName;
+            $msg->save();
+        }
+
+        if (! empty($senderName) && empty($msg->sender_name_snapshot)) {
+            $msg->sender_name_snapshot = $senderName;
+        }
+        if (LoanChatService::hasMessageColumn('reply_to_message_id')) {
+            $msg->reply_to_message_id = $data['reply_to_message_id'] ?? $msg->reply_to_message_id;
+        }
+        if (LoanChatService::hasMessageColumn('reaction')) {
+            $msg->reaction = $data['reaction'] ?? $msg->reaction;
+        }
+        $msg->save();
+
+        $request->attributes->set('loan_chat_viewer_type', $this->isAdmin() ? 'admin' : 'staff');
+        $request->attributes->set('loan_chat_viewer_id', (int) auth()->id());
+        $this->chatService->markSeen($row, 'staff');
+        return $this->ok('Message sent', (new ChatMessageResource($msg))->resolve());
+    }
+
+    public function assign(Request $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.assign'), 403);
+        $data = $request->validate(['staff_id' => 'required|integer']);
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->isAdmin() && ! $this->canViewThread($row)) abort(403);
+        $this->chatService->assignChat($row, (int) $data['staff_id'], $request->input('assigned_team'));
+        return $this->ok('Thread assigned', (new ChatThreadResource($row))->resolve());
+    }
+
+    public function transfer(Request $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.transfer') || auth()->user()->can('loan_management.chat.assign'), 403);
+        $data = $request->validate([
+            'staff_id' => 'required|integer',
+            'assigned_team' => 'nullable|string|max:80',
+        ]);
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->isAdmin() && ! $this->canViewThread($row)) abort(403);
+        $this->chatService->transferChat($row, (int) $data['staff_id'], $data['assigned_team'] ?? null);
+        return $this->ok('Thread transferred', (new ChatThreadResource($row))->resolve());
+    }
+
+    public function read(MarkChatReadRequest $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.view'), 403);
+        $row = LoanChatThread::query()->find($thread);
+        if (! $row || ! $this->canViewThread($row)) return $this->fail('Thread not found', 404, (object) []);
+        $this->chatService->markAsRead($row, $this->isAdmin() ? 'admin' : 'staff', (int) auth()->id());
+        return $this->ok('Marked as read', (object) []);
+    }
+
+    public function typing(MarkChatTypingRequest $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.view'), 403);
+        $row = LoanChatThread::query()->find($thread);
+        if (! $row || ! $this->canViewThread($row)) return $this->fail('Thread not found', 404, (object) []);
+        $this->chatService->markTyping($row, 'staff');
+        return $this->ok('Typing updated', (object) []);
+    }
+
+    public function close(Request $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.close'), 403);
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->canViewThread($row) && ! $this->isAdmin()) abort(403);
+        $this->chatService->closeThread($row, (int) auth()->id(), $request->input('reason'));
+        return $this->ok('Thread closed', (object) []);
+    }
+
+    public function reopen(int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.close'), 403);
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->canViewThread($row) && ! $this->isAdmin()) abort(403);
+        $this->chatService->reopenThread($row);
+        return $this->ok('Thread reopened', (object) []);
+    }
+
+    public function pin(Request $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.view'), 403);
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->canViewThread($row) && ! $this->isAdmin()) abort(403);
+        $this->chatService->pinChat($row, $request->boolean('is_pinned', true));
+        return $this->ok('Thread pin updated', (new ChatThreadResource($row))->resolve());
+    }
+
+    public function mute(Request $request, int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.view'), 403);
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->canViewThread($row) && ! $this->isAdmin()) abort(403);
+        $this->chatService->muteChat($row, $request->boolean('is_muted', true));
+        return $this->ok('Thread mute updated', (new ChatThreadResource($row))->resolve());
+    }
+
+    public function destroy(int $thread)
+    {
+        abort_unless(auth()->user()->can('loan_management.chat.delete'), 403);
+
+        $row = LoanChatThread::query()->findOrFail($thread);
+        if (! $this->canViewThread($row) && ! $this->isAdmin()) abort(403);
+
+        try {
+            $this->chatService->deleteEmptyThread($row);
+        } catch (ValidationException $e) {
+            return $this->fail(
+                'This chat already has messages and cannot be deleted. You can close it instead.',
+                422,
+                (object) []
+            );
+        }
+
+        return $this->ok('Empty chat deleted successfully.', (object) []);
+    }
+
+    public function webInbox()
+    {
+        return view('loanmanagement::chat.inbox', ['initialThreadId' => null]);
+    }
+
+    public function webDetail(int $thread)
+    {
+        return view('loanmanagement::chat.inbox', ['initialThreadId' => $thread]);
+    }
+
+    protected function userBankBranchLoanLocationIds($user): array
+    {
+        $branch = $this->userBankBranchValue($user);
+        if ($branch === '') {
+            return [];
+        }
+
+        if (! Schema::connection('mysql_loan')->hasTable('loan_business_locations')) {
+            return is_numeric($branch) ? [(int) $branch] : [];
+        }
+
+        $query = DB::connection('mysql_loan')->table('loan_business_locations')
+            ->where(function ($q) use ($branch) {
+                if (is_numeric($branch)) {
+                    $q->where('id', (int) $branch);
+                    if (Schema::connection('mysql_loan')->hasColumn('loan_business_locations', 'main_location_id')) {
+                        $q->orWhere('main_location_id', (int) $branch);
+                    }
+                } else {
+                    $q->where('name', $branch);
+                    if (Schema::connection('mysql_loan')->hasColumn('loan_business_locations', 'location_code')) {
+                        $q->orWhere('location_code', $branch);
+                    }
+                }
+            });
+
+        return $query->pluck('id')->map(fn ($id) => (int) $id)->all() ?: (is_numeric($branch) ? [(int) $branch] : []);
+    }
+
+    protected function userBankBranchValue($user): string
+    {
+        if (! $user) {
+            return '';
+        }
+
+        $details = $user->bank_details ?? null;
+        if (is_string($details)) {
+            $details = json_decode($details, true) ?: [];
+        }
+        if (! is_array($details)) {
+            return '';
+        }
+
+        return trim((string) ($details['branch_id'] ?? $details['branch'] ?? ''));
+    }
+
+    protected function appendCustomerChatTargets(array $threads, Request $request): array
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_customers')) {
+            return $threads;
+        }
+
+        $existingCustomerIds = [];
+        foreach ($threads as $thread) {
+            if (! empty($thread['customer_id'])) {
+                $existingCustomerIds[(int) $thread['customer_id']] = true;
+            }
+        }
+
+        $query = DB::connection('mysql_loan')->table('loan_customers');
+        if (Schema::connection('mysql_loan')->hasColumn('loan_customers', 'deleted_at')) {
+            $query->whereNull('deleted_at');
+        }
+        $locationIds = array_values(array_filter(array_map('intval', (array) $request->input('location_ids', []))));
+        $locationId = (int) $request->input('location_id', 0);
+        if ($locationId > 0) {
+            $locationIds[] = $locationId;
+        }
+        $locationIds = array_values(array_unique(array_filter($locationIds)));
+        if (! empty($locationIds) && Schema::connection('mysql_loan')->hasColumn('loan_customers', 'business_location_id')) {
+            $query->whereIn('business_location_id', $locationIds);
+        }
+
+        $search = trim((string) $request->input('search', ''));
+        if ($search !== '') {
+            $query->where(function ($inner) use ($search) {
+                foreach (['name', 'khmer_name', 'phone', 'login_phone', 'customer_code'] as $column) {
+                    if (Schema::connection('mysql_loan')->hasColumn('loan_customers', $column)) {
+                        $inner->orWhere($column, 'like', '%'.$search.'%');
+                    }
+                }
+            });
+        }
+
+        $customers = $query->orderByDesc('id')->limit(300)->get();
+        foreach ($customers as $customer) {
+            if (isset($existingCustomerIds[(int) $customer->id])) {
+                continue;
+            }
+
+            $name = (string) ($customer->name ?? $customer->khmer_name ?? 'Customer');
+            $phone = (string) ($customer->phone ?? $customer->login_phone ?? '');
+            $locationName = (string) ($customer->business_location_name_snapshot ?? '');
+            if ($locationName === '' && ! empty($customer->business_location_id) && Schema::connection('mysql_loan')->hasTable('loan_business_locations')) {
+                $locationName = (string) DB::connection('mysql_loan')
+                    ->table('loan_business_locations')
+                    ->where('id', (int) $customer->business_location_id)
+                    ->value('name');
+            }
+            $threads[] = [
+                'id' => null,
+                'customer_id' => (int) $customer->id,
+                'thread_number' => '',
+                'display_name' => $name,
+                'display_subtitle' => collect([$phone, $locationName, 'New chat'])->filter()->implode(' - '),
+                'avatar_url' => '',
+                'customer_name' => $name,
+                'customer_phone' => $phone,
+                'location_id' => $customer->business_location_id === null ? null : (int) $customer->business_location_id,
+                'location_name' => $locationName,
+                'staff_name' => '',
+                'assigned_staff_name' => '',
+                'assigned_staff_id' => null,
+                'assigned_team' => '',
+                'type' => 'customer_staff',
+                'priority' => 'normal',
+                'status' => 'new',
+                'is_online' => false,
+                'is_pinned' => false,
+                'is_muted' => false,
+                'is_closed' => false,
+                'unread_count' => 0,
+                'last_message' => '',
+                'last_message_type' => 'text',
+                'last_message_at' => null,
+                'last_message_time' => null,
+                'last_sender_name' => '',
+                'typing' => false,
+                'is_customer_only' => true,
+                'message_count' => 0,
+                'can_delete' => false,
+            ];
+        }
+
+        return $threads;
+    }
+}

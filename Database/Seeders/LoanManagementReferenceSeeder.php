@@ -1,0 +1,163 @@
+<?php
+
+namespace Modules\LoanManagement\Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Modules\LoanManagement\Services\LoanSyncFromPosService;
+
+class LoanManagementReferenceSeeder extends Seeder
+{
+    public function run(): void
+    {
+        if (Schema::connection('mysql_loan')->hasTable('loan_business_locations')) {
+            $this->seedLoanBusinessLocations();
+        }
+
+        if (Schema::connection('mysql_loan')->hasTable('loan_currencies')) {
+            $this->seedLoanCurrencies();
+        }
+
+        if (Schema::connection('mysql_loan')->hasTable('loan_payment_methods')) {
+            $this->seedLoanPaymentMethods();
+        }
+    }
+
+    private function seedLoanBusinessLocations(): void
+    {
+        if (Schema::hasTable('business_locations')) {
+            app(LoanSyncFromPosService::class)->syncBusinessLocations();
+        }
+
+        $count = (int) DB::connection('mysql_loan')->table('loan_business_locations')->count();
+        if ($count > 0) {
+            $this->ensureLocationDefaults();
+            return;
+        }
+
+        $now = now();
+        DB::connection('mysql_loan')->table('loan_business_locations')->insert($this->loanLocationColumns([
+            'main_business_id' => null,
+            'main_location_id' => null,
+            'name' => 'Main Location',
+            'location_code' => 'MAIN',
+            'loan_invoice_prefix' => 'KY-',
+            'address' => 'Phnom Penh',
+            'phone' => null,
+            'status' => 'active',
+            'telegram_notify_payment' => false,
+            'telegram_notify_installment' => false,
+            'synced_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]));
+    }
+
+    private function ensureLocationDefaults(): void
+    {
+        $rows = DB::connection('mysql_loan')->table('loan_business_locations')->get();
+
+        foreach ($rows as $row) {
+            $updates = [];
+            if ($this->loanLocationHasColumn('location_code') && empty($row->location_code)) {
+                $updates['location_code'] = 'LOC-'.str_pad((string) $row->id, 3, '0', STR_PAD_LEFT);
+            }
+            if ($this->loanLocationHasColumn('loan_invoice_prefix') && empty($row->loan_invoice_prefix)) {
+                $updates['loan_invoice_prefix'] = 'KY-';
+            }
+            if ($this->loanLocationHasColumn('status') && empty($row->status)) {
+                $updates['status'] = 'active';
+            }
+            if ($this->loanLocationHasColumn('updated_at')) {
+                $updates['updated_at'] = now();
+            }
+
+            if (! empty($updates)) {
+                DB::connection('mysql_loan')->table('loan_business_locations')->where('id', $row->id)->update($updates);
+            }
+        }
+    }
+
+    private function loanLocationColumns(array $payload): array
+    {
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loan_business_locations');
+
+        return array_intersect_key($payload, array_flip($columns));
+    }
+
+    private function loanLocationHasColumn(string $column): bool
+    {
+        return Schema::connection('mysql_loan')->hasColumn('loan_business_locations', $column);
+    }
+
+    private function seedLoanCurrencies(): void
+    {
+        $columns = [
+            'name' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'name'),
+            'exchange_rate' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'exchange_rate'),
+            'is_default' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'is_default'),
+            'is_active' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'is_active'),
+            'updated_at' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'updated_at'),
+            'created_at' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'created_at'),
+        ];
+
+        $now = now();
+        $rows = [
+            'USD' => ['name' => 'US Dollar', 'exchange_rate' => 1, 'is_default' => 1, 'is_active' => 1],
+            'KHR' => ['name' => 'Cambodian Riel', 'exchange_rate' => 4100, 'is_default' => 0, 'is_active' => 1],
+        ];
+
+        foreach ($rows as $code => $data) {
+            $updateData = [];
+            foreach ($data as $key => $value) {
+                if (! empty($columns[$key])) {
+                    $updateData[$key] = $value;
+                }
+            }
+            if ($columns['updated_at']) {
+                $updateData['updated_at'] = $now;
+            }
+            if ($columns['created_at']) {
+                $updateData['created_at'] = $now;
+            }
+
+            DB::connection('mysql_loan')->table('loan_currencies')->updateOrInsert(
+                ['code' => $code],
+                $updateData
+            );
+        }
+    }
+
+    private function seedLoanPaymentMethods(): void
+    {
+        $hasIsActive = Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'is_active');
+        $hasUpdatedAt = Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'updated_at');
+        $hasCreatedAt = Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'created_at');
+        $now = now();
+
+        foreach (['Cash', 'ABA', 'ACLEDA', 'Wing', 'Bank Transfer', 'QR', 'Credit Adjustment'] as $index => $name) {
+            $updateData = [];
+            if (Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'code')) {
+                $updateData['code'] = strtolower(str_replace(' ', '_', $name));
+            }
+            if ($hasIsActive) {
+                $updateData['is_active'] = 1;
+            }
+            if (Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'sort_order')) {
+                $updateData['sort_order'] = $index + 1;
+            }
+            if ($hasUpdatedAt) {
+                $updateData['updated_at'] = $now;
+            }
+            if ($hasCreatedAt) {
+                $updateData['created_at'] = $now;
+            }
+
+            DB::connection('mysql_loan')->table('loan_payment_methods')->updateOrInsert(
+                ['name' => $name],
+                $updateData
+            );
+        }
+    }
+}
