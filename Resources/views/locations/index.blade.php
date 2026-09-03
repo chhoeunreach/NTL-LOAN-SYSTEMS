@@ -476,7 +476,8 @@
             }
 
             $(function() {
-                if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#loan_location_table')) {
+                var hasLocations = @json($locations->isNotEmpty());
+                if (hasLocations && $.fn.DataTable && !$.fn.DataTable.isDataTable('#loan_location_table')) {
                     $('#loan_location_table').DataTable({
                         pageLength: parseInt(window.__default_datatable_page_entries || 25, 10),
                         order: [[0, 'asc']],
