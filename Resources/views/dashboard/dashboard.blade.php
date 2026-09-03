@@ -18,13 +18,6 @@
 @endphp
 
 <div class="lm-dashboard">
-    <div class="lm-dashboard-tabs" role="tablist" aria-label="Loan dashboard tabs">
-        <button type="button" class="lm-dashboard-tab is-active" data-dashboard-tab="overview" aria-pressed="true">Dashboard</button>
-        @if(Route::has('loan-management.reports.dashboard'))
-            <a href="{{ route('loan-management.reports.dashboard') }}" class="lm-dashboard-tab" aria-pressed="false">Dashboard Reports</a>
-        @endif
-    </div>
-
     <div class="lm-dashboard-pane is-active" data-dashboard-pane="overview">
     <section class="lm-dashboard-cards">
         @foreach($cards as $card)
@@ -453,6 +446,18 @@
             return $('<div>').text(value == null ? '-' : value).html();
         }
 
+        function formatLmExpiry(value) {
+            if (!value) {
+                return '';
+            }
+            var date = new Date(value);
+            if (isNaN(date.getTime())) {
+                return String(value);
+            }
+            var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+            return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+        }
+
         function dashboardDate(value) {
             if (!value) {
                 return '-';
@@ -826,7 +831,7 @@
                 })
                 .then(function (res) {
                     var link = res && res.link ? res.link : '';
-                    var expires = res && res.expires_at ? moment(res.expires_at).format('YYYY-MM-DD HH:mm') : '';
+                    var expiresText = res && res.expires_at ? formatLmExpiry(res.expires_at) : '';
                     var qrUrl = link ? 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(link) : '';
 
                     $('.view_modal').html(
@@ -840,7 +845,7 @@
                                     '<p class="text-muted" style="margin-bottom:12px;">Share this link with ' + esc(customer) + '. Valid for a limited time and can only be used once.</p>' +
                                     (qrUrl ? '<img src="' + qrUrl + '" alt="Telegram QR code" style="width:220px;height:220px;max-width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px;background:#fff;margin-bottom:12px;">' : '') +
                                     '<input class="form-control text-center" readonly value="' + esc(link) + '" style="margin-bottom:8px;">' +
-                                    (expires ? '<div class="text-muted small">Expires: ' + esc(expires) + '</div>' : '') +
+                                    (expiresText ? '<div class="text-muted small">Expires: ' + esc(expiresText) + '</div>' : '') +
                                 '</div>' +
                                 '<div class="modal-footer">' +
                                     '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>' +
