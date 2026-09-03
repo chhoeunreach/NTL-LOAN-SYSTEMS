@@ -50,6 +50,7 @@ return [
     'tesseract' => [
         'path' => env('TESSERACT_PATH'),
     ],
+    'website_url' => env('LOAN_MANAGEMENT_WEBSITE_URL', ''),
     'menu_order' => 38,
     'permissions' => [
         'user.view',
