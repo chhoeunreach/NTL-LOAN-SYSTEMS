@@ -10,5 +10,6 @@ class LoanManagementDatabaseSeeder extends Seeder
     {
         $this->call(LoanManagementPermissionSeeder::class);
         $this->call(LoanManagementReferenceSeeder::class);
+        $this->call(LoanManagementSystemDataSeeder::class);
     }
 }

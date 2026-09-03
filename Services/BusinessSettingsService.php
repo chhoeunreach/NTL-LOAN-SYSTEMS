@@ -14,6 +14,10 @@ class BusinessSettingsService
         'theme_color' => '#6366f1',
         'logo_path' => null,
         'login_background_path' => null,
+        'home_headline' => 'Simple loan service for customers',
+        'home_subtitle' => 'Register with NTL CO.LTD and our team will contact you about your loan request.',
+        'home_body' => 'Fast customer registration, clear payment schedules, Telegram updates, and easy support from our branch team.',
+        'invoice_message_template' => "❤️ **{Customer Name}** អរគុណសម្រាប់ការទូទាត់ និងការទុកចិត្តលើ **{Business Name}**។\n🧾 វិក្កយបត្ររបស់អ្នកសូមមើលខាងក្រោម។",
     ];
 
     public static function get(): array
@@ -33,6 +37,10 @@ class BusinessSettingsService
             'theme_color' => self::cleanColor($data['theme_color'] ?? $current['theme_color']),
             'logo_path' => $data['logo_path'] ?? $current['logo_path'],
             'login_background_path' => $data['login_background_path'] ?? $current['login_background_path'],
+            'home_headline' => self::cleanText($data['home_headline'] ?? $current['home_headline'], 140),
+            'home_subtitle' => self::cleanText($data['home_subtitle'] ?? $current['home_subtitle'], 220),
+            'home_body' => self::cleanMultilineText($data['home_body'] ?? $current['home_body'], 1200, ''),
+            'invoice_message_template' => self::cleanMultilineText($data['invoice_message_template'] ?? $current['invoice_message_template'], 2000, self::DEFAULTS['invoice_message_template']),
         ];
 
         $path = self::path();
@@ -63,6 +71,22 @@ class BusinessSettingsService
     public static function themeColor(): string
     {
         return self::get()['theme_color'];
+    }
+
+    public static function invoiceMessageTemplate(): string
+    {
+        return self::get()['invoice_message_template'];
+    }
+
+    public static function invoiceMessage(string $customerName = ''): string
+    {
+        $settings = self::get();
+        $replacements = [
+            '{Customer Name}' => trim($customerName) !== '' ? trim($customerName) : 'Customer',
+            '{Business Name}' => $settings['business_name'] ?: 'KY Store',
+        ];
+
+        return strtr($settings['invoice_message_template'], $replacements);
     }
 
     public static function logoUrl(): ?string
@@ -150,6 +174,11 @@ class BusinessSettingsService
         ]);
     }
 
+    public static function hasSavedSettings(): bool
+    {
+        return is_file(self::path());
+    }
+
     protected static function read(): array
     {
         $path = self::path();
@@ -173,6 +202,13 @@ class BusinessSettingsService
         $clean = trim((string) $value);
 
         return $clean !== '' ? mb_substr($clean, 0, $length) : '';
+    }
+
+    protected static function cleanMultilineText($value, int $length, string $default = ''): string
+    {
+        $clean = trim(str_replace(["\r\n", "\r"], "\n", (string) $value));
+
+        return $clean !== '' ? mb_substr($clean, 0, $length) : $default;
     }
 
     protected static function cleanColor($value): string
