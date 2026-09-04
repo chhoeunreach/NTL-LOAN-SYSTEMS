@@ -125,7 +125,7 @@ class InstallController extends Controller
 
         Artisan::call('migrate', [
             '--database' => 'mysql_loan',
-            '--path' => 'Database/Migrations',
+            '--path' => 'database/migrations',
             '--realpath' => false,
             '--force' => true,
         ]);
