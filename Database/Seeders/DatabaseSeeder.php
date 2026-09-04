@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Modules\LoanManagement\Database\Seeders\LoanManagementDatabaseSeeder;
 use Spatie\Permission\Models\Role;
 
 class DatabaseSeeder extends Seeder
@@ -27,5 +28,7 @@ class DatabaseSeeder extends Seeder
 
         $role = Role::query()->firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
         $admin->assignRole($role);
+
+        $this->call(LoanManagementDatabaseSeeder::class);
     }
 }
