@@ -22,8 +22,8 @@
         <span>Collection</span>
     </a>
 
-    <a href="{{ route('loan-management.customers') }}" class="{{ str_starts_with($currentRoute, 'loan-management.customers') ? 'active' : '' }}">
+    <button type="button" id="loanMobileSidebarToggle" aria-label="Open full menu">
         <i class="fa fa-users"></i>
         <span>More</span>
-    </a>
+    </button>
 </nav>

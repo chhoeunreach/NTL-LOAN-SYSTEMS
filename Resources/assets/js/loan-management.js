@@ -8,7 +8,7 @@
     }
 
     ready(function () {
-        var toggles = Array.prototype.slice.call(document.querySelectorAll('#loanSidebarToggle, #loanSidebarCollapse'));
+        var toggles = Array.prototype.slice.call(document.querySelectorAll('#loanSidebarToggle, #loanSidebarCollapse, #loanMobileSidebarToggle'));
 
         function isMobile() {
             return window.innerWidth <= 992;
@@ -28,7 +28,11 @@
         }
 
         toggles.forEach(function (toggle) {
-            toggle.addEventListener('click', toggleSidebar);
+            toggle.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleSidebar();
+            });
         });
 
         // Sidebar close button
