@@ -20,7 +20,12 @@
         .brand { display: inline-flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 800; text-decoration: none; }
         .logo { width: 42px; height: 42px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; background: #edf3fb; color: var(--public-primary); }
         .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .logout { border: 1px solid #dbe4ef; background: #fff; color: #334155; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; cursor: pointer; }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; }
+        .btn-website { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #dbe4ef; background: #fff; color: #334155; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; text-decoration: none; transition: all .15s ease-in-out; }
+        .btn-website:hover { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+        .btn-website svg { width: 16px; height: 16px; }
+        .logout { border: 1px solid #fee2e2; background: #fff; color: #dc2626; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; cursor: pointer; transition: all .15s ease-in-out; }
+        .logout:hover { background: #fef2f2; border-color: #fca5a5; }
         .wrap { width: min(1180px, calc(100% - 32px)); margin: 26px auto 44px; }
         .hero { background: var(--public-primary); color: #fff; border-radius: 8px; padding: 26px; margin-bottom: 18px; }
         .hero h1 { margin: 0; font-size: 30px; letter-spacing: 0; }
@@ -42,7 +47,8 @@
         .status { display: inline-flex; min-height: 24px; align-items: center; border-radius: 999px; padding: 0 9px; background: #e8f2ff; color: #1d4ed8; font-size: 12px; font-weight: 800; }
         @media (max-width: 900px) {
             .grid { grid-template-columns: 1fr; }
-            .topbar-inner { align-items: flex-start; flex-direction: column; padding: 14px 0; }
+            .topbar-inner { align-items: flex-start; flex-direction: column; padding: 14px 0; gap: 12px; }
+            .topbar-actions { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
             table { min-width: 680px; }
             .table-scroll { overflow-x: auto; }
         }
@@ -55,10 +61,20 @@
                 <span class="logo">@if($businessLogoUrl)<img src="{{ $businessLogoUrl }}" alt="{{ $businessName }}">@else{{ strtoupper(mb_substr($businessName, 0, 1)) }}@endif</span>
                 <span>{{ $businessName }}</span>
             </a>
-            <form method="POST" action="{{ route('loan-management.public.customer-logout') }}">
-                @csrf
-                <button class="logout" type="submit">Logout</button>
-            </form>
+            <div class="topbar-actions">
+                <a href="{{ route('loan-management.public.home') }}" class="btn-website">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                    Website
+                </a>
+                <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0;">
+                    @csrf
+                    <button class="logout" type="submit">Logout</button>
+                </form>
+            </div>
         </div>
     </header>
 
