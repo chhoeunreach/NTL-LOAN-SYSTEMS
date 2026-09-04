@@ -37,6 +37,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/register', [PublicAppController::class, 'register'])->name('loan-management.public.register');
     Route::post('/register', [PublicAppController::class, 'storeRegistration'])->name('loan-management.public.register.store');
     Route::get('/customer/login', [PublicAppController::class, 'customerLogin'])->name('loan-management.public.customer-login');
+    Route::get('/loan-management/customer/login', fn () => redirect()->route('loan-management.public.customer-login'));
     Route::post('/customer/login', [PublicAppController::class, 'customerLoginStore'])->name('loan-management.public.customer-login.store');
     Route::post('/customer/logout', [PublicAppController::class, 'customerLogout'])->name('loan-management.public.customer-logout');
 

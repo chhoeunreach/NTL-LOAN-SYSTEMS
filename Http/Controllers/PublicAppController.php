@@ -85,8 +85,16 @@ class PublicAppController extends Controller
 
     public function customerLogin()
     {
+        $demoCustomers = LoanCustomer::query()
+            ->where('can_login', 1)
+            ->where('status', 'active')
+            ->select('id', 'name', 'phone', 'login_phone', 'username')
+            ->take(3)
+            ->get();
+
         return view('loanmanagement::public.customer_login', [
             'settings' => BusinessSettingsService::get(),
+            'demoCustomers' => $demoCustomers,
         ]);
     }
 
