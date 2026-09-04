@@ -122,6 +122,68 @@
             border-color: var(--login-primary);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--login-primary) 16%, transparent);
         }
+        .demo-login-card {
+            display: block;
+            width: 100%;
+            margin: 0 0 18px;
+            padding: 14px;
+            border: 1px solid #dbe4ef;
+            border-radius: 8px;
+            background: #f8fafc;
+            text-align: left;
+            color: #0f172a;
+            font: inherit;
+            cursor: pointer;
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+        }
+        .demo-login-card:hover,
+        .demo-login-card:focus {
+            border-color: var(--login-primary);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .10);
+            outline: 0;
+            transform: translateY(-1px);
+        }
+        .demo-login-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .demo-login-title {
+            color: #334155;
+            font-size: 12px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .demo-login-action {
+            color: var(--login-primary);
+            font-size: 12px;
+            font-weight: 900;
+            white-space: nowrap;
+        }
+        .demo-login-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 34px;
+            border-top: 1px solid #e2e8f0;
+            color: #475569;
+            font-size: 13px;
+        }
+        .demo-login-row:first-of-type { border-top: 0; }
+        .demo-login-row strong {
+            color: #64748b;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        .demo-login-value {
+            overflow-wrap: anywhere;
+            color: #0f172a;
+            font-weight: 800;
+        }
+        .demo-login-card-bottom { margin: 14px 0 0; }
         .login-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 16px; color: #64748b; font-size: 12px; }
         .login-options label { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: #475569; font-size: 12px; text-transform: none; }
         .login-button {
@@ -252,6 +314,20 @@
                         <a href="{{ route('loan-management.public.home') }}">Website</a>
                     @endif
                 </div>
+                <button type="button" class="demo-login-card demo-login-card-bottom" id="demoAdminLogin" data-email="admin@example.com" data-password="password">
+                    <span class="demo-login-head">
+                        <span class="demo-login-title">Demo Admin</span>
+                        <span class="demo-login-action" id="demoAdminLoginAction">Copy & fill</span>
+                    </span>
+                    <span class="demo-login-row">
+                        <strong>User</strong>
+                        <span class="demo-login-value">admin@example.com</span>
+                    </span>
+                    <span class="demo-login-row">
+                        <strong>Password</strong>
+                        <span class="demo-login-value">password</span>
+                    </span>
+                </button>
             </div>
         </section>
     </main>
@@ -264,6 +340,31 @@
                 var showing = password.type === 'text';
                 password.type = showing ? 'password' : 'text';
                 toggle.textContent = showing ? 'Show' : 'Hide';
+            });
+
+            var demoButton = document.getElementById('demoAdminLogin');
+            var email = document.getElementById('email');
+            var demoAction = document.getElementById('demoAdminLoginAction');
+            if (!demoButton || !email) return;
+
+            demoButton.addEventListener('click', function () {
+                email.value = demoButton.getAttribute('data-email') || '';
+                password.value = demoButton.getAttribute('data-password') || '';
+                email.dispatchEvent(new Event('input', { bubbles: true }));
+                password.dispatchEvent(new Event('input', { bubbles: true }));
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(email.value + "\n" + password.value).catch(function () {});
+                }
+
+                if (demoAction) {
+                    demoAction.textContent = 'Filled';
+                    window.setTimeout(function () {
+                        demoAction.textContent = 'Copy & fill';
+                    }, 1600);
+                }
+
+                password.focus();
             });
         })();
     </script>

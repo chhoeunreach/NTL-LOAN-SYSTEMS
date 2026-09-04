@@ -36,7 +36,7 @@ class InstallLoanManagementCommand extends Command
             $this->info('Running seeders...');
             Artisan::call('db:seed', [
                 '--database' => 'mysql_loan',
-                '--class' => 'Modules\\LoanManagement\\Database\\Seeders\\LoanManagementDatabaseSeeder',
+                '--class' => 'Database\\Seeders\\LoanManagementDatabaseSeeder',
                 '--force' => true,
             ]);
             $this->line(Artisan::output());

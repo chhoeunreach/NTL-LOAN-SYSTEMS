@@ -131,7 +131,7 @@ class InstallController extends Controller
         ]);
 
         Artisan::call('db:seed', [
-            '--class' => 'Modules\\LoanManagement\\Database\\Seeders\\LoanManagementDatabaseSeeder',
+            '--class' => 'Database\\Seeders\\LoanManagementDatabaseSeeder',
             '--force' => true,
         ]);
 
