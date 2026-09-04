@@ -112,6 +112,7 @@
                     <a href="#cart">Cart</a>
                 </nav>
                 <div class="nav-actions">
+                    <a class="button-outline" href="{{ route('login') }}">Admin Login</a>
                     <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>
                     <a class="button" href="{{ route('loan-management.public.register') }}">Register</a>
                 </div>
@@ -205,7 +206,11 @@
         <footer class="footer">
             <div class="footer-inner">
                 <span>{{ $businessName }}</span>
-                <span><a href="{{ route('loan-management.public.customer-login') }}">Customer Login</a></span>
+                <span>
+                    <a href="{{ route('login') }}">Admin Login</a>
+                    &nbsp;|&nbsp;
+                    <a href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>
+                </span>
             </div>
         </footer>
     </main>
