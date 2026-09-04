@@ -229,7 +229,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/tools/loan-import-export', [LoanImportExportController::class, 'loans'])->name('loan-management.tools.loan-import-export');
         Route::get('/tools/send-notification', [DashboardController::class, 'placeholder'])->defaults('page', 'Send Notification')->name('loan-management.tools.send-notification');
 
-        Route::get('/schedules', [DashboardController::class, 'placeholder'])->defaults('page', 'Installment Schedules')->name('loan-management.schedules.index');
+        Route::get('/schedules', [DashboardController::class, 'loanSchedules'])->name('loan-management.schedules.index');
         Route::get('/monthly-payments', [DashboardController::class, 'placeholder'])->defaults('page', 'Monthly Payments')->name('loan-management.monthly-payments.index');
         Route::get('/overdue', [DashboardController::class, 'overdue'])->name('loan-management.overdue.index');
         Route::get('/collection-visits', [DashboardController::class, 'collectionVisits'])->name('loan-management.collection-visits.index');
@@ -245,5 +245,5 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/reports/payment-summary-by-type', [DashboardController::class, 'paymentSummaryByType'])->name('loan-management.reports.payment-summary-by-type');
         Route::get('/reports/payments', [DashboardController::class, 'paymentSummaryByType'])->name('loan-management.reports.payments');
         Route::get('/guarantors', [DashboardController::class, 'placeholder'])->defaults('page', 'Guarantors')->name('loan-management.guarantors.index');
-        Route::get('/blacklist', [DashboardController::class, 'placeholder'])->defaults('page', 'Blacklist')->name('loan-management.blacklist.index');
+        Route::get('/blacklist', [DashboardController::class, 'blacklistIndex'])->name('loan-management.blacklist.index');
     });

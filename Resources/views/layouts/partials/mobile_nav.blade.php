@@ -3,7 +3,7 @@
     $unreadChatCount = (int) ($mobileNavBadges['unread_chat'] ?? 0);
     $overdueCount = (int) ($mobileNavBadges['overdue'] ?? 0);
 
-    $currentRoute = request()->route()->getName() ?? '';
+    $currentRoute = optional(request()->route())->getName() ?? '';
 @endphp
 
 <nav class="lm-mobile-nav d-lg-none" id="loanMobileNav">

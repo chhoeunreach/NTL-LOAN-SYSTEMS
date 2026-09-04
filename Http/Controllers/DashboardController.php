@@ -34,11 +34,190 @@ class DashboardController extends Controller
     {
         $this->allow('loan_management.view');
 
+        if ($page === 'Blacklist') {
+            return $this->blacklistIndex($request);
+        }
+
         $payload = $this->buildPagePayload($page);
         return view('loanmanagement::dashboard.placeholder', [
             'page' => $page,
             'payload' => $payload,
         ]);
+    }
+
+    public function blacklistIndex(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $isKhmer = session('user.language', config('app.locale')) === 'km';
+        $filters = $this->blacklistFilters($request);
+        $conn = DB::connection('mysql_loan');
+
+        $customers = collect();
+        $summary = [
+            'total_blacklisted' => 0,
+            'total_debt_at_risk' => 0,
+            'linked_loans_count' => 0,
+            'flagged_this_month' => 0,
+        ];
+
+        if (Schema::connection('mysql_loan')->hasTable('loan_customers')) {
+            $hasLoans = Schema::connection('mysql_loan')->hasTable('loans');
+            $query = $conn->table('loan_customers as c')
+                ->where('c.blacklist_status', 1)
+                ->whereNull('c.deleted_at');
+            $this->applyBlacklistFilters($query, $filters);
+
+            if ($hasLoans) {
+                $query->leftJoin('loans as l', function ($join) {
+                    $join->on('l.customer_id', '=', 'c.id')->whereNull('l.deleted_at');
+                });
+                $query->selectRaw('
+                    c.id,
+                    c.customer_code,
+                    c.name,
+                    c.khmer_name,
+                    c.phone,
+                    c.id_card_number,
+                    c.address,
+                    c.blacklist_status,
+                    c.blacklist_reason,
+                    c.blacklist_date,
+                    c.blacklist_by,
+                    COUNT(DISTINCT l.id) as total_loans,
+                    COALESCE(SUM(l.balance_amount), 0) as total_debt
+                ')->groupBy('c.id');
+            } else {
+                $query->selectRaw('
+                    c.id,
+                    c.customer_code,
+                    c.name,
+                    c.khmer_name,
+                    c.phone,
+                    c.id_card_number,
+                    c.address,
+                    c.blacklist_status,
+                    c.blacklist_reason,
+                    c.blacklist_date,
+                    c.blacklist_by,
+                    0 as total_loans,
+                    0 as total_debt
+                ');
+            }
+
+            $customers = $query->orderByDesc('c.blacklist_date')->orderByDesc('c.id')->get();
+
+            // Summary calculations
+            $summary['total_blacklisted'] = (int) $customers->count();
+            $summary['total_debt_at_risk'] = (float) $customers->sum('total_debt');
+            $summary['linked_loans_count'] = (int) $customers->sum('total_loans');
+
+            $startOfMonth = now()->startOfMonth();
+            $summary['flagged_this_month'] = (int) $customers->filter(function ($c) use ($startOfMonth) {
+                return ! empty($c->blacklist_date) && \Carbon\Carbon::parse($c->blacklist_date)->greaterThanOrEqualTo($startOfMonth);
+            })->count();
+        }
+
+        // Active customers who can be flagged
+        $eligibleCustomers = collect();
+        if (Schema::connection('mysql_loan')->hasTable('loan_customers')) {
+            $eligibleCustomers = $conn->table('loan_customers')
+                ->where('blacklist_status', 0)
+                ->whereNull('deleted_at')
+                ->select('id', 'customer_code', 'name', 'phone')
+                ->orderBy('name')
+                ->limit(300)
+                ->get();
+        }
+
+        // Staff names
+        $staffIds = $customers->pluck('blacklist_by')->filter()->unique()->values();
+        $staffNames = [];
+        if ($staffIds->isNotEmpty() && Schema::hasTable('users')) {
+            $staffNames = DB::table('users')
+                ->whereIn('id', $staffIds)
+                ->selectRaw("id, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))), ''), username) as display_name")
+                ->pluck('display_name', 'id')
+                ->all();
+        }
+
+        return view('loanmanagement::blacklist.index', compact(
+            'customers',
+            'summary',
+            'eligibleCustomers',
+            'staffNames',
+            'isKhmer',
+            'filters'
+        ));
+    }
+
+    protected function blacklistFilters(Request $request): array
+    {
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $dateRange = trim((string) $request->input('date_range', ''));
+
+        if ($dateRange !== '' && (! $request->filled('date_from') || ! $request->filled('date_to')) && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$dateFrom, $dateTo] = $parsedRange;
+        }
+
+        try {
+            $dateFrom = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->toDateString() : '';
+        } catch (\Throwable $e) {
+            $dateFrom = '';
+        }
+
+        try {
+            $dateTo = $dateTo ? \Carbon\Carbon::parse($dateTo)->toDateString() : '';
+        } catch (\Throwable $e) {
+            $dateTo = '';
+        }
+
+        if ($dateFrom !== '' && $dateTo !== '' && $dateFrom > $dateTo) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
+
+        return [
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+            'search' => trim((string) $request->input('search', '')),
+        ];
+    }
+
+    protected function applyBlacklistFilters($query, array $filters): void
+    {
+        $columns = Schema::connection('mysql_loan')->hasTable('loan_customers')
+            ? Schema::connection('mysql_loan')->getColumnListing('loan_customers')
+            : [];
+
+        if (in_array('blacklist_date', $columns, true)) {
+            if (! empty($filters['date_from'])) {
+                $query->whereDate('c.blacklist_date', '>=', $filters['date_from']);
+            }
+            if (! empty($filters['date_to'])) {
+                $query->whereDate('c.blacklist_date', '<=', $filters['date_to']);
+            }
+        }
+
+        if (($filters['search'] ?? '') !== '') {
+            $like = '%'.$filters['search'].'%';
+            $searchColumns = array_values(array_filter([
+                'customer_code',
+                'name',
+                'khmer_name',
+                'phone',
+                'id_card_number',
+                'blacklist_reason',
+            ], fn ($column) => in_array($column, $columns, true)));
+
+            if ($searchColumns) {
+                $query->where(function ($where) use ($searchColumns, $like) {
+                    foreach ($searchColumns as $column) {
+                        $where->orWhere('c.'.$column, 'like', $like);
+                    }
+                });
+            }
+        }
     }
 
     public function collectionVisits(Request $request)
@@ -236,6 +415,86 @@ class DashboardController extends Controller
             'statusOptions' => $this->installmentStatusOptions(),
             'paymentStatusOptions' => $this->installmentPaymentStatusOptions(),
             'isKhmer' => $this->loanReportIsKhmer(),
+        ]);
+    }
+
+    public function loanSchedules(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $filters = $this->loanScheduleFilters($request);
+        $perPage = (int) $request->input('per_page', 25);
+        if (! in_array($perPage, [25, 50, 100, 200], true)) {
+            $perPage = 25;
+        }
+        $emptySummary = [
+            'count' => 0,
+            'due_today' => 0,
+            'open' => 0,
+            'paid' => 0,
+            'overdue' => 0,
+            'due_total' => 0,
+            'paid_total' => 0,
+            'balance_total' => 0,
+        ];
+
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payment_schedules')
+            || ! Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'loan_id')
+            || ! Schema::connection('mysql_loan')->hasTable('loans')
+            || ! Schema::connection('mysql_loan')->hasColumn('loans', 'id')) {
+            return view('loanmanagement::schedules.index', [
+                'filters' => $filters,
+                'rows' => collect(),
+                'summary' => $emptySummary,
+                'locations' => $this->loanReportLocationOptions(),
+                'statusOptions' => $this->loanScheduleStatusOptions(),
+                'loanStatusOptions' => $this->installmentStatusOptions(),
+                'isKhmer' => $this->loanReportIsKhmer(),
+                'perPage' => $perPage,
+            ]);
+        }
+
+        $query = $this->loanScheduleQuery();
+        $this->applyLoanScheduleFilters($query, $filters);
+
+        $summaryQuery = clone $query;
+        $scheduleExpressions = $this->loanScheduleAmountExpressions();
+        $balanceExpr = $scheduleExpressions['balance'];
+        $statusExpr = Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'status')
+            ? 'LOWER(COALESCE(s.status, ""))'
+            : '""';
+        $dueDateColumn = $this->firstLoanReportColumn('loan_payment_schedules', ['due_date', 'payment_date', 'date', 'created_at']);
+        $openCondition = '('.$balanceExpr.' > 0 AND '.$statusExpr.' NOT IN ("paid", "confirmed", "completed", "cancelled", "canceled", "void"))';
+        $overdueCondition = $dueDateColumn
+            ? '('.$openCondition.' AND DATE(s.'.$dueDateColumn.') < CURDATE())'
+            : '0';
+
+        $summary = [
+            'count' => (int) (clone $summaryQuery)->count(),
+            'due_today' => $dueDateColumn ? (int) (clone $summaryQuery)->whereDate('s.'.$dueDateColumn, now()->toDateString())->count() : 0,
+            'open' => (int) (clone $summaryQuery)->whereRaw($openCondition)->count(),
+            'paid' => (int) (clone $summaryQuery)->whereRaw('('.$balanceExpr.' <= 0 OR '.$statusExpr.' IN ("paid", "confirmed", "completed"))')->count(),
+            'overdue' => (int) (clone $summaryQuery)->whereRaw($overdueCondition)->count(),
+            'due_total' => (float) (clone $summaryQuery)->sum(DB::raw($scheduleExpressions['due'])),
+            'paid_total' => (float) (clone $summaryQuery)->sum(DB::raw($scheduleExpressions['paid'])),
+            'balance_total' => (float) (clone $summaryQuery)->sum(DB::raw($balanceExpr)),
+        ];
+
+        $rows = $query
+            ->orderByRaw($dueDateColumn ? 's.'.$dueDateColumn.' IS NULL, s.'.$dueDateColumn.' ASC' : 's.id ASC')
+            ->orderBy('s.id')
+            ->paginate($perPage)
+            ->appends($request->query());
+
+        return view('loanmanagement::schedules.index', [
+            'filters' => $filters,
+            'rows' => $rows,
+            'summary' => $summary,
+            'locations' => $this->loanReportLocationOptions(),
+            'statusOptions' => $this->loanScheduleStatusOptions(),
+            'loanStatusOptions' => $this->installmentStatusOptions(),
+            'isKhmer' => $this->loanReportIsKhmer(),
+            'perPage' => $perPage,
         ]);
     }
 
@@ -1183,6 +1442,204 @@ class DashboardController extends Controller
         }
 
         return 'NULL';
+    }
+
+    protected function loanScheduleFilters(Request $request): array
+    {
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $dateRange = trim((string) $request->input('date_range', ''));
+
+        if ($dateRange !== '' && (! $request->filled('date_from') || ! $request->filled('date_to')) && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$dateFrom, $dateTo] = $parsedRange;
+        }
+
+        try {
+            $dateFrom = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->toDateString() : '';
+        } catch (\Throwable $e) {
+            $dateFrom = '';
+        }
+
+        try {
+            $dateTo = $dateTo ? \Carbon\Carbon::parse($dateTo)->toDateString() : '';
+        } catch (\Throwable $e) {
+            $dateTo = '';
+        }
+
+        if ($dateFrom !== '' && $dateTo !== '' && $dateFrom > $dateTo) {
+            [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
+        }
+
+        return [
+            'search' => trim((string) $request->input('search', '')),
+            'location_id' => trim((string) $request->input('location_id', '')),
+            'status' => trim((string) $request->input('status', '')),
+            'loan_status' => trim((string) $request->input('loan_status', '')),
+            'collector' => trim((string) $request->input('collector', '')),
+            'date_from' => $dateFrom,
+            'date_to' => $dateTo,
+        ];
+    }
+
+    protected function loanScheduleQuery()
+    {
+        $scheduleColumns = Schema::connection('mysql_loan')->getColumnListing('loan_payment_schedules');
+        $loanColumns = Schema::connection('mysql_loan')->getColumnListing('loans');
+        $dueDateColumn = $this->firstLoanReportColumn('loan_payment_schedules', ['due_date', 'payment_date', 'date', 'created_at'], $scheduleColumns);
+        $paidAtColumn = $this->firstLoanReportColumn('loan_payment_schedules', ['paid_at', 'paid_date', 'payment_date', 'updated_at'], $scheduleColumns);
+        $amountExpressions = $this->loanScheduleAmountExpressions();
+        $balanceExpr = $amountExpressions['balance'];
+        $statusExpr = in_array('status', $scheduleColumns, true) ? 'LOWER(COALESCE(s.status, ""))' : '""';
+        $loanNumberExpr = in_array('loan_number', $loanColumns, true) ? 'l.loan_number' : 'CONCAT("LN-", l.id)';
+        $invoiceExpr = in_array('source_invoice_no', $loanColumns, true)
+            ? 'l.source_invoice_no'
+            : (in_array('invoice_number_snapshot', $loanColumns, true) ? 'l.invoice_number_snapshot' : 'NULL');
+        $locationExpr = in_array('location_name_snapshot', $loanColumns, true)
+            ? 'l.location_name_snapshot'
+            : (in_array('business_location_name_snapshot', $loanColumns, true) ? 'l.business_location_name_snapshot' : 'NULL');
+        $dueDateExpr = $dueDateColumn ? 's.'.$dueDateColumn : 'NULL';
+        $dpdExpr = $dueDateColumn
+            ? 'CASE WHEN '.$balanceExpr.' > 0 AND DATE(s.'.$dueDateColumn.') < CURDATE() AND '.$statusExpr.' NOT IN ("paid", "confirmed", "completed", "cancelled", "canceled", "void") THEN DATEDIFF(CURDATE(), DATE(s.'.$dueDateColumn.')) ELSE 0 END'
+            : '0';
+
+        return DB::connection('mysql_loan')->table('loan_payment_schedules as s')
+            ->join('loans as l', 'l.id', '=', 's.loan_id')
+            ->selectRaw(
+                's.id, s.loan_id, '.
+                (in_array('installment_no', $scheduleColumns, true) ? 's.installment_no' : 's.id').' as installment_no, '.
+                $dueDateExpr.' as due_date, '.
+                ($paidAtColumn ? 's.'.$paidAtColumn : 'NULL').' as paid_at, '.
+                (in_array('status', $scheduleColumns, true) ? 's.status' : 'NULL').' as schedule_status, '.
+                $amountExpressions['principal'].' as principal_amount, '.
+                $amountExpressions['interest'].' as interest_amount, '.
+                $amountExpressions['due'].' as amount_due, '.
+                $amountExpressions['paid'].' as paid_amount, '.
+                $balanceExpr.' as balance_amount, '.
+                $dpdExpr.' as overdue_days, '.
+                $loanNumberExpr.' as loan_number, '.
+                $invoiceExpr.' as invoice_no, '.
+                (in_array('customer_name_snapshot', $loanColumns, true) ? 'l.customer_name_snapshot' : 'NULL').' as customer_name, '.
+                (in_array('customer_phone_snapshot', $loanColumns, true) ? 'l.customer_phone_snapshot' : 'NULL').' as customer_phone, '.
+                $locationExpr.' as location_name, '.
+                (in_array('collector_name_snapshot', $loanColumns, true) ? 'l.collector_name_snapshot' : 'NULL').' as collector_name, '.
+                (in_array('status', $loanColumns, true) ? 'l.status' : 'NULL').' as loan_status, '.
+                (in_array('payment_frequency', $loanColumns, true) ? 'l.payment_frequency' : 'NULL').' as payment_frequency, '.
+                (in_array('currency', $loanColumns, true) ? 'l.currency' : '"USD"').' as currency'
+            )
+            ->when(in_array('deleted_at', $scheduleColumns, true), fn ($query) => $query->whereNull('s.deleted_at'))
+            ->when(in_array('deleted_at', $loanColumns, true), fn ($query) => $query->whereNull('l.deleted_at'));
+    }
+
+    protected function loanScheduleAmountExpressions(): array
+    {
+        return [
+            'principal' => $this->coalesceSql('loan_payment_schedules', 's', ['principal_amount', 'principal_due', 'principal', 'installment_value'], '0'),
+            'interest' => $this->coalesceSql('loan_payment_schedules', 's', ['interest_amount', 'interest_due', 'interest', 'benefit_value'], '0'),
+            'due' => $this->coalesceSql('loan_payment_schedules', 's', ['schedule_amount', 'amount_due', 'total'], '0'),
+            'paid' => $this->coalesceSql('loan_payment_schedules', 's', ['paid_amount', 'amount_paid', 'paid_value'], '0'),
+            'balance' => $this->coalesceSql('loan_payment_schedules', 's', ['balance_amount', 'amount_balance'], '0'),
+        ];
+    }
+
+    protected function applyLoanScheduleFilters($query, array $filters): void
+    {
+        $scheduleColumns = Schema::connection('mysql_loan')->getColumnListing('loan_payment_schedules');
+        $loanColumns = Schema::connection('mysql_loan')->getColumnListing('loans');
+        $dueDateColumn = $this->firstLoanReportColumn('loan_payment_schedules', ['due_date', 'payment_date', 'date', 'created_at'], $scheduleColumns);
+        $amountExpressions = $this->loanScheduleAmountExpressions();
+        $balanceExpr = $amountExpressions['balance'];
+        $paidExpr = $amountExpressions['paid'];
+
+        if ($dueDateColumn && ! empty($filters['date_from'])) {
+            $query->whereDate('s.'.$dueDateColumn, '>=', $filters['date_from']);
+        }
+        if ($dueDateColumn && ! empty($filters['date_to'])) {
+            $query->whereDate('s.'.$dueDateColumn, '<=', $filters['date_to']);
+        }
+        if (! empty($filters['status'])) {
+            $status = strtolower((string) $filters['status']);
+            if (in_array('status', $scheduleColumns, true)) {
+                $query->whereRaw('LOWER(COALESCE(s.status, "")) = ?', [$status]);
+            } elseif (in_array($status, ['paid', 'confirmed', 'completed'], true)) {
+                $query->whereRaw('('.$balanceExpr.') <= 0');
+            } elseif ($status === 'partial') {
+                $query->whereRaw('('.$paidExpr.') > 0 AND ('.$balanceExpr.') > 0');
+            } elseif (in_array($status, ['unpaid', 'pending', 'late', 'overdue'], true)) {
+                $query->whereRaw('('.$balanceExpr.') > 0');
+            }
+        }
+        if (! empty($filters['loan_status']) && in_array('status', $loanColumns, true)) {
+            $query->where('l.status', $filters['loan_status']);
+        }
+        if (! empty($filters['collector'])) {
+            foreach (['collector_name_snapshot', 'assigned_collector_id'] as $column) {
+                if (in_array($column, $loanColumns, true)) {
+                    $query->where('l.'.$column, 'like', '%'.$filters['collector'].'%');
+                    break;
+                }
+            }
+        }
+        if (! empty($filters['location_id'])) {
+            $locationFilter = $this->parseYearlyLocationFilter((string) $filters['location_id']);
+            if (! empty($locationFilter)) {
+                $query->where(function ($where) use ($locationFilter, $loanColumns) {
+                    if (! empty($locationFilter['loan_location_id']) && in_array('business_location_id', $loanColumns, true)) {
+                        $where->orWhere('l.business_location_id', (int) $locationFilter['loan_location_id']);
+                    }
+                    if (! empty($locationFilter['main_location_id']) && in_array('main_location_id', $loanColumns, true)) {
+                        $where->orWhere('l.main_location_id', (int) $locationFilter['main_location_id']);
+                    }
+                    if (! empty($locationFilter['legacy_id'])) {
+                        if (in_array('business_location_id', $loanColumns, true)) {
+                            $where->orWhere('l.business_location_id', (int) $locationFilter['legacy_id']);
+                        }
+                        if (in_array('main_location_id', $loanColumns, true)) {
+                            $where->orWhere('l.main_location_id', (int) $locationFilter['legacy_id']);
+                        }
+                    }
+                    if (! empty($locationFilter['name'])) {
+                        foreach (['location_name_snapshot', 'business_location_name_snapshot'] as $column) {
+                            if (in_array($column, $loanColumns, true)) {
+                                $where->orWhere('l.'.$column, $locationFilter['name']);
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        if (($filters['search'] ?? '') !== '') {
+            $like = '%'.$filters['search'].'%';
+            $query->where(function ($where) use ($scheduleColumns, $loanColumns, $like) {
+                foreach (['id', 'installment_no'] as $column) {
+                    if (in_array($column, $scheduleColumns, true)) {
+                        $where->orWhere('s.'.$column, 'like', $like);
+                    }
+                }
+                foreach (['loan_number', 'source_invoice_no', 'invoice_number_snapshot', 'customer_name_snapshot', 'customer_phone_snapshot', 'collector_name_snapshot'] as $column) {
+                    if (in_array($column, $loanColumns, true)) {
+                        $where->orWhere('l.'.$column, 'like', $like);
+                    }
+                }
+            });
+        }
+    }
+
+    protected function loanScheduleStatusOptions(): array
+    {
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payment_schedules') || ! Schema::connection('mysql_loan')->hasColumn('loan_payment_schedules', 'status')) {
+            return ['pending' => 'Pending', 'partial' => 'Partial', 'paid' => 'Paid', 'overdue' => 'Overdue'];
+        }
+
+        $options = DB::connection('mysql_loan')->table('loan_payment_schedules')
+            ->whereNotNull('status')
+            ->where('status', '!=', '')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status', 'status')
+            ->mapWithKeys(fn ($value) => [$value => ucwords(str_replace('_', ' ', (string) $value))])
+            ->all();
+
+        return $options ?: ['pending' => 'Pending', 'partial' => 'Partial', 'paid' => 'Paid', 'overdue' => 'Overdue'];
     }
 
     protected function recentActivityFilters(Request $request): array

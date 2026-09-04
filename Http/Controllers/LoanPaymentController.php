@@ -15,7 +15,6 @@ class LoanPaymentController extends Controller
     public function index(Request $request)
     {
         abort_if(! Schema::connection($this->connection)->hasTable('loan_payments'), 404);
-        $this->ensurePaymentTypeColumn();
 
         $filters = $request->only([
             'search',

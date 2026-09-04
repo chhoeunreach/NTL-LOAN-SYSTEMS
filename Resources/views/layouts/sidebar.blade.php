@@ -38,8 +38,8 @@
         [
             'label' => $lmText('Loan Management', 'ការគ្រប់គ្រងកម្ចី'),
             'items' => [
-                ['label' => $lmText('New Loan', 'កម្ចីថ្មី'), 'icon' => 'fa fa-plus-circle', 'route' => 'loan-management.loans.create', 'can' => 'loan_management.loans.create|loan_management.create', 'tone' => 'blue'],
                 ['label' => $lmText('Loan Applications', 'ពាក្យស្នើសុំកម្ចី'), 'icon' => 'fa fa-file-text-o', 'tone' => 'slate', 'children' => [
+                    ['label' => $lmText('New Loan', 'កម្ចីថ្មី'), 'route' => 'loan-management.loans.create', 'can' => 'loan_management.loans.create|loan_management.create'],
                     ['label' => $lmText('All Loans', 'បញ្ជីកម្ចីទាំងអស់'), 'route' => 'loan-management.loans', 'can' => 'loan_management.loans.view|loan_management.view'],
                     ['label' => $lmText('Loan Calculator', 'ម៉ាស៊ីនគណនាកម្ចី'), 'route' => 'loan-management.loans.calculator', 'can' => 'loan_management.loans.create|loan_management.create'],
                 ]],
@@ -81,14 +81,13 @@
                 ['label' => $lmText('Cash & Bank', 'សាច់ប្រាក់ និងធនាគារ'), 'icon' => 'fa fa-bank', 'route' => 'loan-management.payments.index', 'params' => ['payment_type' => 'loan'], 'can' => 'loan_management.view', 'tone' => 'cyan'],
                 ['label' => $lmText('Income', 'ចំណូល'), 'icon' => 'fa fa-level-up', 'route' => 'loan-management.payments.index', 'params' => ['payment_type' => 'monthly'], 'can' => 'loan_management.view', 'tone' => 'cyan'],
                 ['label' => $lmText('Expenses', 'ចំណាយ'), 'icon' => 'fa fa-level-down', 'route' => 'loan-management.reports.payments', 'can' => 'loan_management.view', 'tone' => 'orange'],
-                ['label' => $lmText('Accounting', 'គណនេយ្យ'), 'icon' => 'fa fa-book', 'route' => 'loan-management.payment-history.index', 'can' => 'loan_management.view', 'tone' => 'cyan'],
             ],
         ],
         [
             'label' => $lmText('Reports', 'របាយការណ៍'),
             'items' => [
                 ['label' => $lmText('Loan Reports', 'របាយការណ៍កម្ចី'), 'icon' => 'fa fa-pie-chart', 'tone' => 'blue', 'children' => [
-                    ['label' => $lmText('Installment Reports', 'របាយការណ៍រំលស់'), 'route' => 'loan-management.reports.index', 'can' => 'loan_management.reports.view|loan_management.view'],
+                    ['label' => $lmText('Loan Reports', 'របាយការណ៍កម្ចី'), 'route' => 'loan-management.reports.index', 'can' => 'loan_management.reports.view|loan_management.view'],
                     ['label' => $lmText('Daily Loan Summary', 'សង្ខេបកម្ចីប្រចាំថ្ងៃ'), 'route' => 'loan-management.reports.daily-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],
                     ['label' => $lmText('Monthly Loan Summary', 'សង្ខេបកម្ចីប្រចាំខែ'), 'route' => 'loan-management.reports.monthly-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],
                     ['label' => $lmText('Yearly Loan Summary', 'សង្ខេបកម្ចីប្រចាំឆ្នាំ'), 'route' => 'loan-management.reports.yearly-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],

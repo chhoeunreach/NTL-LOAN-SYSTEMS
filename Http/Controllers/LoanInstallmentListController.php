@@ -817,7 +817,52 @@ class LoanInstallmentListController extends Controller
             }
         }
 
-        return view('loanmanagement::loans.index', compact('locations', 'collectors'));
+        $statusCounts = $this->getLoanStatusCounts();
+
+        return view('loanmanagement::loans.index', compact('locations', 'collectors', 'statusCounts'));
+    }
+
+    protected function getLoanStatusCounts(): array
+    {
+        $statusCounts = [
+            'all' => 0,
+            'pending' => 0,
+            'approved' => 0,
+            'active' => 0,
+            'completed' => 0,
+            'rejected' => 0,
+            'cancelled' => 0,
+            'blacklist' => 0,
+        ];
+
+        if ($this->loanTableExists('loans')) {
+            $statusCounts['all'] = (int) DB::connection('mysql_loan')->table('loans')->whereNull('deleted_at')->count();
+
+            $counts = DB::connection('mysql_loan')->table('loans')
+                ->whereNull('deleted_at')
+                ->selectRaw('LOWER(COALESCE(status, "pending")) as st, count(*) as cnt')
+                ->groupBy(DB::raw('LOWER(COALESCE(status, "pending"))'))
+                ->pluck('cnt', 'st')
+                ->all();
+
+            foreach (['pending', 'approved', 'active', 'completed', 'rejected', 'cancelled'] as $st) {
+                $statusCounts[$st] = (int) ($counts[$st] ?? 0);
+            }
+        }
+
+        if ($this->loanTableExists('loan_customers') && $this->loanTableHasCol('loan_customers', 'blacklist_status')) {
+            $statusCounts['blacklist'] = (int) DB::connection('mysql_loan')->table('loan_customers')
+                ->where('blacklist_status', 1)
+                ->whereNull('deleted_at')
+                ->count();
+        } elseif ($this->loanTableExists('loans') && $this->hasCol('blacklisted_at')) {
+            $statusCounts['blacklist'] = (int) DB::connection('mysql_loan')->table('loans')
+                ->whereNotNull('blacklisted_at')
+                ->whereNull('deleted_at')
+                ->count();
+        }
+
+        return $statusCounts;
     }
 
     public function data(Request $request)
@@ -835,6 +880,19 @@ class LoanInstallmentListController extends Controller
             ? 'COALESCE(NULLIF(c.khmer_name, ""), '.($this->hasCol('customer_name_snapshot') ? 'l.customer_name_snapshot' : 'NULL').')'
             : ($this->hasCol('customer_name_snapshot') ? 'l.customer_name_snapshot' : 'NULL');
 
+        $hasSchedules = $this->loanTableExists('loan_payment_schedules');
+        $nextDueExpr = $hasSchedules
+            ? '(SELECT MIN(due_date) FROM loan_payment_schedules WHERE loan_id = l.id AND status = "pending" AND deleted_at IS NULL)'
+            : 'NULL';
+        $paidInstallmentsExpr = $hasSchedules
+            ? '(SELECT COUNT(*) FROM loan_payment_schedules WHERE loan_id = l.id AND status = "paid" AND deleted_at IS NULL)'
+            : '0';
+
+        $hasItems = $this->loanTableExists('loan_items');
+        $itemPriceExpr = $hasItems
+            ? 'COALESCE((SELECT unit_price FROM loan_items WHERE loan_id = l.id AND deleted_at IS NULL AND unit_price > 0 LIMIT 1), ('.($this->hasCol('principal_amount') ? 'l.principal_amount' : '0').' + COALESCE('.($this->hasCol('down_payment') ? 'l.down_payment' : '0').', 0)))'
+            : '('.($this->hasCol('principal_amount') ? 'l.principal_amount' : '0').' + COALESCE('.($this->hasCol('down_payment') ? 'l.down_payment' : '0').', 0))';
+
         $q = DB::connection('mysql_loan')->table('loans as l')
             ->when($canJoinCustomers, function ($query) {
                 $query->leftJoin('loan_customers as c', 'c.id', '=', 'l.customer_id');
@@ -847,6 +905,15 @@ class LoanInstallmentListController extends Controller
                 ($canJoinCustomers && $this->loanTableHasCol('loan_customers', 'telegram_chat_id') ? 'c.telegram_chat_id' : 'NULL').' as telegram_chat_id, '.
                 $customerNameExpr.' as customer_name_snapshot, '.
                 ($this->hasCol('customer_phone_snapshot') ? 'l.customer_phone_snapshot' : 'NULL').' as customer_phone_snapshot, '.
+                ($this->hasCol('product_name_snapshot') ? 'l.product_name_snapshot' : 'NULL').' as product_name_snapshot, '.
+                ($this->hasCol('imei_snapshot') ? 'l.imei_snapshot' : 'NULL').' as imei_snapshot, '.
+                $itemPriceExpr.' as item_price, '.
+                ($this->hasCol('installment_count') ? 'l.installment_count' : '0').' as installment_count, '.
+                ($this->hasCol('payment_frequency') ? 'l.payment_frequency' : "'monthly'").' as payment_frequency, '.
+                ($this->hasCol('total_amount') ? 'l.total_amount' : 'l.principal_amount').' as total_amount, '.
+                ($this->hasCol('down_payment') ? 'l.down_payment' : '0').' as down_payment, '.
+                $nextDueExpr.' as next_due_date, '.
+                $paidInstallmentsExpr.' as paid_installments, '.
                 ($this->hasCol('main_location_id') ? 'l.main_location_id' : 'NULL').' as main_location_id, '.
                 ($this->hasCol('business_location_id') ? 'l.business_location_id' : 'NULL').' as business_location_id, '.
                 ($this->hasCol('location_name_snapshot') ? 'l.location_name_snapshot' : ($this->hasCol('business_location_id') ? "CONCAT('Location #', l.business_location_id)" : 'NULL')).' as location_name_snapshot, '.
@@ -863,8 +930,7 @@ class LoanInstallmentListController extends Controller
 
         $listDateColumn = $this->hasCol('loan_date') ? 'loan_date' : ($this->hasCol('created_at') ? 'created_at' : null);
         if ($listDateColumn) {
-            $startDate = $this->cleanLoanDateFilter($request->input('start_date'));
-            $endDate = $this->cleanLoanDateFilter($request->input('end_date'));
+            [$startDate, $endDate] = $this->loanListDateRange($request);
             if ($startDate) $q->whereDate('l.'.$listDateColumn, '>=', $startDate);
             if ($endDate) $q->whereDate('l.'.$listDateColumn, '<=', $endDate);
         }
@@ -937,9 +1003,12 @@ class LoanInstallmentListController extends Controller
                         ['source_invoice_no', 'l.source_invoice_no'],
                         ['customer_name_snapshot', 'l.customer_name_snapshot'],
                         ['customer_phone_snapshot', 'l.customer_phone_snapshot'],
+                        ['product_name_snapshot', 'l.product_name_snapshot'],
+                        ['imei_snapshot', 'l.imei_snapshot'],
                         ['business_location_name_snapshot', 'l.business_location_name_snapshot'],
                         ['collector_name_snapshot', 'l.collector_name_snapshot'],
                         ['principal_amount', 'l.principal_amount'],
+                        ['total_amount', 'l.total_amount'],
                         ['paid_amount', 'l.paid_amount'],
                         ['balance_amount', 'l.balance_amount'],
                         ['status', 'l.status'],
@@ -963,9 +1032,73 @@ class LoanInstallmentListController extends Controller
                     }
                 });
             })
+            ->editColumn('item_price', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.($r->item_price ?? 0).'</span>')
             ->editColumn('principal_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->principal_amount.'</span>')
+            ->editColumn('total_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.($r->total_amount ?? $r->principal_amount).'</span>')
             ->editColumn('paid_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->paid_amount.'</span>')
             ->editColumn('balance_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->balance_amount.'</span>')
+            ->editColumn('product_name_snapshot', function ($r) {
+                $product = trim((string) ($r->product_name_snapshot ?? ''));
+                if ($product === '') {
+                    return '<span class="text-muted">-</span>';
+                }
+                $html = '<div style="font-weight:600; color:#1e293b; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'.e($product).'">'.e($product).'</div>';
+                $imei = trim((string) ($r->imei_snapshot ?? ''));
+                if ($imei !== '') {
+                    $html .= '<small class="text-muted" style="font-size:11px; font-family:monospace;"><i class="fa fa-barcode"></i> '.e($imei).'</small>';
+                }
+                return $html;
+            })
+            ->addColumn('installment_terms', function ($r) {
+                $count = (int) ($r->installment_count ?? 0);
+                $freq = ucfirst((string) ($r->payment_frequency ?? 'monthly'));
+                if ($count <= 0) {
+                    return '<span class="text-muted">-</span>';
+                }
+                $paid = (int) ($r->paid_installments ?? 0);
+                $badge = $paid > 0
+                    ? '<span class="badge" style="background:rgba(var(--lm-primary-rgb), 0.12); color:var(--lm-primary); font-weight:700; font-size:11px; padding:3px 7px; border-radius:6px; margin-left:4px;">'.$paid.'/'.$count.'</span>'
+                    : '';
+                return '<div style="white-space:nowrap;"><strong style="color:#0f172a;">'.$count.' '.($count == 1 ? 'Term' : 'Terms').'</strong> '.$badge.'<br><small class="text-muted" style="font-size:11px;">'.$freq.'</small></div>';
+            })
+            ->addColumn('next_due_date', function ($r) {
+                $due = $r->next_due_date ?? null;
+                if (! $due) {
+                    if (in_array(strtolower((string) $r->status), ['completed', 'closed'])) {
+                        return '<span class="text-success" style="font-weight:700; font-size:12px;"><i class="fa fa-check-circle"></i> Paid Off</span>';
+                    }
+                    return '<span class="text-muted">-</span>';
+                }
+                try {
+                    $dueDate = \Carbon\Carbon::parse($due);
+                    $now = \Carbon\Carbon::today();
+                    $diffDays = $now->diffInDays($dueDate, false);
+
+                    $formattedDate = $dueDate->format('d M Y');
+                    if ($diffDays < 0) {
+                        $days = abs($diffDays);
+                        return '<div style="white-space:nowrap;"><strong class="text-danger">'.$formattedDate.'</strong><br><span class="label label-danger" style="font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:2px;"><i class="fa fa-exclamation-triangle"></i> '.$days.'d Overdue</span></div>';
+                    } elseif ($diffDays === 0) {
+                        return '<div style="white-space:nowrap;"><strong style="color:#d97706;">'.$formattedDate.'</strong><br><span class="label label-warning" style="font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:2px;"><i class="fa fa-clock-o"></i> Due Today</span></div>';
+                    } else {
+                        return '<div style="white-space:nowrap;"><span style="color:#334155; font-weight:600;">'.$formattedDate.'</span><br><small class="text-muted" style="font-size:11px;">in '.$diffDays.' days</small></div>';
+                    }
+                } catch (\Exception $e) {
+                    return e($due);
+                }
+            })
+            ->addColumn('repayment_progress', function ($r) {
+                $total = (float) ($r->total_amount > 0 ? $r->total_amount : $r->principal_amount);
+                $paid = (float) ($r->paid_amount ?? 0);
+                $pct = $total > 0 ? min(100, (int) round(($paid / $total) * 100)) : 0;
+                $barColor = $pct >= 100 ? '#10b981' : ($pct >= 50 ? 'var(--lm-primary)' : '#f59e0b');
+                return '<div style="min-width:85px;" title="'.$pct.'% paid">
+                    <div style="font-size:11px; font-weight:700; margin-bottom:3px; color:#475569; text-align:right;">'.$pct.'%</div>
+                    <div style="background:#e2e8f0; border-radius:4px; height:6px; overflow:hidden;">
+                        <div style="width:'.$pct.'%; background:'.$barColor.'; height:100%; border-radius:4px;"></div>
+                    </div>
+                </div>';
+            })
             ->editColumn('location_name_snapshot', function ($r) {
                 return e($this->resolveLocationDisplay($r));
             })
@@ -1030,7 +1163,8 @@ class LoanInstallmentListController extends Controller
 
                 return $actions;
             })
-            ->rawColumns(['status', 'principal_amount', 'paid_amount', 'balance_amount', 'action'])
+            ->rawColumns(['status', 'item_price', 'principal_amount', 'total_amount', 'paid_amount', 'balance_amount', 'product_name_snapshot', 'installment_terms', 'next_due_date', 'repayment_progress', 'action'])
+            ->with('status_counts', $this->getLoanStatusCounts())
             ->make(true);
     }
 
@@ -1039,6 +1173,75 @@ class LoanInstallmentListController extends Controller
         $value = trim((string) $value);
 
         return preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) ? $value : null;
+    }
+
+    protected function loanListDateRange(Request $request): array
+    {
+        $startDate = $this->parseLoanDateFilter($request->input('date_from', $request->input('start_date')));
+        $endDate = $this->parseLoanDateFilter($request->input('date_to', $request->input('end_date')));
+        $dateRange = trim((string) $request->input('date_range', ''));
+
+        if ($dateRange !== '' && (! $startDate || ! $endDate)) {
+            $parsed = $this->parseLoanDateRangeFilter($dateRange);
+            if ($parsed) {
+                [$startDate, $endDate] = $parsed;
+            }
+        }
+
+        if ($startDate && $endDate && $startDate > $endDate) {
+            [$startDate, $endDate] = [$endDate, $startDate];
+        }
+
+        return [$startDate, $endDate];
+    }
+
+    protected function parseLoanDateRangeFilter(string $dateRange): ?array
+    {
+        $normalized = trim(str_replace(['–', '—', ' to '], ['-', '-', ' - '], $dateRange));
+
+        foreach ([' ~ ', '~', ' - '] as $separator) {
+            if (! str_contains($normalized, $separator)) {
+                continue;
+            }
+
+            [$from, $to] = array_map('trim', explode($separator, $normalized, 2));
+            $from = $this->parseLoanDateFilter($from);
+            $to = $this->parseLoanDateFilter($to);
+
+            return $from && $to ? [$from, $to] : null;
+        }
+
+        return null;
+    }
+
+    protected function parseLoanDateFilter($value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if ($date = $this->cleanLoanDateFilter($value)) {
+            return $date;
+        }
+
+        foreach (['m-d-Y', 'd-m-Y', 'm/d/Y', 'd/m/Y'] as $format) {
+            try {
+                $parsed = \Carbon\Carbon::createFromFormat($format, $value);
+                if ($parsed && $parsed->format($format) === $value) {
+                    return $parsed->toDateString();
+                }
+            } catch (\Throwable $e) {
+                continue;
+            }
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->toDateString();
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 
     public function printModal(int $loan)

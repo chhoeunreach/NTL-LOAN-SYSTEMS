@@ -6,6 +6,17 @@
     $bi = fn ($en, $km) => $isKhmer ? $km : $en;
     $money = fn ($value) => '$'.number_format((float) ($value ?? 0), 2);
     $number = fn ($value) => number_format((float) ($value ?? 0), 0);
+    $visibleTableMetrics = [
+        'loan_count', 'principal_total', 'interest_total', 'loan_total',
+        'paid_customer_count', 'collection_payment_total', 'deposit_payment_total', 'payment_total',
+        'closed_count', 'closed_principal_total', 'closed_interest_total', 'closed_loan_total', 'closed_paid_total', 'closed_balance_total',
+        'bad_count', 'bad_principal_total', 'bad_interest_total', 'bad_loan_total', 'bad_paid_total', 'bad_balance_total',
+    ];
+    $hasMetricValue = fn ($value) => $value !== null && $value !== '' && (float) $value != 0.0;
+    $rowHasVisibleData = fn ($row) => collect($visibleTableMetrics)->contains(fn ($field) => $hasMetricValue($row[$field] ?? 0));
+    $displayRows = array_values(array_filter($payload['rows'] ?? [], $rowHasVisibleData));
+    $rowMoney = fn ($value) => ! $hasMetricValue($value) ? '' : $money($value);
+    $rowNumber = fn ($value) => ! $hasMetricValue($value) ? '' : $number($value);
     $yearOptions = range((int) now()->format('Y'), 2000);
     $dateFrom = $filters['date_from'] ?? ($filters['start_year'].'-01-01');
     $dateTo = $filters['date_to'] ?? ($filters['end_year'].'-12-31');
@@ -394,32 +405,36 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($payload['rows'] as $row)
+                    @forelse($displayRows as $row)
                         <tr data-loan-detail-year="{{ $row['year'] }}" title="{{ $bi('Click to view loan details', 'ចុចដើម្បីមើលព័ត៌មានលម្អិតកម្ចី') }}">
                             <td class="text-center">{{ $loop->iteration }}</td>
                             <td class="text-center"><strong>{{ $row['year'] }}</strong></td>
-                            <td class="text-right">{{ $number($row['loan_count']) }}</td>
-                            <td class="text-right">{{ $money($row['principal_total']) }}</td>
-                            <td class="text-right">{{ $money($row['interest_total']) }}</td>
-                            <td class="text-right">{{ $money($row['loan_total']) }}</td>
-                            <td class="text-right">{{ $number($row['paid_customer_count']) }}</td>
-                            <td class="text-right">{{ $money($row['collection_payment_total']) }}</td>
-                            <td class="text-right">{{ $money($row['deposit_payment_total']) }}</td>
-                            <td class="text-right">{{ $money($row['payment_total']) }}</td>
-                            <td class="text-right">{{ $number($row['closed_count']) }}</td>
-                            <td class="text-right">{{ $money($row['closed_principal_total']) }}</td>
-                            <td class="text-right">{{ $money($row['closed_interest_total']) }}</td>
-                            <td class="text-right">{{ $money($row['closed_loan_total']) }}</td>
-                            <td class="text-right">{{ $money($row['closed_paid_total']) }}</td>
-                            <td class="text-right">{{ $money($row['closed_balance_total']) }}</td>
-                            <td class="text-right">{{ $number($row['bad_count']) }}</td>
-                            <td class="text-right">{{ $money($row['bad_principal_total']) }}</td>
-                            <td class="text-right">{{ $money($row['bad_interest_total']) }}</td>
-                            <td class="text-right">{{ $money($row['bad_loan_total']) }}</td>
-                            <td class="text-right">{{ $money($row['bad_paid_total']) }}</td>
-                            <td class="text-right">{{ $money($row['bad_balance_total']) }}</td>
+                            <td class="text-right">{{ $rowNumber($row['loan_count']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['principal_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['interest_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['loan_total']) }}</td>
+                            <td class="text-right">{{ $rowNumber($row['paid_customer_count']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['collection_payment_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['deposit_payment_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['payment_total']) }}</td>
+                            <td class="text-right">{{ $rowNumber($row['closed_count']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['closed_principal_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['closed_interest_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['closed_loan_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['closed_paid_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['closed_balance_total']) }}</td>
+                            <td class="text-right">{{ $rowNumber($row['bad_count']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['bad_principal_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['bad_interest_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['bad_loan_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['bad_paid_total']) }}</td>
+                            <td class="text-right">{{ $rowMoney($row['bad_balance_total']) }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="22" class="text-center text-muted">{{ $bi('No data found for this date range.', 'រកមិនឃើញទិន្នន័យសម្រាប់ចន្លោះថ្ងៃនេះទេ។') }}</td>
+                        </tr>
+                    @endforelse
                 </tbody>
                 <tfoot>
                     @php($total = $payload['totals'])
