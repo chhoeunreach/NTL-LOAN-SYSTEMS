@@ -2,6 +2,7 @@
     $businessLogoUrl = \Modules\LoanManagement\Services\BusinessSettingsService::publicLogoUrl();
     $businessName = \Modules\LoanManagement\Services\BusinessSettingsService::businessName();
     $themeColor = $settings['theme_color'] ?? '#2563eb';
+    $customerUser = Auth::guard('customer_loan')->user();
 @endphp
 <!doctype html>
 <html lang="en">
@@ -53,6 +54,16 @@
             <div class="body">
                 <h1>Customer Registration</h1>
                 <p class="muted">Create your customer account. Our team can review your information and contact you for the next step.</p>
+
+                @if($customerUser)
+                    <div style="margin-bottom: 18px; padding: 12px 16px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                        <div>
+                            <strong style="color: #1e40af; display: block; font-size: 14px;">👤 You are currently logged in as {{ $customerUser->name }}</strong>
+                            <span style="color: #3b82f6; font-size: 12px;">You can go to your dashboard, or submit this form to register an additional customer account.</span>
+                        </div>
+                        <a href="{{ route('loan-management.public.customer-dashboard') }}" style="display: inline-flex; align-items: center; padding: 6px 12px; background: #2563eb; color: #fff; border-radius: 6px; font-weight: 800; font-size: 12px; text-decoration: none;">Go to Dashboard</a>
+                    </div>
+                @endif
 
                 @if ($errors->any())
                     <div class="errors">{{ $errors->first() }}</div>

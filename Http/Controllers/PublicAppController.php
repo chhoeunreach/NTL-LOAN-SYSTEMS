@@ -129,8 +129,10 @@ class PublicAppController extends Controller
     public function customerLogout(Request $request)
     {
         Auth::guard('customer_loan')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if (! Auth::guard('web')->check() && ! Auth::check()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return redirect()->route('loan-management.public.home');
     }

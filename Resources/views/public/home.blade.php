@@ -6,6 +6,9 @@
     $subtitle = $settings['home_subtitle'] ?? '';
     $body = $settings['home_body'] ?? '';
     $themeColor = $settings['theme_color'] ?? '#2563eb';
+
+    $customerUser = Auth::guard('customer_loan')->user();
+    $adminUser = Auth::guard('web')->user() ?? Auth::user();
 @endphp
 <!doctype html>
 <html lang="en">
@@ -28,10 +31,14 @@
         .menu { display: flex; align-items: center; gap: 6px; }
         .menu a { min-height: 38px; display: inline-flex; align-items: center; padding: 0 12px; border-radius: 6px; color: #334155; text-decoration: none; font-size: 14px; font-weight: 800; }
         .menu a:hover { background: #eef4fb; color: #0f172a; }
-        .nav-actions { display: flex; align-items: center; gap: 10px; }
-        .button, .button-outline { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 6px; text-decoration: none; font-weight: 800; border: 1px solid transparent; cursor: pointer; }
+        .nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .button, .button-outline, .button-danger-outline { min-height: 42px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; border-radius: 6px; text-decoration: none; font-weight: 800; border: 1px solid transparent; cursor: pointer; transition: all .15s ease-in-out; font-size: 14px; gap: 6px; }
         .button { color: #fff; background: var(--public-primary); border-color: var(--public-primary); }
+        .button:hover { opacity: .92; }
         .button-outline { color: #0f172a; background: #fff; border-color: #dbe4ef; }
+        .button-outline:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .button-danger-outline { color: #dc2626; background: #fff; border-color: #fee2e2; }
+        .button-danger-outline:hover { background: #fef2f2; border-color: #fca5a5; }
         .hero { color: #fff; background: linear-gradient(90deg, rgba(7,18,33,.88), rgba(7,18,33,.58), rgba(7,18,33,.25)), @if($loginBackgroundUrl) url('{{ $loginBackgroundUrl }}') @else linear-gradient(135deg, #12324e, #607d95) @endif; background-size: cover; background-position: center; }
         .hero-inner { width: min(1180px, calc(100% - 32px)); min-height: calc(78vh - 72px); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 42px; align-items: center; padding: 64px 0 92px; }
         .hero-copy { max-width: 720px; }
@@ -112,9 +119,49 @@
                     <a href="#cart">Cart</a>
                 </nav>
                 <div class="nav-actions">
-                    <a class="button-outline" href="{{ route('login') }}">Admin Login</a>
-                    <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>
-                    <a class="button" href="{{ route('loan-management.public.register') }}">Register</a>
+                    @if($customerUser && $adminUser)
+                        <a class="button" href="{{ route('loan-management.public.customer-dashboard') }}">
+                            👤 {{ $customerUser->name ?: 'Customer' }}
+                        </a>
+                        <a class="button-outline" href="{{ route('loan-management.dashboard') }}">
+                            ⚡ Admin Panel
+                        </a>
+                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}" title="Switch customer account">
+                            Switch Customer
+                        </a>
+                        <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0; display: inline;">
+                            @csrf
+                            <button class="button-danger-outline" type="submit">Logout</button>
+                        </form>
+                    @elseif($customerUser)
+                        <a class="button" href="{{ route('loan-management.public.customer-dashboard') }}">
+                            👤 {{ $customerUser->name ?: 'Customer' }} Dashboard
+                        </a>
+                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}" title="Switch or add another customer account">
+                            Switch / Add Account
+                        </a>
+                        <a class="button-outline" href="{{ route('login') }}">
+                            Admin Login
+                        </a>
+                        <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0; display: inline;">
+                            @csrf
+                            <button class="button-danger-outline" type="submit">Logout</button>
+                        </form>
+                    @elseif($adminUser)
+                        <a class="button" href="{{ route('loan-management.dashboard') }}">
+                            ⚡ Admin Panel ({{ $adminUser->name ?? $adminUser->username ?? 'Admin' }})
+                        </a>
+                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">
+                            Customer Portal / Switch
+                        </a>
+                        <a class="button-outline" href="{{ route('loan-management.public.register') }}">
+                            Register Customer
+                        </a>
+                    @else
+                        <a class="button-outline" href="{{ route('login') }}">Admin Login</a>
+                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>
+                        <a class="button" href="{{ route('loan-management.public.register') }}">Register</a>
+                    @endif
                 </div>
             </div>
         </header>
@@ -131,8 +178,16 @@
                         <p class="body-copy">{{ $body }}</p>
                     @endif
                     <div class="hero-cta">
-                        <a class="button" href="#products">Shop Products</a>
-                        <a class="button-outline" href="{{ route('loan-management.public.register') }}">Apply Now</a>
+                        @if($customerUser)
+                            <a class="button" href="{{ route('loan-management.public.customer-dashboard') }}">Go to My Dashboard</a>
+                            <a class="button-outline" href="#products">Shop Products</a>
+                        @elseif($adminUser)
+                            <a class="button" href="{{ route('loan-management.dashboard') }}">Open Admin Dashboard</a>
+                            <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Customer Login / Switch</a>
+                        @else
+                            <a class="button" href="#products">Shop Products</a>
+                            <a class="button-outline" href="{{ route('loan-management.public.register') }}">Apply Now</a>
+                        @endif
                     </div>
                 </div>
                 <aside class="hero-card">
@@ -207,9 +262,18 @@
             <div class="footer-inner">
                 <span>{{ $businessName }}</span>
                 <span>
-                    <a href="{{ route('login') }}">Admin Login</a>
-                    &nbsp;|&nbsp;
-                    <a href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>
+                    @if($customerUser)
+                        <a href="{{ route('loan-management.public.customer-dashboard') }}">Customer Dashboard</a>
+                        &nbsp;|&nbsp;
+                    @endif
+                    @if($adminUser)
+                        <a href="{{ route('loan-management.dashboard') }}">Admin Dashboard</a>
+                        &nbsp;|&nbsp;
+                    @else
+                        <a href="{{ route('login') }}">Admin Login</a>
+                        &nbsp;|&nbsp;
+                    @endif
+                    <a href="{{ route('loan-management.public.customer-login') }}">Customer Portal</a>
                 </span>
             </div>
         </footer>

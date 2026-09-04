@@ -4,6 +4,7 @@
     $themeColor = $settings['theme_color'] ?? '#2563eb';
     $money = function ($value) { return number_format((float) ($value ?? 0), 2); };
     $displayName = trim((string) ($customer->khmer_name ?? '')) ?: trim((string) ($customer->name ?? 'Customer'));
+    $adminUser = Auth::guard('web')->user() ?? Auth::user();
 @endphp
 <!doctype html>
 <html lang="en">
@@ -20,10 +21,12 @@
         .brand { display: inline-flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 800; text-decoration: none; }
         .logo { width: 42px; height: 42px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; background: #edf3fb; color: var(--public-primary); }
         .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .topbar-actions { display: flex; align-items: center; gap: 10px; }
-        .btn-website { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #dbe4ef; background: #fff; color: #334155; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; text-decoration: none; transition: all .15s ease-in-out; }
-        .btn-website:hover { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
-        .btn-website svg { width: 16px; height: 16px; }
+        .topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .btn-topbar { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #dbe4ef; background: #fff; color: #334155; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; text-decoration: none; transition: all .15s ease-in-out; }
+        .btn-topbar:hover { background: #f1f5f9; color: #0f172a; border-color: #cbd5e1; }
+        .btn-topbar svg { width: 16px; height: 16px; }
+        .btn-admin-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e9d5ff; background: #faf5ff; color: #7e22ce; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; text-decoration: none; transition: all .15s ease-in-out; }
+        .btn-admin-pill:hover { background: #f3e8ff; border-color: #d8b4fe; }
         .logout { border: 1px solid #fee2e2; background: #fff; color: #dc2626; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; cursor: pointer; transition: all .15s ease-in-out; }
         .logout:hover { background: #fef2f2; border-color: #fca5a5; }
         .wrap { width: min(1180px, calc(100% - 32px)); margin: 26px auto 44px; }
@@ -62,7 +65,7 @@
                 <span>{{ $businessName }}</span>
             </a>
             <div class="topbar-actions">
-                <a href="{{ route('loan-management.public.home') }}" class="btn-website">
+                <a href="{{ route('loan-management.public.home') }}" class="btn-topbar">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="2" y1="12" x2="22" y2="12"></line>
@@ -70,6 +73,20 @@
                     </svg>
                     Website
                 </a>
+                <a href="{{ route('loan-management.public.customer-login') }}" class="btn-topbar" title="Switch or add another account">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    Switch Account
+                </a>
+                @if($adminUser)
+                    <a href="{{ route('loan-management.dashboard') }}" class="btn-admin-pill" title="Go back to Admin Dashboard">
+                        ⚡ Admin Panel
+                    </a>
+                @endif
                 <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0;">
                     @csrf
                     <button class="logout" type="submit">Logout</button>

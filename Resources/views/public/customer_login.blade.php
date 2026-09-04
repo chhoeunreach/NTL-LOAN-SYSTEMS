@@ -4,6 +4,9 @@
     $themeColor = $settings['theme_color'] ?? '#2563eb';
     $loginBackgroundUrl = \Modules\LoanManagement\Services\BusinessSettingsService::loginBackgroundUrl();
 
+    $currentCustomer = Auth::guard('customer_loan')->user();
+    $currentAdmin = Auth::guard('web')->user() ?? Auth::user();
+
     $primaryDemo = (isset($demoCustomers) && $demoCustomers->isNotEmpty()) ? $demoCustomers->first() : null;
     $defaultDemoPhone = $primaryDemo ? ($primaryDemo->phone ?: $primaryDemo->username) : '010111001';
     $defaultDemoName = $primaryDemo ? $primaryDemo->name : 'Sok Dara';
@@ -63,6 +66,46 @@
         .banner.error { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
         .banner.success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
         .banner.info { background: #eff6ff; border: 1px solid #bfdbfe; color: #1d4ed8; }
+        .session-card {
+            margin: 18px 0 0;
+            padding: 12px 14px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .session-card.customer {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1e40af;
+        }
+        .session-card.admin {
+            background: #fdf4ff;
+            border: 1px solid #f5d0fe;
+            color: #86198f;
+        }
+        .session-card-info strong { display: block; font-size: 13px; font-weight: 800; }
+        .session-card-info span { display: block; font-size: 11px; opacity: .8; }
+        .session-card-actions { display: flex; align-items: center; gap: 6px; }
+        .session-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background: #fff;
+            color: inherit;
+            border: 1px solid currentColor;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 12px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .session-btn:hover {
+            opacity: .85;
+        }
         form { margin-top: 20px; }
         .field { margin-bottom: 16px; }
         .field label { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; color: #334155; font-size: 13px; font-weight: 700; }
@@ -419,6 +462,30 @@
                     <div class="banner success">{{ session('status') }}</div>
                 @endif
 
+                @if($currentCustomer)
+                    <div class="session-card customer">
+                        <div class="session-card-info">
+                            <strong>👤 Currently: {{ $currentCustomer->name }}</strong>
+                            <span>Phone: {{ $currentCustomer->phone ?: $currentCustomer->username }}</span>
+                        </div>
+                        <div class="session-card-actions">
+                            <a href="{{ route('loan-management.public.customer-dashboard') }}" class="session-btn">My Dashboard</a>
+                        </div>
+                    </div>
+                @endif
+
+                @if($currentAdmin)
+                    <div class="session-card admin">
+                        <div class="session-card-info">
+                            <strong>⚡ Admin: {{ $currentAdmin->name ?? $currentAdmin->username ?? 'Administrator' }}</strong>
+                            <span>Admin session is active</span>
+                        </div>
+                        <div class="session-card-actions">
+                            <a href="{{ route('loan-management.dashboard') }}" class="session-btn">Admin Panel</a>
+                        </div>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('loan-management.public.customer-login.store') }}" id="loginForm">
                     @csrf
                     <div class="field">
@@ -515,15 +582,15 @@
                     </div>
                 </form>
 
-                <div class="divider">New here?</div>
+                <div class="divider">Switch or Explore</div>
                 <div class="links">
                     <a class="link primary" href="{{ route('loan-management.public.register') }}">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
                         Create account
                     </a>
-                    <a class="link ghost" href="{{ route('loan-management.public.home') }}">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-                        Back home
+                    <a class="link ghost" href="{{ route('login') }}">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Admin Login
                     </a>
                 </div>
             </div>
