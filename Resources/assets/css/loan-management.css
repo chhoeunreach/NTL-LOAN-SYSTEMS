@@ -1547,6 +1547,13 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     background: #fff;
     box-shadow: 0 8px 24px rgba(15,23,42,.06);
 }
+.js-dashboard-card-detail {
+    cursor: pointer;
+}
+.js-dashboard-card-detail:focus {
+    outline: 2px solid var(--lm-primary-200);
+    outline-offset: 2px;
+}
 .lm-overdue-mobile-card + .lm-overdue-mobile-card { margin-top: 10px; }
 .lm-overdue-mobile-card__header {
     display: flex;
@@ -1957,7 +1964,7 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
 @media (max-width: 767px) {
     .lm-content { padding: 10px 10px 70px; }
     .lm-workspace { padding-left: 0; padding-right: 0; }
-    .lm-dashboard { gap: 12px; overflow: hidden; max-width: 100%; }
+    .lm-dashboard { gap: 12px; overflow: visible; max-width: 100%; }
     .lm-dashboard-tabs {
         width: 100%;
         overflow-x: auto;
@@ -2047,21 +2054,24 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .view_modal .modal-body { padding: 12px 14px; }
     .view_modal .modal-footer { padding: 10px 14px; flex-wrap: wrap; gap: 6px; }
     .view_modal .modal-footer .btn { flex: 1; min-width: 100px; }
-    .lm-dashboard-pane { padding-bottom: 18px; overflow: hidden; }
+    .lm-dashboard-pane { padding-bottom: 84px; overflow: visible; }
     .lm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
     .lm-table-wrap--hover-actions { overflow: auto; }
     .lm-overdue-customers-scroll { display: none; }
     .lm-overdue-mobile-list {
         display: block;
-        max-height: clamp(260px, 52vh, 430px);
+        box-sizing: border-box;
+        max-height: 620px;
+        max-height: min(620px, calc(100dvh - 140px));
         min-height: 0;
         overflow-x: hidden;
-        overflow-y: auto;
-        padding: 1px 3px 6px 1px;
+        overflow-y: scroll;
+        padding: 1px 3px 28px 1px;
         margin-right: -3px;
         scrollbar-width: thin;
         scrollbar-color: rgba(239,68,68,.42) transparent;
-        overscroll-behavior: contain;
+        overscroll-behavior-y: auto;
+        scroll-padding-bottom: 96px;
         touch-action: pan-y;
         -webkit-overflow-scrolling: touch;
     }
@@ -2374,10 +2384,25 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-quick-box__meta { gap: 5px; margin-bottom: 8px; }
     .lm-quick-box__chip { padding: 4px 7px; font-size: 9px; gap: 4px; }
     .lm-quick-input { margin-bottom: 8px !important; }
+    .lm-overdue-search { margin-bottom: 6px; }
+    .lm-overdue-search .input-group {
+        display: flex;
+        align-items: stretch;
+    }
     .lm-quick-input .form-control,
-    .lm-overdue-search .form-control { height: 34px; font-size: 12px; }
+    .lm-overdue-search .form-control {
+        height: 30px;
+        min-width: 0;
+        padding: 4px 8px;
+        font-size: 11px;
+        line-height: 1.2;
+    }
     .lm-quick-input .input-group-addon,
-    .lm-overdue-search .input-group-addon { padding: 6px 9px; font-size: 12px; }
+    .lm-overdue-search .input-group-addon {
+        width: 30px;
+        padding: 4px 8px;
+        font-size: 11px;
+    }
     .lm-quick-box__footer { margin-top: 8px; padding-top: 8px; font-size: 10px; }
     .lm-collect-payment-card,
     .lm-overdue-mobile-card,
@@ -2399,12 +2424,13 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
         box-shadow: 0 2px 10px rgba(15,23,42,.04);
     }
     .lm-overdue-mobile-card + .lm-overdue-mobile-card { margin-top: 5px; }
+    .lm-overdue-mobile-card:last-child { margin-bottom: 96px; }
     .lm-collect-payment-card__header,
     .lm-overdue-mobile-card__header,
     .lm-dashboard-mobile-card__header { gap: 7px; }
     .lm-overdue-mobile-card__header {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) minmax(82px, auto);
         align-items: center;
         gap: 5px;
     }
@@ -2439,13 +2465,12 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-overdue-mobile-grid span,
     .lm-dashboard-mobile-card__grid span { font-size: 11px; line-height: 1.25; }
     .lm-overdue-mobile-main {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 5px 7px;
+        display: block;
+        min-width: 0;
+        padding: 4px 6px;
         border-radius: 6px;
         background: linear-gradient(135deg, #fff7ed, #fff1f2);
+        text-align: right;
     }
     .lm-overdue-mobile-main small {
         margin-bottom: 0;
@@ -2462,19 +2487,29 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-overdue-mobile-badge {
         min-width: 25px;
         min-height: 18px;
+        width: max-content;
+        max-width: 100%;
         padding: 2px 5px;
         box-shadow: inset 0 0 0 1px rgba(239,68,68,.08);
         font-size: 8.5px;
         line-height: 1.1;
     }
-    .lm-overdue-mobile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+    .lm-overdue-mobile-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; }
     .lm-overdue-mobile-grid > div {
-        padding: 4px 5px;
+        padding: 4px 3px;
         border-radius: 6px;
         background: #fff;
     }
-    .lm-overdue-mobile-grid small { font-size: 7.5px; }
-    .lm-overdue-mobile-grid span { font-size: 10px; line-height: 1.15; }
+    .lm-overdue-mobile-grid small {
+        font-size: 6.8px;
+        letter-spacing: 0;
+        white-space: nowrap;
+    }
+    .lm-overdue-mobile-grid span {
+        font-size: 8.5px;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+    }
     .lm-dashboard-mobile-card__status {
         max-width: 96px;
         padding: 3px 7px;
@@ -2491,6 +2526,12 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
         font-size: 10.5px;
         gap: 4px;
     }
+    .lm-overdue-mobile-card .btn {
+        min-height: 27px;
+        padding: 3px 6px;
+        border-radius: 6px;
+        font-size: 9.5px;
+    }
     .lm-chart-shell { padding: 10px; }
     .lm-chart-copy strong { font-size: 13px; }
     .lm-chart-copy small { font-size: 10px; line-height: 1.3; }
@@ -2498,6 +2539,7 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
 
 @media (max-width: 340px) {
     .lm-dashboard-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lm-overdue-mobile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ============================================================

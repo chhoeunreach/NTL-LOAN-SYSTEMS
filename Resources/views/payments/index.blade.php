@@ -160,8 +160,8 @@
         <div class="box-header with-border">
             <h3 class="box-title">Payment List</h3>
         </div>
-        <div class="box-body table-responsive">
-            <table class="table table-bordered table-striped table-hover">
+        <div class="box-body table-responsive lm-payment-list-body">
+            <table class="table table-bordered table-striped table-hover lm-payment-table">
                 <thead>
                     <tr>
                         <th>Receipt #</th>
@@ -226,6 +226,67 @@
                     @endforelse
                 </tbody>
             </table>
+
+            <div class="lm-payment-mobile-list">
+                @forelse($payments as $payment)
+                    @php
+                        $paymentShowUrl = route('loan-management.payments.show', $payment->id);
+                        $paymentType = $payment->payment_type ?? 'monthly';
+                        $paymentStatus = $payment->status ?? '-';
+                        $paymentIsPaid = in_array($paymentStatus, ['paid', 'confirmed', 'completed']);
+                    @endphp
+                    <article class="lm-payment-mobile-card">
+                        <div class="lm-payment-mobile-card__top">
+                            <div>
+                                <a href="{{ $paymentShowUrl }}" class="lm-payment-mobile-card__receipt">
+                                    {{ $payment->receipt_number ?? ('#'.$payment->id) }}
+                                </a>
+                                <span class="lm-payment-mobile-card__date">
+                                    <i class="fa fa-calendar-o"></i>
+                                    {{ ! empty($payment->paid_date) ? \Carbon\Carbon::parse($payment->paid_date)->format('d-m-Y') : '-' }}
+                                </span>
+                            </div>
+                            <strong class="lm-payment-mobile-card__amount">$ {{ number_format((float) ($payment->amount ?? 0), 2) }}</strong>
+                        </div>
+
+                        <div class="lm-payment-mobile-card__customer">
+                            <span class="lm-payment-mobile-card__avatar">{{ mb_substr(trim((string)($payment->customer_name ?? 'C')) ?: 'C', 0, 1) }}</span>
+                            <span>
+                                <strong>{{ $payment->customer_name ?? '-' }}</strong>
+                                <small>{{ $payment->customer_phone ?: 'No phone' }}</small>
+                            </span>
+                        </div>
+
+                        <div class="lm-payment-mobile-card__badges">
+                            <span class="label label-{{ \Modules\LoanManagement\Http\Controllers\LoanPaymentController::paymentTypeLabelClass($paymentType) }}">
+                                {{ \Modules\LoanManagement\Http\Controllers\LoanPaymentController::paymentTypeLabel($paymentType) }}
+                            </span>
+                            <span class="label label-{{ $paymentIsPaid ? 'success' : 'default' }}">{{ ucfirst($paymentStatus) }}</span>
+                        </div>
+
+                        <div class="lm-payment-mobile-card__grid">
+                            <div><small>Loan #</small><span>{{ $payment->loan_number ?? '-' }}</span></div>
+                            <div><small>Method</small><span>{{ $payment->payment_method ?? '-' }}</span></div>
+                            <div><small>Reference</small><span>{{ $payment->reference_number ?? '-' }}</span></div>
+                            <div><small>Received By</small><span>{{ $payment->received_by ?? '-' }}</span></div>
+                        </div>
+
+                        <div class="lm-payment-mobile-card__actions">
+                            <a href="{{ $paymentShowUrl }}" class="btn btn-info btn-sm"><i class="fa fa-eye"></i> View</a>
+                            @if(\Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.payment|loan_management.payments.create|loan_management.edit'))
+                                <a href="{{ route('loan-management.payments.edit', $payment->id) }}" class="btn btn-primary btn-sm"><i class="fa fa-edit"></i> Edit</a>
+                                <form method="POST" action="{{ route('loan-management.payments.destroy', $payment->id) }}" onsubmit="return confirm('Delete this payment? This will update loan totals.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i></button>
+                                </form>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <div class="lm-payment-mobile-empty">No payments found.</div>
+                @endforelse
+            </div>
 
             <div class="text-center">
                 {{ $payments->links() }}
@@ -338,21 +399,302 @@
         .lm-payment-filter-panel.is-collapsed #loanPaymentFilterBody {
             display: none;
         }
+        .lm-payment-mobile-list {
+            display: none;
+        }
+        .lm-payment-mobile-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+        }
         @media (max-width: 1400px) {
             .lm-payment-summary-grid {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
             }
         }
         @media (max-width: 767px) {
+            .content-header {
+                padding: 8px 10px 0;
+            }
+            .content-header h1 {
+                margin: 0 0 8px;
+                font-size: 19px;
+                line-height: 1.2;
+            }
+            .content {
+                padding: 0 8px 70px;
+            }
             .lm-payment-summary-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+                margin-bottom: 8px;
             }
             .lm-payment-summary-card {
-                min-height: 94px;
-                padding: 14px;
+                min-height: 58px;
+                gap: 6px;
+                padding: 7px;
+                border-radius: 8px;
+                box-shadow: 0 3px 12px rgba(15, 23, 42, .05);
+            }
+            .lm-payment-summary-icon {
+                flex-basis: 25px;
+                width: 25px;
+                height: 25px;
+                border-radius: 7px;
+                font-size: 10px;
+            }
+            .lm-payment-summary-copy span {
+                font-size: 7.5px;
+                letter-spacing: 0;
             }
             .lm-payment-summary-copy strong {
-                font-size: 20px;
+                margin: 2px 0 1px;
+                font-size: 12px;
+                line-height: 1.1;
+            }
+            .lm-payment-summary-copy small {
+                display: none;
+            }
+            .lm-payment-filter-panel {
+                margin-bottom: 8px;
+                border-radius: 8px;
+                overflow: hidden;
+            }
+            .lm-payment-filter-panel .box-header {
+                gap: 8px;
+                padding: 8px 9px;
+            }
+            .lm-payment-filter-title {
+                font-size: 13px;
+            }
+            .lm-payment-filter-toggle {
+                min-height: 27px;
+                padding: 0 8px;
+                border-radius: 6px;
+                font-size: 10px;
+            }
+            #loanPaymentFilterBody {
+                padding: 8px 9px 9px;
+            }
+            #loanPaymentFilterBody .row {
+                margin-right: -4px;
+                margin-left: -4px;
+            }
+            #loanPaymentFilterBody [class*="col-"] {
+                padding-right: 4px;
+                padding-left: 4px;
+            }
+            #loanPaymentFilterBody .form-group {
+                margin-bottom: 7px;
+            }
+            #loanPaymentFilterBody label {
+                margin-bottom: 3px;
+                font-size: 10px;
+                line-height: 1.2;
+            }
+            #loanPaymentFilterBody .form-control {
+                height: 30px;
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            #loanPaymentFilterBody .text-right {
+                padding-top: 0 !important;
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+            }
+            #loanPaymentFilterBody .btn {
+                min-height: 30px;
+                padding: 5px 8px;
+                border-radius: 6px;
+                font-size: 11px;
+            }
+            .lm-payment-list-body {
+                overflow: visible;
+                padding: 8px;
+            }
+            .lm-payment-table {
+                display: none;
+            }
+            .lm-payment-mobile-list {
+                display: block;
+                max-height: clamp(340px, 66vh, 620px);
+                overflow-x: hidden;
+                overflow-y: auto;
+                padding: 1px 3px 6px 1px;
+                margin-right: -3px;
+                scrollbar-width: thin;
+                scrollbar-color: rgba(37, 99, 235, .35) transparent;
+                overscroll-behavior: contain;
+                touch-action: pan-y;
+                -webkit-overflow-scrolling: touch;
+            }
+            .lm-payment-mobile-list::-webkit-scrollbar {
+                width: 4px;
+            }
+            .lm-payment-mobile-list::-webkit-scrollbar-thumb {
+                border-radius: 999px;
+                background: rgba(37, 99, 235, .28);
+            }
+            .lm-payment-mobile-card {
+                display: grid;
+                gap: 6px;
+                padding: 7px;
+                border-color: #dbeafe;
+                box-shadow: 0 2px 10px rgba(15, 23, 42, .04);
+            }
+            .lm-payment-mobile-card + .lm-payment-mobile-card {
+                margin-top: 6px;
+            }
+            .lm-payment-mobile-card__top {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr) auto;
+                align-items: start;
+                gap: 8px;
+            }
+            .lm-payment-mobile-card__receipt {
+                display: block;
+                color: #0f172a;
+                font-size: 12px;
+                font-weight: 900;
+                line-height: 1.2;
+                overflow-wrap: anywhere;
+            }
+            .lm-payment-mobile-card__date {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                margin-top: 2px;
+                color: #64748b;
+                font-size: 9.5px;
+                font-weight: 700;
+            }
+            .lm-payment-mobile-card__amount {
+                color: #15803d;
+                font-size: 13px;
+                line-height: 1.15;
+                text-align: right;
+                white-space: nowrap;
+            }
+            .lm-payment-mobile-card__customer {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                min-width: 0;
+                padding: 5px 6px;
+                border-radius: 7px;
+                background: #f8fafc;
+            }
+            .lm-payment-mobile-card__avatar {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 25px;
+                width: 25px;
+                height: 25px;
+                border-radius: 7px;
+                background: #e0f2fe;
+                color: #0369a1;
+                font-size: 10px;
+                font-weight: 900;
+                text-transform: uppercase;
+            }
+            .lm-payment-mobile-card__customer span:last-child {
+                min-width: 0;
+            }
+            .lm-payment-mobile-card__customer strong,
+            .lm-payment-mobile-card__customer small {
+                display: block;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .lm-payment-mobile-card__customer strong {
+                color: #0f172a;
+                font-size: 11px;
+                line-height: 1.2;
+            }
+            .lm-payment-mobile-card__customer small {
+                margin-top: 1px;
+                color: #64748b;
+                font-size: 9px;
+            }
+            .lm-payment-mobile-card__badges {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .lm-payment-mobile-card__badges .label {
+                padding: 3px 6px;
+                border-radius: 999px;
+                font-size: 8.5px;
+                line-height: 1.1;
+            }
+            .lm-payment-mobile-card__grid {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 4px;
+            }
+            .lm-payment-mobile-card__grid > div {
+                min-width: 0;
+                padding: 5px 6px;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
+                background: #fff;
+            }
+            .lm-payment-mobile-card__grid small,
+            .lm-payment-mobile-card__grid span {
+                display: block;
+                overflow-wrap: anywhere;
+            }
+            .lm-payment-mobile-card__grid small {
+                margin-bottom: 1px;
+                color: #64748b;
+                font-size: 7.5px;
+                font-weight: 800;
+                text-transform: uppercase;
+            }
+            .lm-payment-mobile-card__grid span {
+                color: #0f172a;
+                font-size: 10px;
+                font-weight: 700;
+                line-height: 1.15;
+            }
+            .lm-payment-mobile-card__actions {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+                gap: 5px;
+            }
+            .lm-payment-mobile-card__actions .btn {
+                min-height: 28px;
+                padding: 4px 6px;
+                border-radius: 6px;
+                font-size: 10px;
+                line-height: 1.2;
+            }
+            .lm-payment-mobile-card__actions form {
+                margin: 0;
+            }
+            .lm-payment-mobile-card__actions form .btn {
+                width: 100%;
+            }
+            .lm-payment-mobile-empty {
+                padding: 16px 10px;
+                border: 1px dashed #cbd5e1;
+                border-radius: 8px;
+                color: #64748b;
+                background: #f8fafc;
+                font-size: 12px;
+                text-align: center;
+            }
+        }
+        @media (max-width: 360px) {
+            .lm-payment-summary-grid,
+            .lm-payment-mobile-card__grid {
+                grid-template-columns: 1fr;
+            }
+            .lm-payment-mobile-card__actions {
+                grid-template-columns: 1fr;
             }
         }
     </style>

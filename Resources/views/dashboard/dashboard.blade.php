@@ -265,7 +265,7 @@
                                 $overdueDue = (float)($row['total_not_yet_paid'] ?? ($row['overdue_amount'] ?? 0));
                                 $overduePayoff = (float)($row['pay_off_now'] ?? 0);
                             @endphp
-                            <article class="lm-overdue-mobile-card">
+                            <article class="lm-overdue-mobile-card js-dashboard-card-detail" role="button" tabindex="0" data-title="Loan Detail" data-url="{{ url('loan-management/loans/'.($row['id'] ?? 0).'/view?_lm_modal=1') }}">
                                 <div class="lm-overdue-mobile-card__header">
                                     <div class="lm-customer-profile">
                                         <span class="lm-customer-profile__avatar">
@@ -280,12 +280,12 @@
                                             <span class="lm-row-subtitle">{{ $row['loan_number'] ?? '' }}{{ !empty($row['phone']) ? ' · '.$row['phone'] : '' }}</span>
                                         </span>
                                     </div>
-                                    <span class="lm-overdue-mobile-badge">{{ (int)($row['overdue_days'] ?? 0) }}d</span>
+                                    <div class="lm-overdue-mobile-main">
+                                        <small>Amount Due</small>
+                                        <strong>{{ number_format($overdueDue, 2) }}</strong>
+                                    </div>
                                 </div>
-                                <div class="lm-overdue-mobile-main">
-                                    <small>Amount Due</small>
-                                    <strong>{{ number_format($overdueDue, 2) }}</strong>
-                                </div>
+                                <span class="lm-overdue-mobile-badge">{{ (int)($row['overdue_days'] ?? 0) }}d overdue</span>
                                 <div class="lm-overdue-mobile-grid">
                                     <div><small>Pay Date</small><span>{{ $row['date_to_pay'] ?? '-' }}</span></div>
                                     <div><small>Paid</small><span>{{ number_format((float)($row['total_paid'] ?? 0), 2) }}</span></div>
@@ -656,12 +656,13 @@
         }
 
         function overdueMobileCardHtml(row, payUrl, customerAvatar, customerSub, customerName) {
-            return '<article class="lm-overdue-mobile-card">'
+            var detailUrl = "{{ url('loan-management/loans') }}/" + row.id + "/view?_lm_modal=1";
+            return '<article class="lm-overdue-mobile-card js-dashboard-card-detail" role="button" tabindex="0" data-title="Loan Detail" data-url="' + detailUrl + '">'
                 + '<div class="lm-overdue-mobile-card__header">'
                 + '<div class="lm-customer-profile">' + customerAvatar + '<span class="lm-customer-profile__info"><span class="lm-row-title">'+esc(customerName)+'</span><span class="lm-row-subtitle">'+customerSub+'</span></span></div>'
-                + '<span class="lm-overdue-mobile-badge">' + intValue(row.overdue_days) + 'd</span>'
-                + '</div>'
                 + '<div class="lm-overdue-mobile-main"><small>Amount Due</small><strong>' + money(row.total_not_yet_paid || row.overdue_amount || 0) + '</strong></div>'
+                + '</div>'
+                + '<span class="lm-overdue-mobile-badge">' + intValue(row.overdue_days) + 'd overdue</span>'
                 + '<div class="lm-overdue-mobile-grid">'
                 + '<div><small>Pay Date</small><span>' + esc(row.date_to_pay || '-') + '</span></div>'
                 + '<div><small>Paid</small><span>' + money(row.total_paid || 0) + '</span></div>'
@@ -806,7 +807,7 @@
             var statusClass = isOverdue ? ' lm-pay-status--overdue' : '';
             var statusBadge = row.status ? '<span class="lm-pay-status' + statusClass + '">' + esc(row.status) + '</span>' : '';
 
-            return '<article class="lm-collect-payment-card" data-loan-id="' + esc(row.id) + '">'
+            return '<article class="lm-collect-payment-card js-dashboard-card-detail" role="button" tabindex="0" data-loan-id="' + esc(row.id) + '" data-title="Loan Detail" data-url="' + urls.detail + '">'
                 + '<div class="lm-collect-payment-card__header">'
                 + '<div class="lm-customer-profile">' + customerAvatar
                 + '<span class="lm-customer-profile__info">'
@@ -1449,6 +1450,22 @@
             $(document).on('click', '.js-loan-detail-modal', function (event) {
                 event.preventDefault();
                 openDashboardIframeModal($(this).data('title') || 'Detail', $(this).data('url'));
+            });
+            $(document).on('click', '.js-dashboard-card-detail', function (event) {
+                if ($(event.target).closest('a, button, input, select, textarea, .dropdown-menu').length) {
+                    return;
+                }
+                openDashboardIframeModal($(this).data('title') || 'Loan Detail', $(this).data('url'));
+            });
+            $(document).on('keydown', '.js-dashboard-card-detail', function (event) {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+                if ($(event.target).closest('a, button, input, select, textarea, .dropdown-menu').length) {
+                    return;
+                }
+                event.preventDefault();
+                openDashboardIframeModal($(this).data('title') || 'Loan Detail', $(this).data('url'));
             });
 
             timer = window.setInterval(refreshLoanDashboard, refreshMs);
