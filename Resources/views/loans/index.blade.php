@@ -687,31 +687,37 @@
         color: #0f172a;
         text-align: right !important;
     }
-    #loan_list_table tbody td:nth-child(9) {
+    #loan_list_table tbody td:nth-child(7) {
         font-weight: 700;
-        color: #475569;
+        color: #0284c7;
         text-align: right !important;
     }
     #loan_list_table tbody td:nth-child(10) {
         font-weight: 700;
-        color: #1e293b;
+        color: #475569;
         text-align: right !important;
     }
     #loan_list_table tbody td:nth-child(11) {
         font-weight: 700;
-        color: #059669;
+        color: #1e293b;
         text-align: right !important;
     }
     #loan_list_table tbody td:nth-child(12) {
+        font-weight: 700;
+        color: #059669;
+        text-align: right !important;
+    }
+    #loan_list_table tbody td:nth-child(13) {
         font-weight: 800;
         color: #d97706;
         text-align: right !important;
     }
     #loan_list_table thead th:nth-child(6),
-    #loan_list_table thead th:nth-child(9),
+    #loan_list_table thead th:nth-child(7),
     #loan_list_table thead th:nth-child(10),
     #loan_list_table thead th:nth-child(11),
-    #loan_list_table thead th:nth-child(12) {
+    #loan_list_table thead th:nth-child(12),
+    #loan_list_table thead th:nth-child(13) {
         text-align: right !important;
     }
 
@@ -1086,6 +1092,7 @@
                         <th>{{ $text('Phone', 'ទូរស័ព្ទ') }}</th>
                         <th>{{ $text('Product', 'ទំនិញ/ផលិតផល') }}</th>
                         <th>{{ $text('Price', 'តម្លៃ') }}</th>
+                        <th>{{ $text('Customer Deposit', 'ប្រាក់កក់អតិថិជន') }}</th>
                         <th>{{ $text('Terms', 'រយៈពេល') }}</th>
                         <th>{{ $text('Next Due', 'ថ្ងៃត្រូវបង់បន្ទាប់') }}</th>
                         <th>{{ $text('Principal', 'ប្រាក់ដើម') }}</th>
@@ -1487,6 +1494,7 @@ function escapeHtml(value) {
             {data:'customer_phone_snapshot', name:'customer_phone_snapshot'},
             {data:'product_name_snapshot', name:'product_name_snapshot'},
             {data:'item_price', name:'item_price'},
+            {data:'down_payment', name:'down_payment'},
             {data:'installment_terms', name:'installment_terms', orderable:false, searchable:false},
             {data:'next_due_date', name:'next_due_date', searchable:false},
             {data:'principal_amount', name:'principal_amount'},

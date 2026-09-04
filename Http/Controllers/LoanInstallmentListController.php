@@ -1033,6 +1033,7 @@ class LoanInstallmentListController extends Controller
                 });
             })
             ->editColumn('item_price', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.($r->item_price ?? 0).'</span>')
+            ->editColumn('down_payment', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.($r->down_payment ?? 0).'</span>')
             ->editColumn('principal_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->principal_amount.'</span>')
             ->editColumn('total_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.($r->total_amount ?? $r->principal_amount).'</span>')
             ->editColumn('paid_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->paid_amount.'</span>')
@@ -1163,7 +1164,7 @@ class LoanInstallmentListController extends Controller
 
                 return $actions;
             })
-            ->rawColumns(['status', 'item_price', 'principal_amount', 'total_amount', 'paid_amount', 'balance_amount', 'product_name_snapshot', 'installment_terms', 'next_due_date', 'repayment_progress', 'action'])
+            ->rawColumns(['status', 'item_price', 'down_payment', 'principal_amount', 'total_amount', 'paid_amount', 'balance_amount', 'product_name_snapshot', 'installment_terms', 'next_due_date', 'repayment_progress', 'action'])
             ->with('status_counts', $this->getLoanStatusCounts())
             ->make(true);
     }
