@@ -94,6 +94,19 @@
             font-weight: 800;
             letter-spacing: 0;
         }
+        .login-kicker {
+            display: inline-flex;
+            align-items: center;
+            min-height: 22px;
+            margin-bottom: 5px;
+            padding: 0 8px;
+            border-radius: 999px;
+            background: color-mix(in srgb, var(--login-primary) 10%, #fff);
+            color: var(--login-primary);
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
         .login-subtitle {
             margin: 4px 0 0;
             color: #64748b;
@@ -209,15 +222,27 @@
             .login-button { box-shadow: 0 12px 28px rgba(37, 99, 235, .24); }
         }
         @media (max-width: 900px) {
+            html, body { min-height: 100dvh; }
+            body { overflow-x: hidden; }
             .login-shell {
+                display: block;
                 grid-template-columns: 1fr;
+                min-height: 100dvh;
+                background: #f8fafc;
             }
             .login-brand-panel {
-                min-height: 280px;
-                padding: 28px;
+                min-height: auto;
+                padding: 22px 20px 52px;
+                background: linear-gradient(145deg, rgba(15, 23, 42, .96), rgba(30, 58, 95, .92));
+                border-radius: 0 0 24px 24px;
+            }
+            .login-shell.has-photo .login-brand-panel {
+                background-image: linear-gradient(145deg, rgba(7, 18, 33, .92), rgba(22, 43, 68, .76)), var(--login-background);
+                background-size: cover;
+                background-position: center;
             }
             .brand-copy {
-                padding: 28px 0 0;
+                padding: 22px 0 0;
             }
             .brand-copy h1 {
                 font-size: 32px;
@@ -225,11 +250,111 @@
             .brand-points { grid-template-columns: 1fr; }
             .login-panel {
                 min-height: auto;
-                padding: 24px 18px 34px;
+                margin-top: -34px;
+                padding: 0 18px 34px;
+                background: transparent;
+                backdrop-filter: none;
+                place-items: start center;
             }
             .login-box {
                 padding: 26px;
+                margin-top: -8px;
+                border-radius: 18px;
+                border-color: rgba(226, 232, 240, .92);
             }
+        }
+        @media (max-width: 560px) {
+            body { background: #f8fafc; }
+            .login-brand-panel { padding: 18px 16px 46px; }
+            .brand-mark { max-width: 100%; }
+            .brand-mark > span:last-child {
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .brand-logo { width: 40px; height: 40px; }
+            .brand-copy { padding-top: 14px; }
+            .brand-copy h1 { font-size: 23px; line-height: 1.18; }
+            .brand-copy p {
+                max-width: 300px;
+                margin-top: 8px;
+                font-size: 13px;
+                line-height: 1.5;
+            }
+            .brand-points { display: none; }
+            .login-panel { margin-top: -30px; padding: 0 12px 24px; background: transparent; }
+            .login-box {
+                width: 100%;
+                padding: 20px 16px 18px;
+                border-radius: 18px;
+                box-shadow: 0 18px 46px rgba(15, 23, 42, .16);
+            }
+            .login-box-head {
+                align-items: flex-start;
+                gap: 10px;
+                margin-bottom: 18px;
+                padding-bottom: 14px;
+                border-bottom: 1px solid #eef2f7;
+            }
+            .login-box-logo { width: 42px; height: 42px; border-radius: 12px; }
+            .login-kicker { min-height: 20px; margin-bottom: 4px; font-size: 10px; }
+            .login-title { font-size: 22px; line-height: 1.15; }
+            .login-subtitle { font-size: 13px; line-height: 1.45; }
+            .form-group { margin-bottom: 14px; }
+            .login-box label { margin-bottom: 6px; font-size: 11px; letter-spacing: .04em; }
+            .login-box .form-control,
+            .login-button { height: 48px; border-radius: 10px; font-size: 15px; }
+            .login-button { margin-top: 4px; box-shadow: 0 12px 22px rgba(37, 99, 235, .18); }
+            .login-password-row .form-control { padding-right: 74px; }
+            .login-password-toggle { right: 7px; top: 7px; height: 34px; min-width: 58px; border-radius: 8px; }
+            .login-options { margin-bottom: 14px; }
+            .login-meta { margin-top: 14px; }
+            .login-links {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 8px;
+                margin-top: 12px;
+            }
+            .login-links a {
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 10px;
+                border: 1px solid #e2e8f0;
+                border-radius: 9px;
+                background: #fff;
+                text-align: center;
+            }
+            .demo-login-card {
+                padding: 14px;
+                border-radius: 13px;
+                background: linear-gradient(180deg, #ffffff, #f8fafc);
+                border-style: dashed;
+            }
+            .demo-login-card-bottom { margin-top: 12px; }
+            .demo-login-head { margin-bottom: 8px; }
+            .demo-login-action {
+                min-height: 26px;
+                display: inline-flex;
+                align-items: center;
+                padding: 0 8px;
+                border-radius: 999px;
+                background: color-mix(in srgb, var(--login-primary) 10%, #fff);
+            }
+            .demo-login-row { align-items: flex-start; padding: 9px 0; }
+            .demo-login-value { max-width: 66%; text-align: right; overflow-wrap: anywhere; }
+        }
+        @media (max-width: 360px) {
+            .login-box { padding: 20px 14px; }
+            .demo-login-head,
+            .demo-login-row {
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 4px;
+            }
+            .demo-login-value { max-width: 100%; text-align: left; }
         }
     </style>
 </head>
@@ -277,6 +402,7 @@
                         @endif
                     </span>
                     <div>
+                        <span class="login-kicker">Admin Portal</span>
                         <h2 class="login-title">Admin Login</h2>
                         <p class="login-subtitle">Sign in to continue to your secure workspace.</p>
                     </div>

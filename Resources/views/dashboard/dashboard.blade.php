@@ -236,7 +236,7 @@
                                         </span>
                                         <span class="lm-customer-profile__info">
                                             <span class="lm-row-title">{{ $overdueName }}</span>
-                                            <span class="lm-row-subtitle">{{ $row['loan_number'] ?? '' }}{{ !empty($row['phone']) ? ' Â· '.$row['phone'] : '' }}</span>
+                                            <span class="lm-row-subtitle">{{ $row['loan_number'] ?? '' }}{{ !empty($row['phone']) ? ' · '.$row['phone'] : '' }}</span>
                                         </span>
                                     </div>
                                 </td>
@@ -256,6 +256,49 @@
                         @endforelse
                         </tbody>
                     </table>
+                    </div>
+                    <div class="lm-overdue-mobile-list" id="loanOverdueCustomersMobile">
+                        @forelse(($overdueCustomers ?? []) as $row)
+                            @php
+                                $overdueName = trim((string) ($row['customer'] ?? '-'));
+                                $overdueInitial = mb_substr($overdueName !== '' && $overdueName !== '-' ? $overdueName : 'C', 0, 1);
+                                $overdueDue = (float)($row['total_not_yet_paid'] ?? ($row['overdue_amount'] ?? 0));
+                                $overduePayoff = (float)($row['pay_off_now'] ?? 0);
+                            @endphp
+                            <article class="lm-overdue-mobile-card">
+                                <div class="lm-overdue-mobile-card__header">
+                                    <div class="lm-customer-profile">
+                                        <span class="lm-customer-profile__avatar">
+                                            @if(!empty($row['customer_photo_url']))
+                                                <img src="{{ $row['customer_photo_url'] }}" alt="">
+                                            @else
+                                                {{ $overdueInitial }}
+                                            @endif
+                                        </span>
+                                        <span class="lm-customer-profile__info">
+                                            <span class="lm-row-title">{{ $overdueName }}</span>
+                                            <span class="lm-row-subtitle">{{ $row['loan_number'] ?? '' }}{{ !empty($row['phone']) ? ' · '.$row['phone'] : '' }}</span>
+                                        </span>
+                                    </div>
+                                    <span class="lm-overdue-mobile-badge">{{ (int)($row['overdue_days'] ?? 0) }}d</span>
+                                </div>
+                                <div class="lm-overdue-mobile-main">
+                                    <small>Amount Due</small>
+                                    <strong>{{ number_format($overdueDue, 2) }}</strong>
+                                </div>
+                                <div class="lm-overdue-mobile-grid">
+                                    <div><small>Pay Date</small><span>{{ $row['date_to_pay'] ?? '-' }}</span></div>
+                                    <div><small>Paid</small><span>{{ number_format((float)($row['total_paid'] ?? 0), 2) }}</span></div>
+                                    <div><small>Payoff</small><span>{{ number_format($overduePayoff, 2) }}</span></div>
+                                    <div><small>Status</small><span>Overdue</span></div>
+                                </div>
+                                <button type="button" class="btn btn-success btn-sm btn-block btn-modal" data-href="{{ url('loan-management/loans/'.($row['id'] ?? 0).'/payment/create?return_to='.rawurlencode(route('loan-management.dashboard'))) }}" data-container=".view_modal">
+                                    <i class="fa fa-money"></i> Collect Payment
+                                </button>
+                            </article>
+                        @empty
+                            <div class="lm-mobile-loan-empty">No overdue customers.</div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -303,6 +346,25 @@
                     @endforelse
                     </tbody>
                 </table>
+                <div class="lm-dashboard-mobile-list" id="loanVisitScheduleMobile">
+                    @forelse(($visitSchedule ?? []) as $row)
+                        <article class="lm-dashboard-mobile-card lm-dashboard-mobile-card--visit">
+                            <div class="lm-dashboard-mobile-card__header">
+                                <div>
+                                    <span class="lm-dashboard-mobile-card__title">{{ $row['customer'] ?? '-' }}</span>
+                                    <span class="lm-dashboard-mobile-card__subtitle">{{ $row['assigned_staff'] ?? '-' }}</span>
+                                </div>
+                                <span class="lm-dashboard-mobile-card__status">{{ $row['status'] ?? '-' }}</span>
+                            </div>
+                            <div class="lm-dashboard-mobile-card__grid">
+                                <div><small>Date</small><span>{{ $row['follow_up_date'] ?? '-' }}</span></div>
+                                <div><small>Staff</small><span>{{ $row['assigned_staff'] ?? '-' }}</span></div>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="lm-mobile-loan-empty">No pending visits.</div>
+                    @endforelse
+                </div>
             </div>
         </div>
 
@@ -329,6 +391,25 @@
                     @endforelse
                     </tbody>
                 </table>
+                <div class="lm-dashboard-mobile-list" id="loanCollectorPerformanceMobile">
+                    @forelse(($collectorPerformance ?? []) as $row)
+                        <article class="lm-dashboard-mobile-card lm-dashboard-mobile-card--collector">
+                            <div class="lm-dashboard-mobile-card__header">
+                                <div>
+                                    <span class="lm-dashboard-mobile-card__title">{{ $row['collector'] ?? '-' }}</span>
+                                    <span class="lm-dashboard-mobile-card__subtitle">{{ (int)($row['assigned_loans'] ?? 0) }} assigned loans</span>
+                                </div>
+                                <span class="lm-dashboard-mobile-card__amount">{{ number_format((float)($row['collected_amount'] ?? 0), 2) }}</span>
+                            </div>
+                            <div class="lm-dashboard-mobile-card__grid">
+                                <div><small>Assigned</small><span>{{ (int)($row['assigned_loans'] ?? 0) }}</span></div>
+                                <div><small>Visits</small><span>{{ (int)($row['visit_count'] ?? 0) }}</span></div>
+                            </div>
+                        </article>
+                    @empty
+                        <div class="lm-mobile-loan-empty">No collector performance data.</div>
+                    @endforelse
+                </div>
             </div>
         </div>
     </section>
@@ -549,6 +630,7 @@
 
         function renderOverdueCustomers(rows) {
             var html = '';
+            var mobileHtml = '';
             (rows || []).forEach(function (row) {
                 var payUrl = "{{ url('loan-management/loans') }}/" + row.id + "/payment/create?return_to={{ rawurlencode(route('loan-management.dashboard')) }}";
                 var customerName = row.customer || '-';
@@ -556,7 +638,7 @@
                 var customerAvatar = row.customer_photo_url
                     ? '<span class="lm-customer-profile__avatar"><img src="' + esc(row.customer_photo_url) + '" alt=""></span>'
                     : '<span class="lm-customer-profile__avatar">' + esc(customerInitial) + '</span>';
-                var customerSub = (row.loan_number || '') + (row.phone ? ' &middot; ' + esc(row.phone) : '');
+                var customerSub = esc(row.loan_number || '') + (row.phone ? ' &middot; ' + esc(row.phone) : '');
                 html += '<tr>'
                     + '<td><div class="lm-customer-profile">' + customerAvatar + '<span class="lm-customer-profile__info"><span class="lm-row-title">'+esc(customerName)+'</span><span class="lm-row-subtitle">'+customerSub+'</span></span></div></td>'
                     + '<td>'+esc(row.date_to_pay || '-')+'</td>'
@@ -566,15 +648,36 @@
                     + '<td class="text-right">'+money(row.pay_off_now || 0)+'</td>'
                     + '<td class="text-center"><button type="button" class="btn btn-success btn-xs btn-modal" data-href="'+payUrl+'" data-container=".view_modal"><i class="fa fa-money"></i> Pay</button></td>'
                     + '</tr>';
+                mobileHtml += overdueMobileCardHtml(row, payUrl, customerAvatar, customerSub, customerName);
             });
             $('[data-loan-table="overdue_customers"]').html(html || '<tr><td colspan="7" class="text-center">No overdue customers.</td></tr>');
+            $('#loanOverdueCustomersMobile').html(mobileHtml || '<div class="lm-mobile-loan-empty">No overdue customers.</div>');
             filterOverdueCustomers();
+        }
+
+        function overdueMobileCardHtml(row, payUrl, customerAvatar, customerSub, customerName) {
+            return '<article class="lm-overdue-mobile-card">'
+                + '<div class="lm-overdue-mobile-card__header">'
+                + '<div class="lm-customer-profile">' + customerAvatar + '<span class="lm-customer-profile__info"><span class="lm-row-title">'+esc(customerName)+'</span><span class="lm-row-subtitle">'+customerSub+'</span></span></div>'
+                + '<span class="lm-overdue-mobile-badge">' + intValue(row.overdue_days) + 'd</span>'
+                + '</div>'
+                + '<div class="lm-overdue-mobile-main"><small>Amount Due</small><strong>' + money(row.total_not_yet_paid || row.overdue_amount || 0) + '</strong></div>'
+                + '<div class="lm-overdue-mobile-grid">'
+                + '<div><small>Pay Date</small><span>' + esc(row.date_to_pay || '-') + '</span></div>'
+                + '<div><small>Paid</small><span>' + money(row.total_paid || 0) + '</span></div>'
+                + '<div><small>Payoff</small><span>' + money(row.pay_off_now || 0) + '</span></div>'
+                + '<div><small>Status</small><span>Overdue</span></div>'
+                + '</div>'
+                + '<button type="button" class="btn btn-success btn-sm btn-block btn-modal" data-href="'+payUrl+'" data-container=".view_modal"><i class="fa fa-money"></i> Collect Payment</button>'
+                + '</article>';
         }
 
         function filterOverdueCustomers() {
             var query = String($('#loanOverdueCustomersSearch').val() || '').toLowerCase().trim();
             var visibleCount = 0;
             var $tbody = $('[data-loan-table="overdue_customers"]');
+            var $cards = $('#loanOverdueCustomersMobile .lm-overdue-mobile-card');
+            var visibleCardCount = 0;
 
             $tbody.find('tr.lm-overdue-no-results').remove();
             $tbody.find('tr').each(function () {
@@ -593,6 +696,20 @@
 
             if (query && visibleCount === 0) {
                 $tbody.append('<tr class="lm-overdue-no-results"><td colspan="7" class="text-center text-muted">No overdue customers match your search.</td></tr>');
+            }
+
+            $('#loanOverdueCustomersMobile .lm-overdue-mobile-no-results').remove();
+            $cards.each(function () {
+                var $card = $(this);
+                var matches = !query || $card.text().toLowerCase().indexOf(query) !== -1;
+                $card.toggle(matches);
+                if (matches) {
+                    visibleCardCount++;
+                }
+            });
+
+            if (query && $cards.length && visibleCardCount === 0) {
+                $('#loanOverdueCustomersMobile').append('<div class="lm-mobile-loan-empty lm-overdue-mobile-no-results">No overdue customers match your search.</div>');
             }
         }
 
@@ -966,18 +1083,42 @@
 
         function renderFollowUps(rows) {
             var html = '';
+            var mobileHtml = '';
             (rows || []).forEach(function (row) {
                 html += '<tr><td><span class="lm-row-title">'+esc(row.customer)+'</span></td><td>'+esc(row.follow_up_date)+'</td><td>'+esc(row.status)+'</td><td>'+esc(row.assigned_staff)+'</td></tr>';
+                mobileHtml += '<article class="lm-dashboard-mobile-card lm-dashboard-mobile-card--visit">'
+                    + '<div class="lm-dashboard-mobile-card__header">'
+                    + '<div><span class="lm-dashboard-mobile-card__title">' + esc(row.customer || '-') + '</span><span class="lm-dashboard-mobile-card__subtitle">' + esc(row.assigned_staff || '-') + '</span></div>'
+                    + '<span class="lm-dashboard-mobile-card__status">' + esc(row.status || '-') + '</span>'
+                    + '</div>'
+                    + '<div class="lm-dashboard-mobile-card__grid">'
+                    + '<div><small>Date</small><span>' + esc(row.follow_up_date || '-') + '</span></div>'
+                    + '<div><small>Staff</small><span>' + esc(row.assigned_staff || '-') + '</span></div>'
+                    + '</div>'
+                    + '</article>';
             });
             $('[data-loan-table="follow_up_customers"]').html(html || '<tr><td colspan="4" class="text-center">No pending visits.</td></tr>');
+            $('#loanVisitScheduleMobile').html(mobileHtml || '<div class="lm-mobile-loan-empty">No pending visits.</div>');
         }
 
         function renderCollectorPerformance(rows) {
             var html = '';
+            var mobileHtml = '';
             (rows || []).forEach(function (row) {
                 html += '<tr><td><span class="lm-row-title">'+esc(row.collector)+'</span></td><td>'+intValue(row.assigned_loans)+'</td><td class="text-right">'+money(row.collected_amount)+'</td><td>'+intValue(row.visit_count)+'</td></tr>';
+                mobileHtml += '<article class="lm-dashboard-mobile-card lm-dashboard-mobile-card--collector">'
+                    + '<div class="lm-dashboard-mobile-card__header">'
+                    + '<div><span class="lm-dashboard-mobile-card__title">' + esc(row.collector || '-') + '</span><span class="lm-dashboard-mobile-card__subtitle">' + intValue(row.assigned_loans) + ' assigned loans</span></div>'
+                    + '<span class="lm-dashboard-mobile-card__amount">' + money(row.collected_amount) + '</span>'
+                    + '</div>'
+                    + '<div class="lm-dashboard-mobile-card__grid">'
+                    + '<div><small>Assigned</small><span>' + intValue(row.assigned_loans) + '</span></div>'
+                    + '<div><small>Visits</small><span>' + intValue(row.visit_count) + '</span></div>'
+                    + '</div>'
+                    + '</article>';
             });
             $('[data-loan-table="collector_performance"]').html(html || '<tr><td colspan="4" class="text-center">No collector performance data.</td></tr>');
+            $('#loanCollectorPerformanceMobile').html(mobileHtml || '<div class="lm-mobile-loan-empty">No collector performance data.</div>');
         }
 
         function updateChartText(chart) {

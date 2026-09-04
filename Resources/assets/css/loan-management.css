@@ -1537,6 +1537,168 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     z-index: 2;
     background: var(--lm-bg-subtle);
 }
+.lm-overdue-mobile-list { display: none; }
+.lm-overdue-mobile-card {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius);
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15,23,42,.06);
+}
+.lm-overdue-mobile-card + .lm-overdue-mobile-card { margin-top: 10px; }
+.lm-overdue-mobile-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+.lm-overdue-mobile-badge {
+    flex: 0 0 auto;
+    min-width: 42px;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #fef2f2;
+    color: var(--lm-danger);
+    font-size: 12px;
+    font-weight: 900;
+}
+.lm-overdue-mobile-main {
+    padding: 12px;
+    border-radius: var(--lm-radius-sm);
+    background: linear-gradient(135deg, #fff7ed, #fef2f2);
+    border: 1px solid #fed7aa;
+}
+.lm-overdue-mobile-main small,
+.lm-overdue-mobile-grid small {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--lm-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.lm-overdue-mobile-main strong {
+    display: block;
+    color: var(--lm-danger);
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1.1;
+}
+.lm-overdue-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.lm-overdue-mobile-grid > div {
+    min-width: 0;
+    padding: 9px 10px;
+    border-radius: var(--lm-radius-sm);
+    background: var(--lm-bg-subtle);
+    border: 1px solid var(--lm-border-light);
+}
+.lm-overdue-mobile-grid span {
+    display: block;
+    color: var(--lm-text);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.lm-dashboard-mobile-list { display: none; }
+.lm-dashboard-mobile-card {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius);
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15,23,42,.06);
+}
+.lm-dashboard-mobile-card + .lm-dashboard-mobile-card { margin-top: 10px; }
+.lm-dashboard-mobile-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+.lm-dashboard-mobile-card__header > div {
+    min-width: 0;
+}
+.lm-dashboard-mobile-card__title {
+    display: block;
+    color: var(--lm-text);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
+.lm-dashboard-mobile-card__subtitle {
+    display: block;
+    margin-top: 2px;
+    color: var(--lm-muted);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+.lm-dashboard-mobile-card__status {
+    flex: 0 0 auto;
+    max-width: 120px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: #eef6ff;
+    color: var(--lm-primary);
+    font-size: 10px;
+    font-weight: 900;
+    line-height: 1.25;
+    text-align: center;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+}
+.lm-dashboard-mobile-card__amount {
+    flex: 0 0 auto;
+    color: #15803d;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.2;
+    text-align: right;
+}
+.lm-dashboard-mobile-card__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.lm-dashboard-mobile-card__grid > div {
+    min-width: 0;
+    padding: 9px 10px;
+    border-radius: var(--lm-radius-sm);
+    background: var(--lm-bg-subtle);
+    border: 1px solid var(--lm-border-light);
+}
+.lm-dashboard-mobile-card__grid small {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--lm-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.lm-dashboard-mobile-card__grid span {
+    display: block;
+    color: var(--lm-text);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+}
 .lm-row-title { color: var(--lm-text); font-weight: 700; }
 .lm-row-subtitle { display: block; margin-top: 2px; color: var(--lm-muted); font-size: 12px; }
 
@@ -1793,6 +1955,8 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-side-stack > .lm-dashboard-panel { flex: 1; min-width: 0; }
 }
 @media (max-width: 767px) {
+    .lm-content { padding: 10px 10px 70px; }
+    .lm-workspace { padding-left: 0; padding-right: 0; }
     .lm-dashboard { gap: 12px; overflow: hidden; max-width: 100%; }
     .lm-dashboard-tabs {
         width: 100%;
@@ -1821,27 +1985,44 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-hero-metric { flex: 0 0 110px; min-width: 110px; padding: 6px 8px; border-radius: var(--lm-radius-sm); }
     .lm-hero-metric-label { font-size: 9px; margin-bottom: 1px; }
     .lm-hero-metric-value { font-size: 16px; }
-    .lm-dashboard-cards { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; }
+    .lm-dashboard-cards { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
     .lm-stat-card {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 12px;
+        gap: 9px;
+        padding: 11px;
         min-height: 78px;
-        border-radius: 14px;
+        border-radius: 12px;
+        box-shadow: 0 8px 22px rgba(15,23,42,.05);
     }
     .lm-stat-card__icon { flex: 0 0 38px; width: 38px; height: 38px; font-size: 15px; border-radius: 11px; }
     .lm-stat-card__label { font-size: 11px; line-height: 1.25; letter-spacing: .03em; }
     .lm-stat-card__value { font-size: 20px; margin-top: 2px; }
     .lm-stat-card__meta { display: none; }
-    .lm-dashboard-panel { border-radius: 14px; }
-    .lm-dashboard-panel__header { padding: 16px 16px 12px; }
+    .lm-dashboard-panel { border-radius: 13px; box-shadow: 0 8px 24px rgba(15,23,42,.05); }
+    .lm-dashboard-panel__header {
+        align-items: flex-start;
+        padding: 14px 14px 10px;
+        gap: 10px;
+    }
+    .lm-dashboard-panel__actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    .lm-dashboard-panel__actions .btn {
+        width: 100%;
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--lm-radius-sm);
+    }
     .lm-dashboard-panel__title { font-size: 18px; white-space: normal; overflow: visible; text-overflow: clip; }
     .lm-dashboard-panel__hint { font-size: 13px; line-height: 1.4; }
     .lm-dashboard-panel__badge { display: none; }
-    .lm-dashboard-panel__body { padding: 14px 16px 16px; }
+    .lm-dashboard-panel__body { padding: 12px 14px 14px; }
     .lm-quick-grid { grid-template-columns: 1fr; gap: 12px; }
-    .lm-quick-box { padding: 16px; border-radius: 14px; }
+    .lm-quick-box { padding: 14px; border-radius: 13px; }
     .lm-quick-box__title { align-items: flex-start; font-size: 18px; line-height: 1.25; }
     .lm-quick-box__icon { width: 42px; height: 42px; border-radius: 12px; }
     .lm-quick-box__subtitle { font-size: 13px; line-height: 1.45; }
@@ -1869,6 +2050,35 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-dashboard-pane { padding-bottom: 18px; overflow: hidden; }
     .lm-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
     .lm-table-wrap--hover-actions { overflow: auto; }
+    .lm-overdue-customers-scroll { display: none; }
+    .lm-overdue-mobile-list {
+        display: block;
+        max-height: clamp(260px, 52vh, 430px);
+        min-height: 0;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 1px 3px 6px 1px;
+        margin-right: -3px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(239,68,68,.42) transparent;
+        overscroll-behavior: contain;
+        touch-action: pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+    .lm-overdue-mobile-list::-webkit-scrollbar { width: 4px; }
+    .lm-overdue-mobile-list::-webkit-scrollbar-thumb {
+        border-radius: 999px;
+        background: rgba(239,68,68,.35);
+    }
+    .lm-dashboard-panel__body.lm-table-wrap > table { display: none; }
+    .lm-dashboard-mobile-list {
+        display: block;
+        max-height: min(64vh, 520px);
+        overflow-y: auto;
+        padding-right: 2px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .lm-chart-shell { min-height: auto; padding: 16px; }
     .lm-customer-chat-fab { display: none; }
 }
 @media (max-width: 400px) {
@@ -1876,11 +2086,29 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     .lm-dashboard-title { font-size: 19px; }
     .lm-hero-metric { flex: 0 0 100px; min-width: 100px; padding: 5px 6px; }
     .lm-hero-metric-value { font-size: 14px; }
-    .lm-dashboard-cards { gap: 8px; }
-    .lm-stat-card { padding: 10px; gap: 8px; min-height: 74px; }
+    .lm-dashboard-cards { grid-template-columns: 1fr; gap: 8px; }
+    .lm-stat-card { padding: 10px; gap: 8px; min-height: 70px; }
     .lm-stat-card__icon { width: 34px; height: 34px; flex-basis: 34px; font-size: 14px; border-radius: 10px; }
     .lm-stat-card__label { font-size: 10px; }
     .lm-stat-card__value { font-size: 18px; }
+    .lm-overdue-mobile-grid { grid-template-columns: 1fr; }
+    .lm-overdue-mobile-main strong { font-size: 20px; }
+    .lm-collect-payment-card__grid,
+    .lm-dashboard-mobile-card__grid { grid-template-columns: 1fr; }
+    .lm-collect-payment-card__actions { grid-template-columns: 1fr; }
+    .lm-dashboard-mobile-card__header,
+    .lm-overdue-mobile-card__header,
+    .lm-collect-payment-card__header {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+    .lm-dashboard-mobile-card__status,
+    .lm-dashboard-mobile-card__amount,
+    .lm-overdue-mobile-badge {
+        width: max-content;
+        max-width: 100%;
+        text-align: left;
+    }
     .lm-chat-card__title { font-size: 17px; }
     .lm-chat-card__summary-value { font-size: 18px; }
     .lm-chat-card__item { grid-template-columns: 54px minmax(0,1fr) 14px; }
@@ -2038,6 +2266,238 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
         padding-right: 2px;
         -webkit-overflow-scrolling: touch;
     }
+}
+
+@media (max-width: 767px) {
+    .lm-content { padding: 8px 8px 64px; }
+    .lm-dashboard,
+    .lm-dashboard-grid,
+    .lm-side-stack,
+    .lm-quick-grid { gap: 8px; }
+    .lm-dashboard-tabs {
+        gap: 4px;
+        padding: 4px;
+        border-radius: 10px;
+    }
+    .lm-dashboard-tab {
+        min-width: 96px;
+        min-height: 34px;
+        padding: 7px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        gap: 5px;
+    }
+    .lm-dashboard-hero {
+        padding: 10px;
+        border-radius: 11px;
+    }
+    .lm-dashboard-hero-grid { gap: 8px; }
+    .lm-dashboard-title {
+        margin-bottom: 2px;
+        font-size: 19px;
+        line-height: 1.15;
+    }
+    .lm-hero-metrics { gap: 5px; }
+    .lm-hero-metric {
+        flex-basis: 96px;
+        min-width: 96px;
+        padding: 5px 6px;
+        border-radius: 8px;
+    }
+    .lm-hero-metric-label { font-size: 8.5px; }
+    .lm-hero-metric-value { font-size: 14px; line-height: 1.15; }
+    .lm-dashboard-cards {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+    }
+    .lm-stat-card {
+        display: grid;
+        justify-items: center;
+        text-align: center;
+        min-height: 56px;
+        padding: 6px 4px;
+        gap: 4px;
+        border-radius: 9px;
+    }
+    .lm-stat-card > div {
+        min-width: 0;
+        width: 100%;
+    }
+    .lm-stat-card__icon {
+        width: 24px;
+        height: 24px;
+        flex-basis: 24px;
+        border-radius: 7px;
+        font-size: 10px;
+    }
+    .lm-stat-card__label {
+        font-size: 7.5px;
+        line-height: 1.15;
+        letter-spacing: 0;
+        overflow-wrap: anywhere;
+    }
+    .lm-stat-card__value {
+        margin-top: 1px;
+        font-size: 14px;
+        line-height: 1.1;
+        overflow-wrap: anywhere;
+    }
+    .lm-dashboard-panel { border-radius: 10px; }
+    .lm-dashboard-panel__header {
+        padding: 9px 9px 6px;
+        gap: 5px;
+    }
+    .lm-dashboard-panel__title {
+        font-size: 15px;
+        line-height: 1.25;
+    }
+    .lm-dashboard-panel__hint {
+        margin-top: 2px;
+        font-size: 11px;
+        line-height: 1.3;
+    }
+    .lm-dashboard-panel__body { padding: 8px 9px 9px; }
+    .lm-dashboard-panel__actions .btn { min-height: 30px; font-size: 10.5px; }
+    .lm-quick-box { padding: 9px; border-radius: 9px; }
+    .lm-quick-box__title {
+        gap: 7px;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+    .lm-quick-box__icon {
+        width: 29px;
+        height: 29px;
+        border-radius: 8px;
+        font-size: 12px;
+    }
+    .lm-quick-box__subtitle { margin-bottom: 7px; font-size: 10.5px; line-height: 1.3; }
+    .lm-quick-box__meta { gap: 5px; margin-bottom: 8px; }
+    .lm-quick-box__chip { padding: 4px 7px; font-size: 9px; gap: 4px; }
+    .lm-quick-input { margin-bottom: 8px !important; }
+    .lm-quick-input .form-control,
+    .lm-overdue-search .form-control { height: 34px; font-size: 12px; }
+    .lm-quick-input .input-group-addon,
+    .lm-overdue-search .input-group-addon { padding: 6px 9px; font-size: 12px; }
+    .lm-quick-box__footer { margin-top: 8px; padding-top: 8px; font-size: 10px; }
+    .lm-collect-payment-card,
+    .lm-overdue-mobile-card,
+    .lm-dashboard-mobile-card {
+        gap: 7px;
+        padding: 8px;
+        border-radius: 9px;
+        box-shadow: 0 5px 16px rgba(15,23,42,.05);
+    }
+    .lm-collect-payment-card + .lm-collect-payment-card,
+    .lm-overdue-mobile-card + .lm-overdue-mobile-card,
+    .lm-dashboard-mobile-card + .lm-dashboard-mobile-card { margin-top: 7px; }
+    .lm-overdue-mobile-card {
+        gap: 5px;
+        padding: 6px;
+        border-radius: 8px;
+        border-color: #fee2e2;
+        background: linear-gradient(180deg, #fff, #fffafa);
+        box-shadow: 0 2px 10px rgba(15,23,42,.04);
+    }
+    .lm-overdue-mobile-card + .lm-overdue-mobile-card { margin-top: 5px; }
+    .lm-collect-payment-card__header,
+    .lm-overdue-mobile-card__header,
+    .lm-dashboard-mobile-card__header { gap: 7px; }
+    .lm-overdue-mobile-card__header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 5px;
+    }
+    .lm-customer-profile { gap: 6px; }
+    .lm-customer-profile__avatar {
+        width: 28px;
+        height: 28px;
+        flex-basis: 28px;
+        font-size: 11px;
+    }
+    .lm-row-title,
+    .lm-dashboard-mobile-card__title { font-size: 12px; line-height: 1.25; }
+    .lm-row-subtitle,
+    .lm-dashboard-mobile-card__subtitle { font-size: 10px; line-height: 1.25; }
+    .lm-collect-payment-card__grid,
+    .lm-overdue-mobile-grid,
+    .lm-dashboard-mobile-card__grid { gap: 5px; }
+    .lm-collect-payment-card__grid > div,
+    .lm-overdue-mobile-grid > div,
+    .lm-dashboard-mobile-card__grid > div {
+        padding: 6px 7px;
+        border-radius: 7px;
+    }
+    .lm-collect-payment-card__grid small,
+    .lm-overdue-mobile-main small,
+    .lm-overdue-mobile-grid small,
+    .lm-dashboard-mobile-card__grid small {
+        margin-bottom: 2px;
+        font-size: 8.5px;
+    }
+    .lm-collect-payment-card__grid strong,
+    .lm-overdue-mobile-grid span,
+    .lm-dashboard-mobile-card__grid span { font-size: 11px; line-height: 1.25; }
+    .lm-overdue-mobile-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 5px 7px;
+        border-radius: 6px;
+        background: linear-gradient(135deg, #fff7ed, #fff1f2);
+    }
+    .lm-overdue-mobile-main small {
+        margin-bottom: 0;
+        font-size: 7.5px;
+        white-space: nowrap;
+    }
+    .lm-overdue-mobile-main strong {
+        min-width: 0;
+        font-size: 13px;
+        line-height: 1.05;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+    .lm-overdue-mobile-badge {
+        min-width: 25px;
+        min-height: 18px;
+        padding: 2px 5px;
+        box-shadow: inset 0 0 0 1px rgba(239,68,68,.08);
+        font-size: 8.5px;
+        line-height: 1.1;
+    }
+    .lm-overdue-mobile-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px; }
+    .lm-overdue-mobile-grid > div {
+        padding: 4px 5px;
+        border-radius: 6px;
+        background: #fff;
+    }
+    .lm-overdue-mobile-grid small { font-size: 7.5px; }
+    .lm-overdue-mobile-grid span { font-size: 10px; line-height: 1.15; }
+    .lm-dashboard-mobile-card__status {
+        max-width: 96px;
+        padding: 3px 7px;
+        font-size: 9px;
+    }
+    .lm-dashboard-mobile-card__amount { font-size: 13px; }
+    .lm-collect-payment-card__actions { gap: 6px; }
+    .lm-collect-payment-card__actions .btn,
+    .lm-overdue-mobile-card .btn,
+    .lm-dashboard-mobile-card .btn {
+        min-height: 30px;
+        padding: 4px 7px;
+        border-radius: 7px;
+        font-size: 10.5px;
+        gap: 4px;
+    }
+    .lm-chart-shell { padding: 10px; }
+    .lm-chart-copy strong { font-size: 13px; }
+    .lm-chart-copy small { font-size: 10px; line-height: 1.3; }
+}
+
+@media (max-width: 340px) {
+    .lm-dashboard-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ============================================================
