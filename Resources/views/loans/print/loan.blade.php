@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Print Loan {{ $loanRow->loan_number ?? $loanRow->id }}</title>
+    <title>Print Installment {{ $loanRow->loan_number ?? $loanRow->id }}</title>
     <style>
         @font-face { font-family: 'Noto Sans Khmer'; src: url('{{ asset('fonts/khmer/NotoSansKhmer-Regular.ttf') }}') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Khmer OS Battambang'; src: url('{{ asset('fonts/khmer/KhmerOSbattambang.ttf') }}') format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
@@ -838,7 +838,7 @@
 
 <div class="no-print">
     <button type="button" id="copy_loan_as_image_button">Copy as Image</button>
-    <button type="button" onclick="window.print()">Print Loan</button>
+    <button type="button" onclick="window.print()">Print Installment</button>
     <button type="button" onclick="window.close()">Close</button>
     <span class="copy-status" id="copy_loan_as_image_status"></span>
 </div>
@@ -1145,7 +1145,7 @@
     </div>
 
     <div class="printed-date">Printed date&nbsp;&nbsp;&nbsp;&nbsp;{{ $printedAt }}</div>
-    
+
 </div>
 
 <script>
@@ -1215,7 +1215,7 @@
     async function buildLoanPrintImageBlob(scale, mimeType, quality) {
         var target = document.querySelector('.page');
         if (!target) {
-            throw new Error('Loan print page was not found.');
+            throw new Error('Installment print page was not found.');
         }
 
         scale = parseFloat(scale || 2);

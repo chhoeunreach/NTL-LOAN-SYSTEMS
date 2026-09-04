@@ -9,7 +9,7 @@
         'broken_ptp' => ['label' => 'Broken PTP', 'icon' => 'fa fa-chain-broken', 'tone' => 'orange', 'hint' => 'Promises to pay that were missed'],
         'field_visits_today' => ['label' => 'Field Visits Today', 'icon' => 'fa fa-map-marker', 'tone' => 'violet', 'hint' => 'Visits due for collector follow-up'],
         'collection_amount_today' => ['label' => 'Collected Today', 'icon' => 'fa fa-money', 'tone' => 'green', 'hint' => 'Total collection amount recorded today', 'money' => true],
-        'recovery_cases' => ['label' => 'Recovery Cases', 'icon' => 'fa fa-refresh', 'tone' => 'cyan', 'hint' => 'Loans currently in recovery workflow'],
+        'recovery_cases' => ['label' => 'Recovery Cases', 'icon' => 'fa fa-refresh', 'tone' => 'cyan', 'hint' => 'Installments currently in recovery workflow'],
         'legal_cases' => ['label' => 'Legal Cases', 'icon' => 'fa fa-gavel', 'tone' => 'red', 'hint' => 'Accounts escalated to legal handling'],
         'high_risk_customers' => ['label' => 'High Risk', 'icon' => 'fa fa-warning', 'tone' => 'orange', 'hint' => 'Customers marked high risk or critical'],
         'repossessions' => ['label' => 'Repossessions', 'icon' => 'fa fa-archive', 'tone' => 'slate', 'hint' => 'Assets or accounts under repossession'],

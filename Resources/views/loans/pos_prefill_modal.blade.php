@@ -5,7 +5,7 @@
                 <span aria-hidden="true">&times;</span>
             </button>
             <h4 class="modal-title">
-                <i class="fa fa-exchange"></i> Add Loan to POS
+                <i class="fa fa-exchange"></i> Add Installment to POS
             </h4>
         </div>
         <div class="modal-body{{ empty($error) ? ' loan-pos-prefill-modal__body' : '' }}">

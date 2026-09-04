@@ -1,5 +1,7 @@
-﻿@php
+@php
     $cards = [
+        ['key' => 'total_loans', 'label' => 'All Installment', 'icon' => 'fa fa-list-alt', 'tone' => 'slate', 'url' => route('loan-management.loans.index')],
+        ['key' => 'pending_requests', 'label' => 'Pending Requests', 'icon' => 'fa fa-clock-o', 'tone' => 'amber', 'url' => route('loan-management.loans.index', ['status' => 'pending'])],
         ['key' => 'due_today', 'label' => 'Due Today', 'icon' => 'fa fa-calendar-check-o', 'tone' => 'blue', 'url' => route('loan-management.operations.page', ['page' => 'due-today'])],
         ['key' => 'overdue_accounts', 'label' => 'Overdue Accounts', 'icon' => 'fa fa-exclamation-triangle', 'tone' => 'red', 'url' => route('loan-management.collection.page', ['page' => 'overdue-accounts'])],
         ['key' => 'broken_ptp', 'label' => 'Broken PTP', 'icon' => 'fa fa-chain-broken', 'tone' => 'amber', 'url' => route('loan-management.collection.page', ['page' => 'broken-promise'])],
@@ -35,43 +37,35 @@
 
     <section class="lm-dashboard-grid">
         <div class="lm-dashboard-panel lm-dashboard-panel--feature lm-dashboard-panel--quick-payment">
-            <div class="lm-dashboard-panel__header">
-                <div>
-                    <h3 class="lm-dashboard-panel__title">Quick Actions</h3>
-                    <p class="lm-dashboard-panel__hint">Search loans, collect payment, create new loans.</p>
-                </div>
-                <div class="lm-dashboard-panel__actions">
-                    <span class="lm-dashboard-panel__badge"><i class="fa fa-bolt"></i> 2 smart tools</span>
-                    <a href="{{ route('loan-management.settings.cms') }}" class="btn btn-default btn-sm">
-                        <i class="fa fa-newspaper-o"></i> CMS Manager
-                    </a>
-                </div>
-            </div>
             <div class="lm-dashboard-panel__body lm-dashboard-panel__body--quick-actions">
                 <div class="lm-quick-grid">
                     <div class="lm-quick-box lm-quick-box--loan">
-                        <h4 class="lm-quick-box__title"><span class="lm-quick-box__icon lm-quick-box__icon--pay"><i class="fa fa-money"></i></span> Collect Payment</h4>
-                        <p class="lm-quick-box__subtitle">Search by name, phone, or loan # to collect payment.</p>
-                        <div class="lm-quick-box__meta">
-                            <span class="lm-quick-box__chip lm-quick-box__chip--pay"><i class="fa fa-calendar"></i> Due Date</span>
-                            <span class="lm-quick-box__chip lm-quick-box__chip--pay"><i class="fa fa-money"></i> Balance</span>
-                            <span class="lm-quick-box__chip lm-quick-box__chip--pay"><i class="fa fa-check-circle"></i> Quick Pay</span>
-                        </div>
-                        <div class="form-group lm-quick-input" style="margin-bottom:12px;">
-                            <div class="input-group">
-                                <span class="input-group-addon"><i class="fa fa-search"></i></span>
-                                <input type="text" class="form-control" id="loanDashboardQuickSearchInput" placeholder="Search loan #, customer name, phone...">
+                        <div class="lm-quick-box__topline">
+                            <h4 class="lm-quick-box__title"><span class="lm-quick-box__icon lm-quick-box__icon--pay"><i class="fa fa-money"></i></span> Collect Payment</h4>
+                            <div class="lm-quick-box__meta">
+                                <span class="lm-quick-box__chip lm-quick-box__chip--pay"><i class="fa fa-calendar"></i> Due Date</span>
+                                <span class="lm-quick-box__chip lm-quick-box__chip--pay"><i class="fa fa-money"></i> Balance</span>
+                                <span class="lm-quick-box__chip lm-quick-box__chip--pay"><i class="fa fa-check-circle"></i> Quick Pay</span>
                             </div>
                         </div>
-                        <div class="form-group lm-quick-input" style="margin-bottom:12px;">
-                            <div class="input-group">
-                                <span class="input-group-addon"><i class="fa fa-map-marker"></i></span>
-                                <select class="form-control" id="loanDashboardQuickLocationFilter">
-                                    <option value="">All Locations</option>
-                                    @foreach($locations as $location)
-                                        <option value="{{ $location['id'] }}">{{ $location['name'] }}</option>
-                                    @endforeach
-                                </select>
+                        <p class="lm-quick-box__subtitle">Search by name, phone, or installment # to collect payment.</p>
+                        <div class="lm-quick-filter-row">
+                            <div class="form-group lm-quick-input lm-quick-input--search">
+                                <div class="input-group">
+                                    <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                                    <input type="text" class="form-control" id="loanDashboardQuickSearchInput" placeholder="Search installment #, customer name, phone...">
+                                </div>
+                            </div>
+                            <div class="form-group lm-quick-input lm-quick-input--location">
+                                <div class="input-group">
+                                    <span class="input-group-addon"><i class="fa fa-map-marker"></i></span>
+                                    <select class="form-control" id="loanDashboardQuickLocationFilter">
+                                        <option value="">All Locations</option>
+                                        @foreach($locations as $location)
+                                            <option value="{{ $location['id'] }}">{{ $location['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div class="table-responsive lm-table-wrap lm-table-wrap--hover-actions lm-collect-payment-scroll">
@@ -265,7 +259,7 @@
                                 $overdueDue = (float)($row['total_not_yet_paid'] ?? ($row['overdue_amount'] ?? 0));
                                 $overduePayoff = (float)($row['pay_off_now'] ?? 0);
                             @endphp
-                            <article class="lm-overdue-mobile-card js-dashboard-card-detail" role="button" tabindex="0" data-title="Loan Detail" data-url="{{ url('loan-management/loans/'.($row['id'] ?? 0).'/view?_lm_modal=1') }}">
+                            <article class="lm-overdue-mobile-card js-dashboard-card-detail" role="button" tabindex="0" data-title="Installment Detail" data-url="{{ url('loan-management/loans/'.($row['id'] ?? 0).'/view?_lm_modal=1') }}">
                                 <div class="lm-overdue-mobile-card__header">
                                     <div class="lm-customer-profile">
                                         <span class="lm-customer-profile__avatar">
@@ -306,8 +300,8 @@
             <div class="lm-dashboard-panel">
                 <div class="lm-dashboard-panel__header">
                     <div>
-                        <h3 class="lm-dashboard-panel__title">Loan Status Overview</h3>
-                        <p class="lm-dashboard-panel__hint">Loan status distribution.</p>
+                        <h3 class="lm-dashboard-panel__title">Installment Status Overview</h3>
+                        <p class="lm-dashboard-panel__hint">Installment status distribution.</p>
                     </div>
                 </div>
                 <div class="lm-dashboard-panel__body">
@@ -377,7 +371,7 @@
             </div>
             <div class="lm-dashboard-panel__body lm-table-wrap">
                 <table class="table table-striped table-bordered lm-dashboard-table" id="loanCollectorPerformanceTable">
-                    <thead><tr><th>Collector</th><th>Assigned Loans</th><th class="text-right">Collected</th><th>Visits</th></tr></thead>
+                    <thead><tr><th>Collector</th><th>Assigned Installments</th><th class="text-right">Collected</th><th>Visits</th></tr></thead>
                     <tbody data-loan-table="collector_performance">
                     @forelse(($collectorPerformance ?? []) as $row)
                         <tr>
@@ -464,7 +458,7 @@
                             id="loanDashboardLiveChatFrame"
                             class="lm-live-chat-frame"
                             src="{{ !empty($initialLiveChat['id']) ? route('loan-management.live-chat.detail', ['thread' => $initialLiveChat['id'], '_lm_embed' => 1]) : route('loan-management.live-chat', ['_lm_embed' => 1]) }}"
-                            title="Loan live chat dashboard"></iframe>
+                            title="Installment live chat dashboard"></iframe>
                     </main>
 
                     <aside class="lm-live-chat-side">
@@ -473,7 +467,7 @@
                                 {{ strtoupper(substr((string) ($initialLiveChat['display_name'] ?? 'C'), 0, 1)) }}
                             </div>
                             <h4 class="lm-live-chat-profile-name" id="loanDashboardLiveChatProfileName">{{ $initialLiveChat['display_name'] ?? 'Customer Chat' }}</h4>
-                            <p class="lm-live-chat-profile-subtitle" id="loanDashboardLiveChatProfileSubtitle">{{ $initialLiveChat['display_subtitle'] ?? 'Loan support inbox' }}</p>
+                            <p class="lm-live-chat-profile-subtitle" id="loanDashboardLiveChatProfileSubtitle">{{ $initialLiveChat['display_subtitle'] ?? 'Installment support inbox' }}</p>
                             <p class="lm-live-chat-profile-time" id="loanDashboardLiveChatProfileTime">
                                 {{ !empty($initialLiveChat['last_message_at']) ? \Carbon\Carbon::parse($initialLiveChat['last_message_at'])->diffForHumans() : 'Waiting for live activity' }}
                             </p>
@@ -657,7 +651,7 @@
 
         function overdueMobileCardHtml(row, payUrl, customerAvatar, customerSub, customerName) {
             var detailUrl = "{{ url('loan-management/loans') }}/" + row.id + "/view?_lm_modal=1";
-            return '<article class="lm-overdue-mobile-card js-dashboard-card-detail" role="button" tabindex="0" data-title="Loan Detail" data-url="' + detailUrl + '">'
+            return '<article class="lm-overdue-mobile-card js-dashboard-card-detail" role="button" tabindex="0" data-title="Installment Detail" data-url="' + detailUrl + '">'
                 + '<div class="lm-overdue-mobile-card__header">'
                 + '<div class="lm-customer-profile">' + customerAvatar + '<span class="lm-customer-profile__info"><span class="lm-row-title">'+esc(customerName)+'</span><span class="lm-row-subtitle">'+customerSub+'</span></span></div>'
                 + '<div class="lm-overdue-mobile-main"><small>Amount Due</small><strong>' + money(row.total_not_yet_paid || row.overdue_amount || 0) + '</strong></div>'
@@ -770,7 +764,7 @@
                 + '<div class="lm-customer-profile__info">'
                     + '<div class="lm-customer-cell">'
                     + '<div class="lm-customer-hover">'
-                    + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '">' + esc(row.customer_name) + '</a>'
+                    + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Installment Detail" data-url="' + urls.detail + '">' + esc(row.customer_name) + '</a>'
                     + hoverTelegram
                     + '</div>'
                     + '<span class="lm-row-subtitle">' + esc(row.loan_number) + (row.customer_phone && row.customer_phone !== '-' ? ' &middot; ' + esc(row.customer_phone) : '') + (row.location_name ? ' &middot; ' + esc(row.location_name) : '') + '</span>'
@@ -787,7 +781,7 @@
                 + '<div class="lm-pay-more dropdown">'
                 + '<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" title="More actions"><i class="fa fa-ellipsis-h"></i></button>'
                 + '<ul class="dropdown-menu dropdown-menu-right lm-action-menu__list">'
-                + '<li><button type="button" class="js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '"><i class="fa fa-eye"></i> View Loan</button></li>'
+                + '<li><button type="button" class="js-loan-detail-modal" data-title="Installment Detail" data-url="' + urls.detail + '"><i class="fa fa-eye"></i> View Installment</button></li>'
                 + telegramAction
                 + '</ul>'
                 + '</div>'
@@ -807,11 +801,11 @@
             var statusClass = isOverdue ? ' lm-pay-status--overdue' : '';
             var statusBadge = row.status ? '<span class="lm-pay-status' + statusClass + '">' + esc(row.status) + '</span>' : '';
 
-            return '<article class="lm-collect-payment-card js-dashboard-card-detail" role="button" tabindex="0" data-loan-id="' + esc(row.id) + '" data-title="Loan Detail" data-url="' + urls.detail + '">'
+            return '<article class="lm-collect-payment-card js-dashboard-card-detail" role="button" tabindex="0" data-loan-id="' + esc(row.id) + '" data-title="Installment Detail" data-url="' + urls.detail + '">'
                 + '<div class="lm-collect-payment-card__header">'
                 + '<div class="lm-customer-profile">' + customerAvatar
                 + '<span class="lm-customer-profile__info">'
-                + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '">' + esc(row.customer_name || '-') + '</a>'
+                + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Installment Detail" data-url="' + urls.detail + '">' + esc(row.customer_name || '-') + '</a>'
                 + '<span class="lm-row-subtitle">' + loanMeta + '</span>'
                 + '</span></div>'
                 + statusBadge
@@ -824,7 +818,7 @@
                 + '<div class="lm-collect-payment-card__actions">'
                 + '<button type="button" class="btn btn-success btn-sm btn-modal" data-href="' + urls.pay + '" data-container=".view_modal"><i class="fa fa-money"></i> Pay</button>'
                 + '<button type="button" class="btn btn-default btn-sm btn-modal" data-href="' + urls.printModal + '" data-container=".view_modal"><i class="fa fa-print"></i> Print</button>'
-                + '<button type="button" class="btn btn-default btn-sm js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '"><i class="fa fa-eye"></i> View</button>'
+                + '<button type="button" class="btn btn-default btn-sm js-loan-detail-modal" data-title="Installment Detail" data-url="' + urls.detail + '"><i class="fa fa-eye"></i> View</button>'
                 + '</div>'
                 + '</article>';
         }
@@ -1199,7 +1193,7 @@
                     { values: charts.monthly_loan ? charts.monthly_loan.principal : [], format: 'money', className: 'lm-live-chart__bar--accent' }
                 ],
                 legends: [
-                    { label: 'Loan Count', className: '' },
+                    { label: 'Installment Count', className: '' },
                     { label: 'Principal', className: 'lm-live-chart__legend-swatch--accent' }
                 ]
             });
@@ -1220,7 +1214,7 @@
                     { values: charts.loan_status ? charts.loan_status.series : [], format: 'int', className: 'lm-live-chart__bar--warn' }
                 ],
                 legends: [
-                    { label: 'Loans', className: 'lm-live-chart__legend-swatch--warn' }
+                    { label: 'Installments', className: 'lm-live-chart__legend-swatch--warn' }
                 ]
             });
 
@@ -1265,7 +1259,7 @@
             thread = thread || {};
             var name = thread.display_name || 'Customer Chat';
             $('#loanDashboardLiveChatTitle, #loanDashboardLiveChatProfileName').text(name);
-            $('#loanDashboardLiveChatSubtitle, #loanDashboardLiveChatProfileSubtitle').text(thread.display_subtitle || 'Loan support inbox');
+            $('#loanDashboardLiveChatSubtitle, #loanDashboardLiveChatProfileSubtitle').text(thread.display_subtitle || 'Installment support inbox');
             $('#loanDashboardLiveChatProfileAvatar').text((name.charAt(0) || 'C').toUpperCase());
             $('#loanDashboardLiveChatProfileTime').text(thread.last_message_at ? formatLiveChatTime(thread.last_message_at) : 'Waiting for live activity');
             $('#loanDashboardLiveChatStatus').text(thread.status ? String(thread.status).replace(/_/g, ' ') : 'open');
@@ -1455,7 +1449,7 @@
                 if ($(event.target).closest('a, button, input, select, textarea, .dropdown-menu').length) {
                     return;
                 }
-                openDashboardIframeModal($(this).data('title') || 'Loan Detail', $(this).data('url'));
+                openDashboardIframeModal($(this).data('title') || 'Installment Detail', $(this).data('url'));
             });
             $(document).on('keydown', '.js-dashboard-card-detail', function (event) {
                 if (event.key !== 'Enter' && event.key !== ' ') {
@@ -1465,7 +1459,7 @@
                     return;
                 }
                 event.preventDefault();
-                openDashboardIframeModal($(this).data('title') || 'Loan Detail', $(this).data('url'));
+                openDashboardIframeModal($(this).data('title') || 'Installment Detail', $(this).data('url'));
             });
 
             timer = window.setInterval(refreshLoanDashboard, refreshMs);

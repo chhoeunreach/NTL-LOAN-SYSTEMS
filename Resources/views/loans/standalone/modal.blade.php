@@ -503,7 +503,7 @@
 
         <div class="mob-topbar">
             <button type="button" class="mob-close" data-dismiss="modal" aria-label="Close">&times;</button>
-            <div class="mob-title">Create Loan</div>
+            <div class="mob-title">Create Installment</div>
             <div class="mob-action"></div>
         </div>
 
@@ -532,7 +532,7 @@
                         <div class="mob-section-title"><i class="fa fa-file-invoice"></i> Invoice Details</div>
                         <div class="mob-grid-2">
                             <div class="mob-field">
-                                <label>Loan #</label>
+                                <label>Installment #</label>
                                 <input type="text" name="loan_number" class="mob-input" placeholder="Auto">
                             </div>
                             <div class="mob-field">
@@ -774,7 +774,7 @@
                     </div>
 
                     <div class="mob-card" style="margin-top: 12px;">
-                        <div class="mob-section-title"><i class="fa fa-sliders-h"></i> Loan Conditions</div>
+                        <div class="mob-section-title"><i class="fa fa-sliders-h"></i> Installment Conditions</div>
                         <div class="mob-field">
                             <label>Principal After Deposit <span class="mob-required">*</span></label>
                             <input type="number" step="0.01" id="modalPrincipalAmount" name="principal_amount" class="mob-input" min="0.01" required placeholder="Auto" readonly>
@@ -831,7 +831,7 @@
                 <div class="mob-step-panel" data-panel="3">
                     <div class="mob-card">
                         <div class="mob-section-title"><i class="fa fa-receipt"></i> Summary</div>
-                        <div class="mob-review-row"><span class="mob-review-label">Loan Date</span><span class="mob-review-value" id="mobRevDate">{{ date('Y-m-d') }}</span></div>
+                        <div class="mob-review-row"><span class="mob-review-label">Installment Date</span><span class="mob-review-value" id="mobRevDate">{{ date('Y-m-d') }}</span></div>
                         <div class="mob-review-row"><span class="mob-review-label">Location</span><span class="mob-review-value" id="mobRevLocation">-</span></div>
                         <div class="mob-review-row"><span class="mob-review-label">Collector</span><span class="mob-review-value" id="mobRevCollector">-</span></div>
                     </div>
@@ -845,7 +845,7 @@
                         <div id="mobRevProducts" style="font-size:13px; color:#6b7280;">No products added</div>
                     </div>
                     <div class="mob-card">
-                        <div class="mob-section-title"><i class="fa fa-calculator"></i> Loan Terms</div>
+                        <div class="mob-section-title"><i class="fa fa-calculator"></i> Installment Terms</div>
                         <div class="mob-review-row"><span class="mob-review-label">Principal</span><span class="mob-review-value" id="mobRevPrincipal">-</span></div>
                         <div class="mob-review-row"><span class="mob-review-label">Interest</span><span class="mob-review-value" id="mobRevInterest">-</span></div>
                         <div class="mob-review-row"><span class="mob-review-label">Duration</span><span class="mob-review-value" id="mobRevDuration">-</span></div>
@@ -895,7 +895,7 @@
                     Next <i class="fa fa-arrow-right"></i>
                 </button>
                 <button type="button" class="mob-btn-submit" id="mobBtnSubmit" style="display:none;" onclick="mobSubmit('create_approve')">
-                    <i class="fa fa-check"></i> Create Loan
+                    <i class="fa fa-check"></i> Create Installment
                 </button>
             </div>
         </form>
@@ -2010,7 +2010,7 @@ function mobSubmit(action) {
     jQuery.ajax({
         url: urls.storeLoan, method: 'POST', data: fd, processData: false, contentType: false,
         success: function(res) {
-            if (window.toastr) toastr.success(res.message || 'Loan created');
+            if (window.toastr) toastr.success(res.message || 'Installment created');
             jQuery('#standaloneLoanModal').modal('hide');
             if (res?.data?.loan_id) {
                 var loanUrl = urls.loanViewBase + '/' + res.data.loan_id + '/view?_lm_modal=1';

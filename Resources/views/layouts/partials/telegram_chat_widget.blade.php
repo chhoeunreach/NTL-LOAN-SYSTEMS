@@ -1,5 +1,5 @@
 {{-- Global Telegram-style chat widget: sticky floating button + a two-pane panel (contact
-     sidebar + conversation), available on every Loan Management module page. Backed entirely by
+     sidebar + conversation), available on every Installment Management module page. Backed entirely by
      its own tables/service/controller (TelegramChatService, LoanTelegramChatController,
      loan_telegram_chat_threads/messages) - fully independent from the staff's own internal Live
      Chat tool (chat/inbox.blade.php, LoanChatService, loan_chat_threads/messages), which this
@@ -928,7 +928,7 @@
             return;
         }
 
-        var loanNo = activeLoanContext.loan_number ? ('Loan #: ' + activeLoanContext.loan_number + '\n') : '';
+        var loanNo = activeLoanContext.loan_number ? ('Installment #: ' + activeLoanContext.loan_number + '\n') : '';
         var balance = activeLoanContext.balance_amount ? ('Balance: ' + activeLoanContext.balance_amount + '\n') : '';
         var text = window.prompt('Invoice message:', 'Dear ' + activeCustomerName + ',\n' + loanNo + balance + 'Please review your invoice and contact us if you have questions.');
         if (text) sendTelegramText(text);

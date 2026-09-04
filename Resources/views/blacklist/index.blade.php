@@ -446,7 +446,7 @@
         </div>
         <div class="lm-blacklist-hero-actions">
             <a href="{{ route('loan-management.loans') }}" class="lm-btn-back">
-                <i class="fa fa-arrow-left"></i> {{ $text('All Loans', 'កម្ចីទាំងអស់') }}
+                <i class="fa fa-arrow-left"></i> {{ $text('All Installments', 'កម្ចីទាំងអស់') }}
             </a>
             <button type="button" class="lm-btn-flag" data-toggle="modal" data-target="#modalAddBlacklist">
                 <i class="fa fa-plus-circle"></i> {{ $text('Flag Customer', 'ដាក់បញ្ចូលបញ្ជីខ្មៅ') }}
@@ -473,7 +473,7 @@
         <div class="lm-stat-card lm-stat-indigo">
             <div class="lm-stat-card-icon"><i class="fa fa-shield"></i></div>
             <div class="lm-stat-card-content">
-                <small>{{ $text('Linked Loans', 'កម្ចីជាប់ពាក់ព័ន្ធ') }}</small>
+                <small>{{ $text('Linked Installments', 'កម្ចីជាប់ពាក់ព័ន្ធ') }}</small>
                 <strong>{{ number_format($summary['linked_loans_count'] ?? 0) }}</strong>
             </div>
         </div>
@@ -593,7 +593,7 @@
                             </strong>
                             <br>
                             <small class="text-muted">
-                                {{ (int) ($c->total_loans ?? 0) }} {{ $text('Loans', 'កម្ចី') }}
+                                {{ (int) ($c->total_loans ?? 0) }} {{ $text('Installments', 'កម្ចី') }}
                             </small>
                         </td>
                         <td style="text-align:center;">
@@ -680,7 +680,7 @@
                             {{ $text('Reason for Blacklisting', 'មូលហេតុនៃការដាក់បញ្ជីខ្មៅ') }} <span class="text-danger">*</span>
                         </label>
                         <textarea name="blacklist_reason" id="blacklist_reason_input" rows="3" class="form-control" placeholder="{{ $text('Describe default behavior, refusal to pay, fraudulent document, etc.', 'ពិពណ៌នាអំពីអាកប្បកិរិយាយឺតយ៉ាវ បដិសេធមិនបង់ប្រាក់ ក្លែងបន្លំឯកសារ...') }}" required style="border-radius:8px;"></textarea>
-                        
+
                         <div style="margin-top:8px;">
                             <small class="text-muted" style="display:block; margin-bottom:4px; font-weight:600;">
                                 {{ $text('Quick Reason Suggestions:', 'ជម្រើសមូលហេតុរហ័ស៖') }}
@@ -701,7 +701,7 @@
                     </div>
 
                     <div class="alert alert-warning" style="margin-top:16px; margin-bottom:0; font-size:12px; border-radius:8px;">
-                        <i class="fa fa-warning"></i> 
+                        <i class="fa fa-warning"></i>
                         {{ $text('Blacklisting a customer will restrict them from applying for new installment loans across all branches.', 'ការដាក់បញ្ចូលបញ្ជីខ្មៅនឹងរារាំងអតិថិជននេះពីការស្នើសុំកម្ចីរំលស់ថ្មីនៅគ្រប់សាខា។') }}
                     </div>
                 </div>

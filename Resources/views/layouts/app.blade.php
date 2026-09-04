@@ -208,10 +208,10 @@
                                     '<button type="button" class="close" data-dismiss="modal" aria-label="Close">' +
                                         '<span aria-hidden="true">&times;</span>' +
                                     '</button>' +
-                                    '<h4 class="modal-title">' + escLoanModal(title || 'Loan Detail') + '</h4>' +
+                                    '<h4 class="modal-title">' + escLoanModal(title || 'Installment Detail') + '</h4>' +
                                 '</div>' +
                                 '<div class="modal-body" style="padding:0;height:85vh;">' +
-                                    '<iframe src="' + escLoanModal(modalUrl) + '" style="width:100%;height:100%;border:0;" title="' + escLoanModal(title || 'Loan Detail') + '"></iframe>' +
+                                    '<iframe src="' + escLoanModal(modalUrl) + '" style="width:100%;height:100%;border:0;" title="' + escLoanModal(title || 'Installment Detail') + '"></iframe>' +
                                 '</div>' +
                             '</div>' +
                         '</div>';
@@ -223,7 +223,7 @@
                     var actions = '<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>';
                     if (loanUrl) {
                         actions = '<button type="button" class="btn btn-primary js-open-existing-loan-detail" data-loan-url="' + escLoanModal(loanUrl) + '">' +
-                            '<i class="fa fa-eye"></i> View Loan' +
+                            '<i class="fa fa-eye"></i> View Installment' +
                         '</button> ' + actions;
                     }
 
@@ -451,7 +451,7 @@
 
                 $(document).on('click', '.js-open-existing-loan-detail', function(event){
                     event.preventDefault();
-                    openLoanDetailFrameModal($(this).data('loan-url'), 'Loan Detail');
+                    openLoanDetailFrameModal($(this).data('loan-url'), 'Installment Detail');
                 });
 
                 window.loanManagementOpenAutoInstallment = openAutoInstallment;
@@ -516,7 +516,7 @@
 
                 var $trigger = $(this);
                 var url = $trigger.data('href') || $trigger.attr('href');
-                var title = $trigger.data('title') || 'Loan Calculator';
+                var title = $trigger.data('title') || 'Installment Calculator';
 
                 if (!url || !$('.view_modal').length) {
                     window.location.href = url;

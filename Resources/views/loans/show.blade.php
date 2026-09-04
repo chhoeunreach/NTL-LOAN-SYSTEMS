@@ -31,7 +31,7 @@
     );
 @endphp
 @extends('loanmanagement::layouts.app')
-@section('title', 'Loan Detail')
+@section('title', 'Installment Detail')
 @section('loan_css')
 @if($isEmbeddedModal)
 <style>
@@ -77,7 +77,7 @@
             <i class="fa fa-times"></i>
         </button>
         @endif
-        <h1 style="margin:0;">Loan Detail #{{ $loanRow->id }}</h1>
+        <h1 style="margin:0;">Installment Detail #{{ $loanRow->id }}</h1>
     </div>
     <div class="pull-right d-none d-lg-block" style="white-space:nowrap;">
         @can('loan_management.edit')
@@ -85,7 +85,7 @@
                 class="btn btn-primary btn-modal"
                 data-href="{{ route('loan-management.loans.edit', $loanEditRouteParams) }}"
                 data-container=".view_modal">
-            <i class="fa fa-pencil"></i> Edit Loan
+            <i class="fa fa-pencil"></i> Edit Installment
         </button>
         @endcan
         <button type="button"
@@ -98,7 +98,7 @@
                 class="btn btn-default btn-modal"
                 data-href="{{ route('loan-management.loans.print-modal', $loanRow->id) }}"
                 data-container=".view_modal">
-            <i class="fa fa-print"></i> Print Loan
+            <i class="fa fa-print"></i> Print Installment
         </button>
         @can('loan_management.edit')
         <button type="button"
@@ -112,12 +112,12 @@
 </section>
 <section class="content">
 
-{{-- Mobile Loan Info Card --}}
+{{-- Mobile Installment Info Card --}}
 <div class="lm-mobile-info-card lm-animate-slideUp">
-    <div class="lm-mobile-info-card-title"><i class="fa fa-file-text-o" style="color: #3b82f6;"></i> Loan Information</div>
+    <div class="lm-mobile-info-card-title"><i class="fa fa-file-text-o" style="color: #3b82f6;"></i> Installment Information</div>
     <div class="lm-mobile-info-grid">
         <div class="lm-mobile-info-item">
-            <small>Loan #</small>
+            <small>Installment #</small>
             <strong>{{ $loanRow->loan_number ?? $loanRow->id }}</strong>
         </div>
         <div class="lm-mobile-info-item">
@@ -177,10 +177,10 @@
 <div class="row">
 <div class="col-md-12">
 <div class="box box-primary">
-<div class="box-header"><h3 class="box-title">Loan Information</h3></div>
+<div class="box-header"><h3 class="box-title">Installment Information</h3></div>
 <div class="box-body row">
-<div class="col-md-3"><strong>Loan #:</strong> {{ $loanRow->loan_number ?? $loanRow->id }}</div>
-<div class="col-md-3"><strong>Loan Date:</strong> {{ $loanRow->loan_date ?? $loanRow->created_at }}</div>
+<div class="col-md-3"><strong>Installment #:</strong> {{ $loanRow->loan_number ?? $loanRow->id }}</div>
+<div class="col-md-3"><strong>Installment Date:</strong> {{ $loanRow->loan_date ?? $loanRow->created_at }}</div>
 <div class="col-md-3"><strong>Status:</strong> <span class="label label-info">{{ ucfirst($loanRow->status ?? 'pending') }}</span></div>
 <div class="col-md-3"><strong>Currency:</strong> {{ $loanRow->currency ?? 'USD' }}</div>
 <div class="col-md-3"><strong>Principal:</strong> {{ number_format((float)($loanRow->principal_amount ?? 0),2) }}</div>
@@ -220,10 +220,10 @@
 </div>
 
 <div class="box box-default">
-<div class="box-header"><h3 class="box-title">Related Loan Data</h3></div>
+<div class="box-header"><h3 class="box-title">Related Installment Data</h3></div>
 <div class="box-body">
     <div class="row" style="margin-bottom: 12px;">
-        <div class="col-md-3"><strong>Loan Items:</strong> {{ $loanItemsCount ?? 0 }}</div>
+        <div class="col-md-3"><strong>Installment Items:</strong> {{ $loanItemsCount ?? 0 }}</div>
         <div class="col-md-3"><strong>Product Items:</strong> {{ $productItemsCount ?? 0 }}</div>
         <div class="col-md-3"><strong>Schedules:</strong> {{ $scheduleCount ?? 0 }}</div>
         <div class="col-md-3"><strong>Payments:</strong> {{ $paymentsCount ?? 0 }}</div>

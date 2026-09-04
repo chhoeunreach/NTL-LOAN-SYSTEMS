@@ -15,6 +15,7 @@ use Modules\LoanManagement\Http\Controllers\LoanImportExportController;
 use Modules\LoanManagement\Http\Controllers\LoanInstallmentListController;
 use Modules\LoanManagement\Http\Controllers\LoanLocationController;
 use Modules\LoanManagement\Http\Controllers\LoanPaymentController;
+use Modules\LoanManagement\Http\Controllers\LoanProductController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramChatController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramWebhookController;
 use Modules\LoanManagement\Http\Controllers\PublicAppController;
@@ -39,9 +40,14 @@ Route::middleware(['web'])->group(function () {
     Route::get('/customer/login', [PublicAppController::class, 'customerLogin'])->name('loan-management.public.customer-login');
     Route::get('/loan-management/customer/login', fn () => redirect()->route('loan-management.public.customer-login'));
     Route::post('/customer/login', [PublicAppController::class, 'customerLoginStore'])->name('loan-management.public.customer-login.store');
-    Route::post('/customer/logout', [PublicAppController::class, 'customerLogout'])->name('loan-management.public.customer-logout');
+    Route::match(['get', 'post'], '/customer/logout', [PublicAppController::class, 'customerLogout'])->name('loan-management.public.customer-logout');
+    Route::match(['get', 'post'], '/logout', [\App\Http\Controllers\Auth\LoginController::class, 'logout'])->name('logout');
 
     Route::get('/customer/dashboard', [PublicAppController::class, 'customerDashboard'])->name('loan-management.public.customer-dashboard');
+    Route::post('/customer/profile-photo', [PublicAppController::class, 'updateProfilePhoto'])->name('loan-management.public.customer-profile-photo');
+    Route::get('/customer/loan-request', [PublicAppController::class, 'customerLoanRequest'])->name('loan-management.public.customer-loan-request');
+    Route::post('/customer/loan-request', [PublicAppController::class, 'storeCustomerLoanRequest'])->name('loan-management.public.customer-loan-request.store');
+    Route::post('/customer/loan-request/{id}/cancel', [PublicAppController::class, 'cancelCustomerLoanRequest'])->name('loan-management.public.customer-loan-request.cancel');
 });
 
 Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'AdminSidebarMenu', 'CheckUserLogin', 'loan.activity'])
@@ -138,6 +144,20 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/customers/clone-from-pos', [LoanCustomerController::class, 'cloneFromUltimatePosStore'])->name('loan-management.customers.clone-from-pos.store');
         Route::get('/customers/search-main-contacts', [LoanCustomerController::class, 'searchMainContacts'])->name('loan-management.customers.search-main-contacts');
         Route::get('/customers/{customer}', [LoanCustomerController::class, 'show'])->name('loan-management.customers.show');
+
+        Route::get('/products', [LoanProductController::class, 'index'])->name('loan-management.products');
+        Route::get('/products/index', [LoanProductController::class, 'index'])->name('loan-management.products.index');
+        Route::get('/products/create', [LoanProductController::class, 'create'])->name('loan-management.products.create');
+        Route::post('/products', [LoanProductController::class, 'store'])->name('loan-management.products.store');
+        Route::get('/products/export-csv', [LoanProductController::class, 'exportCsv'])->name('loan-management.products.export-csv');
+        Route::post('/products/bulk-action', [LoanProductController::class, 'bulkAction'])->name('loan-management.products.bulk-action');
+        Route::get('/products/ajax-search', [LoanProductController::class, 'ajaxSearch'])->name('loan-management.products.ajax-search');
+        Route::get('/products/{product}', [LoanProductController::class, 'show'])->name('loan-management.products.show');
+        Route::get('/products/{product}/edit', [LoanProductController::class, 'edit'])->name('loan-management.products.edit');
+        Route::put('/products/{product}', [LoanProductController::class, 'update'])->name('loan-management.products.update');
+        Route::delete('/products/{product}', [LoanProductController::class, 'destroy'])->name('loan-management.products.destroy');
+        Route::post('/products/{product}/stock-adjust', [LoanProductController::class, 'quickStockAdjust'])->name('loan-management.products.stock-adjust');
+        Route::get('/products/{product}/calculator-data', [LoanProductController::class, 'calculatorData'])->name('loan-management.products.calculator-data');
         Route::get('/customers/{customer}/edit', [LoanCustomerController::class, 'edit'])->name('loan-management.customers.edit');
         Route::put('/customers/{customer}', [LoanCustomerController::class, 'update'])->name('loan-management.customers.update');
         Route::delete('/customers/{customer}', [LoanCustomerController::class, 'destroy'])->name('loan-management.customers.destroy');

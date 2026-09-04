@@ -1,5 +1,5 @@
 @php
-    $loanNumber = $loan->loan_number ?? ('Loan #'.$loan->id);
+    $loanNumber = $loan->loan_number ?? ('Installment #'.$loan->id);
     $customerName = trim((string) ($loan->customer_name_snapshot ?? '')) ?: '-';
     $addPaymentUrl = route('loan-management.loans.payment.create', [
         'loan' => $loan->id,
@@ -20,7 +20,7 @@
             <div class="row">
                 <div class="col-sm-4">
                     <div class="well well-sm">
-                        <strong>Loan #:</strong> {{ $loanNumber }}<br>
+                        <strong>Installment #:</strong> {{ $loanNumber }}<br>
                         <strong>Customer:</strong> {{ $customerName }}
                     </div>
                 </div>

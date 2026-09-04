@@ -221,7 +221,7 @@
                 <span aria-hidden="true">&times;</span>
             </button>
             <h4 class="modal-title">
-                <i class="fa fa-money"></i> {{ $isDepositPayment ? 'Add Customer Deposit Payment' : 'Add Loan Payment' }}
+                <i class="fa fa-money"></i> {{ $isDepositPayment ? 'Add Customer Deposit Payment' : 'Add Installment Payment' }}
             </h4>
         </div>
 
@@ -230,7 +230,7 @@
                 <div class="lm-payment-summary-card">
                     <span class="lm-payment-summary-card__label">Customer</span>
                     <span class="lm-payment-summary-card__value">{{ $customerName }}</span>
-                    <span class="lm-payment-summary-card__sub">Loan # {{ $loanNumber }}</span>
+                    <span class="lm-payment-summary-card__sub">Installment # {{ $loanNumber }}</span>
                         @if($telegramLinkUrl && auth()->user() && auth()->user()->can('loan_management.edit'))
                             <div style="margin-top:10px;">
                                 @if($telegramLinked)
@@ -1143,7 +1143,7 @@ $(function () {
         applyPayTarget();
     });
     } catch (err) {
-        if (window.console) { console.error('Loan payment form init error:', err); }
+        if (window.console) { console.error('Installment payment form init error:', err); }
     }
 
     refreshRemoveButtons();

@@ -29,7 +29,7 @@
         <div class="lm-payment-summary-card tone-blue">
             <div class="lm-payment-summary-icon"><i class="fa fa-bank"></i></div>
             <div class="lm-payment-summary-copy">
-                <span>Loan Payments</span>
+                <span>Installment Payments</span>
                 <strong>$ {{ number_format($summary['loan_amount'] ?? 0, 2) }}</strong>
                 <small>{{ number_format($summary['loan_count'] ?? 0) }} records</small>
             </div>
@@ -79,7 +79,7 @@
                     </div>
                     <div class="col-md-2">
                         <div class="form-group">
-                            <label>Loan #</label>
+                            <label>Installment #</label>
                             <input type="text" name="loan_number" class="form-control" value="{{ $filters['loan_number'] ?? '' }}">
                         </div>
                     </div>
@@ -105,7 +105,7 @@
                             <label>Type</label>
                             <select name="payment_type" class="form-control">
                                 <option value="">All</option>
-                                <option value="loan" {{ ($filters['payment_type'] ?? '') === 'loan' ? 'selected' : '' }}>Loan</option>
+                                <option value="loan" {{ ($filters['payment_type'] ?? '') === 'loan' ? 'selected' : '' }}>Installment</option>
                                 <option value="monthly" {{ ($filters['payment_type'] ?? '') === 'monthly' ? 'selected' : '' }}>Monthly</option>
                                 <option value="payoff" {{ ($filters['payment_type'] ?? '') === 'payoff' ? 'selected' : '' }}>Pay Off</option>
                             </select>
@@ -166,7 +166,7 @@
                     <tr>
                         <th>Receipt #</th>
                         <th>Paid Date</th>
-                        <th>Loan #</th>
+                        <th>Installment #</th>
                         <th>Customer</th>
                         <th>Type</th>
                         <th>Method</th>
@@ -188,7 +188,7 @@
                             <td>{{ ! empty($payment->paid_date) ? \Carbon\Carbon::parse($payment->paid_date)->format('d-m-Y') : '-' }}</td>
                             <td>
                                 @if(Route::has('loan-management.loans.view') && ! empty($payment->loan_id))
-                                    <a href="{{ route('loan-management.loans.view', $payment->loan_id) }}">{{ $payment->loan_number ?? ('Loan #'.$payment->loan_id) }}</a>
+                                    <a href="{{ route('loan-management.loans.view', $payment->loan_id) }}">{{ $payment->loan_number ?? ('Installment #'.$payment->loan_id) }}</a>
                                 @else
                                     {{ $payment->loan_number ?? '-' }}
                                 @endif
@@ -265,7 +265,7 @@
                         </div>
 
                         <div class="lm-payment-mobile-card__grid">
-                            <div><small>Loan #</small><span>{{ $payment->loan_number ?? '-' }}</span></div>
+                            <div><small>Installment #</small><span>{{ $payment->loan_number ?? '-' }}</span></div>
                             <div><small>Method</small><span>{{ $payment->payment_method ?? '-' }}</span></div>
                             <div><small>Reference</small><span>{{ $payment->reference_number ?? '-' }}</span></div>
                             <div><small>Received By</small><span>{{ $payment->received_by ?? '-' }}</span></div>

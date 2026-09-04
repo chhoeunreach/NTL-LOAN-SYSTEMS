@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
             </ul>
         </li>
         <li class="treeview installment-section section-loans ${treeOpenClass([links.installment, links.overdue])}" data-section="loans">
-            <a href="#"><i class="fa fa-credit-card"></i> <span>Loans</span><i class="fa fa-angle-left pull-right"></i></a>
+            <a href="#"><i class="fa fa-credit-card"></i> <span>Installments</span><i class="fa fa-angle-left pull-right"></i></a>
             <ul class="treeview-menu" ${treeMenuStyle([links.installment, links.overdue])}>
                 <li class="${activeClass(links.installment)}"><a href="${links.installment}"><i class="fa fa-money"></i> Installment</a></li>
                 <li class="${activeClass(links.overdue)}"><a href="${links.overdue}"><i class="fa fa-exclamation-triangle"></i> Overdue / Late Payments</a></li>
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="#"><i class="fa fa-bar-chart"></i> <span>Reports</span><i class="fa fa-angle-left pull-right"></i></a>
             <ul class="treeview-menu" ${treeMenuStyle([links.reportsPayments, links.reportsSummary, links.reportsAba])}>
                 <li class="${activeClass(links.reportsPayments)}"><a href="${links.reportsPayments}"><i class="fa fa-line-chart"></i> Payments Report</a></li>
-                <li class="${activeClass(links.reportsSummary)}"><a href="${links.reportsSummary}"><i class="fa fa-list"></i> Loan Summary Report</a></li>
+                <li class="${activeClass(links.reportsSummary)}"><a href="${links.reportsSummary}"><i class="fa fa-list"></i> Installment Summary Report</a></li>
                 <li class="${activeClass(links.reportsAba)}"><a href="${links.reportsAba}"><i class="fa fa-qrcode"></i> ABA Transactions Report</a></li>
             </ul>
         </li>
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
             <a href="#"><i class="fa fa-cogs"></i> <span>Tools</span><i class="fa fa-angle-left pull-right"></i></a>
             <ul class="treeview-menu" ${treeMenuStyle([links.toolsMonthlyImport, links.toolsLoanImport, links.toolsNotify, links.activityLogs])}>
                 <li class="${activeClass(links.toolsMonthlyImport)}"><a href="${links.toolsMonthlyImport}"><i class="fa fa-exchange"></i> Monthly Payments Import/Export</a></li>
-                <li class="${activeClass(links.toolsLoanImport)}"><a href="${links.toolsLoanImport}"><i class="fa fa-upload"></i> Loan Import/Export</a></li>
+                <li class="${activeClass(links.toolsLoanImport)}"><a href="${links.toolsLoanImport}"><i class="fa fa-upload"></i> Installment Import/Export</a></li>
                 <li class="${activeClass(links.toolsNotify)}"><a href="${links.toolsNotify}"><i class="fa fa-bell"></i> Send Notification</a></li>
                 <li class="${activeClass(links.activityLogs)}"><a href="${links.activityLogs}"><i class="fa fa-history"></i> Activity Logs</a></li>
             </ul>

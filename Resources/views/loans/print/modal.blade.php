@@ -10,7 +10,7 @@
                 <span aria-hidden="true">&times;</span>
             </button>
             <h4 class="modal-title">
-                <i class="fa fa-print"></i> Print Loan #{{ $loanRow->loan_number ?? $loanRow->id }}
+                <i class="fa fa-print"></i> Print Installment #{{ $loanRow->loan_number ?? $loanRow->id }}
             </h4>
         </div>
         @endif
@@ -19,7 +19,7 @@
                 id="loan_print_preview_frame"
                 src="{{ $frameSrc }}"
                 style="width: 100%; height: 100%; border: 0; display: block;"
-                title="Loan print preview"></iframe>
+                title="Installment print preview"></iframe>
         </div>
         @if(! $isAutostart)
         <div class="modal-footer">

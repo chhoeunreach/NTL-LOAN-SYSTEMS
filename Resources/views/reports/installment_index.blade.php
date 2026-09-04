@@ -74,7 +74,7 @@
 
 <section class="content ir-page">
     <div class="ir-cards">
-        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-file-text-o"></i></span><span><small>{{ $bi('Loans', 'កម្ចី') }}</small><strong>{{ $number($summary['count'] ?? 0) }}</strong></span></div>
+        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-file-text-o"></i></span><span><small>{{ $bi('Installments', 'កម្ចី') }}</small><strong>{{ $number($summary['count'] ?? 0) }}</strong></span></div>
         <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-money"></i></span><span><small>{{ $bi('Principal', 'ប្រាក់ដើម') }}</small><strong>{{ $money($summary['principal'] ?? 0) }}</strong></span></div>
         <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-check-circle"></i></span><span><small>{{ $bi('Paid', 'បានបង់') }}</small><strong>{{ $money($summary['paid'] ?? 0) }}</strong></span></div>
         <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-balance-scale"></i></span><span><small>{{ $bi('Balance', 'សមតុល្យ') }}</small><strong>{{ $money($summary['balance'] ?? 0) }}</strong></span></div>
@@ -106,9 +106,9 @@
                             @endforeach
                         </select>
                     </div>
-                    <div><label>{{ $bi('Search', 'ស្វែងរក') }}</label><input type="text" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="{{ $bi('Loan, invoice, customer', 'កម្ចី វិក្កយបត្រ អតិថិជន') }}"></div>
+                    <div><label>{{ $bi('Search', 'ស្វែងរក') }}</label><input type="text" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="{{ $bi('Installment, invoice, customer', 'កម្ចី វិក្កយបត្រ អតិថិជន') }}"></div>
                     <div>
-                        <label>{{ $bi('Loan status', 'ស្ថានភាពកម្ចី') }}</label>
+                        <label>{{ $bi('Installment status', 'ស្ថានភាពកម្ចី') }}</label>
                         <select name="status" class="form-control">
                             <option value="">{{ $bi('All statuses', 'គ្រប់ស្ថានភាព') }}</option>
                             @foreach($statusOptions as $key => $label)
@@ -144,7 +144,7 @@
             <table class="table table-bordered table-hover ir-table" id="installmentReportsTable">
                 <thead>
                     <tr>
-                        <th>{{ $bi('Loan #', 'លេខកម្ចី') }}</th>
+                        <th>{{ $bi('Installment #', 'លេខកម្ចី') }}</th>
                         <th>{{ $bi('Date', 'ថ្ងៃ') }}</th>
                         <th>{{ $bi('Invoice', 'វិក្កយបត្រ') }}</th>
                         <th>{{ $bi('Customer', 'អតិថិជន') }}</th>

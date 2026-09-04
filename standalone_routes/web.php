@@ -22,5 +22,5 @@ Route::middleware('auth')->group(function () {
     Route::post('/roles/import', [RoleController::class, 'import'])->name('roles.import');
     Route::resource('/roles', RoleController::class)->except(['show']);
 });
-Route::redirect('/products', '/loan-management/dashboard')->name('products.index');
+Route::redirect('/products', '/loan-management/products')->name('products.index');
 Route::get('/sells/{sell}', [SellController::class, 'show'])->name('sells.show');

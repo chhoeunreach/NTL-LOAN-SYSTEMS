@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', (session('user.language', config('app.locale')) === 'km') ? 'របាយការណ៍សង្ខេបកម្ចីប្រចាំឆ្នាំ' : 'Yearly Loan Summary')
+@section('title', (session('user.language', config('app.locale')) === 'km') ? 'របាយការណ៍សង្ខេបកម្ចីប្រចាំឆ្នាំ' : 'Yearly Installment Summary')
 
 @php
     $isKhmer = $isKhmer ?? session('user.language', config('app.locale')) === 'km';
@@ -314,7 +314,7 @@
 <section class="content-header yls-wrap">
     <div class="yls-header">
         <div>
-            <h1 class="yls-title">{{ $bi('Yearly Loan Summary', 'របាយការណ៍សង្ខេបកម្ចីប្រចាំឆ្នាំ') }}</h1>
+            <h1 class="yls-title">{{ $bi('Yearly Installment Summary', 'របាយការណ៍សង្ខេបកម្ចីប្រចាំឆ្នាំ') }}</h1>
             <p class="yls-subtitle">{{ $bi('Annual loan, schedule, collection, deposit, and overdue totals.', 'សរុបកម្ចី កាលវិភាគ ការប្រមូលប្រាក់ ប្រាក់កក់ និងហួសកំណត់ប្រចាំឆ្នាំ') }}</p>
         </div>
         <a class="btn btn-success"
@@ -359,7 +359,7 @@
                 </div>
                 <div class="form-group" style="margin:0;">
                     <label>{{ $bi('Search', 'ស្វែងរក') }}</label>
-                    <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $bi('Loan, customer, phone', 'កម្ចី អតិថិជន ទូរស័ព្ទ') }}">
+                    <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $bi('Installment, customer, phone', 'កម្ចី អតិថិជន ទូរស័ព្ទ') }}">
                 </div>
                 <div class="yls-filter-actions">
                     <button type="submit" class="btn btn-primary">{{ $bi('Filter', 'ចម្រោះ') }}</button>
@@ -473,10 +473,10 @@
 <div class="yls-loan-modal" id="ylsLoanModal" aria-hidden="true">
     <div class="yls-loan-modal-dialog">
         <div class="yls-loan-modal-head">
-            <div class="yls-loan-modal-title" id="ylsLoanModalTitle">{{ $bi('Loan Details', 'ព័ត៌មានលម្អិតកម្ចី') }}</div>
+            <div class="yls-loan-modal-title" id="ylsLoanModalTitle">{{ $bi('Installment Details', 'ព័ត៌មានលម្អិតកម្ចី') }}</div>
             <button type="button" class="yls-loan-modal-close" id="ylsLoanModalClose">{{ $bi('Close', 'បិទ') }}</button>
         </div>
-        <iframe id="ylsLoanModalFrame" title="{{ $bi('Loan Details', 'ព័ត៌មានលម្អិតកម្ចី') }}"></iframe>
+        <iframe id="ylsLoanModalFrame" title="{{ $bi('Installment Details', 'ព័ត៌មានលម្អិតកម្ចី') }}"></iframe>
     </div>
 </div>
 @endsection
@@ -566,7 +566,7 @@
         var detailUrl = @json(route('loan-management.admin-loan.details'));
         var filters = @json($yearlyLoanDetailFilterPayload);
         var labels = {
-            all: @json($bi('All Loans', 'កម្ចីទាំងអស់')),
+            all: @json($bi('All Installments', 'កម្ចីទាំងអស់')),
             registered: @json($bi('Registered Installments', 'អតិថិជនចុះឈ្មោះរំលស់')),
             generalPaid: @json($bi('General Installments Paid', 'អតិថិជនរំលស់បានបង់ទូរទៅ')),
             paidOff: @json($bi('Paid Off', 'បង់ផ្ដាច់')),

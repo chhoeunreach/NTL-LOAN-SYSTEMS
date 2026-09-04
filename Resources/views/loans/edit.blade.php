@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Edit Loan')
+@section('title', 'Edit Installment')
 
 @section('loan_css')
 @php $isEmbeddedModal = request()->boolean('_lm_modal'); @endphp
@@ -427,7 +427,7 @@
 
     <div class="lm-wiz-topbar" style="display:flex; align-items:center; gap:8px;">
         <div class="lm-wiz-title" style="flex:1;">
-            <i class="fa fa-pencil-square-o"></i> Edit Loan #{{ $loanRow->loan_number ?? $loanRow->id }}
+            <i class="fa fa-pencil-square-o"></i> Edit Installment #{{ $loanRow->loan_number ?? $loanRow->id }}
         </div>
     </div>
 
@@ -467,7 +467,7 @@
                     </div>
                     <div class="lm-wiz-grid-3">
                         <div class="lm-wiz-field">
-                            <label>Loan No</label>
+                            <label>Installment No</label>
                             <div class="lm-wiz-readonly">{{ $loanRow->loan_number ?? '#' . $loanRow->id }}</div>
                         </div>
                         <div class="lm-wiz-field">
@@ -537,7 +537,7 @@
                     <input type="hidden" name="currency" value="{{ $loanRow->currency ?? 'USD' }}">
                     <input type="hidden" name="exchange_rate" value="{{ $loanRow->exchange_rate ?? 1 }}">
                     <div class="lm-wiz-field">
-                        <label>Loan Note</label>
+                        <label>Installment Note</label>
                         <textarea name="note" class="lm-wiz-input" rows="3" placeholder="Internal note for this loan">{{ old('note', $loanRow->note ?? '') }}</textarea>
                     </div>
                 </div>
@@ -964,7 +964,7 @@
                 </div>
 
                 <div class="lm-wiz-card">
-                    <div class="lm-wiz-section-title"><i class="fa fa-sliders-h"></i> Loan Conditions</div>
+                    <div class="lm-wiz-section-title"><i class="fa fa-sliders-h"></i> Installment Conditions</div>
                     <div class="lm-wiz-grid-2">
                         <div class="lm-wiz-field">
                             <label>Principal After Deposit <span class="lm-wiz-required">*</span></label>
@@ -1097,8 +1097,8 @@
                 <div class="lm-wiz-card">
                     <div class="lm-wiz-section-title"><i class="fa fa-receipt"></i> Summary</div>
                     <div class="lm-wiz-review-grid">
-                        <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Loan Number</span><span class="lm-wiz-review-value">{{ $loanRow->loan_number ?? '#' . $loanRow->id }}</span></div>
-                        <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Loan Date</span><span class="lm-wiz-review-value" id="wizRevDate">{{ !empty($loanRow->loan_date) ? \Carbon\Carbon::parse($loanRow->loan_date)->format('d-m-Y') : '-' }}</span></div>
+                        <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Installment Number</span><span class="lm-wiz-review-value">{{ $loanRow->loan_number ?? '#' . $loanRow->id }}</span></div>
+                        <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Installment Date</span><span class="lm-wiz-review-value" id="wizRevDate">{{ !empty($loanRow->loan_date) ? \Carbon\Carbon::parse($loanRow->loan_date)->format('d-m-Y') : '-' }}</span></div>
                         <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Status</span><span class="lm-wiz-review-value" id="wizRevStatus">{{ ucfirst($loanRow->status ?? 'draft') }}</span></div>
                         <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Collector</span><span class="lm-wiz-review-value" id="wizRevCollector">{{ $loanRow->collector_name_snapshot ?? optional($collectedCollectors->firstWhere('id', $loanRow->assigned_collector_id ?? $loanRow->collector_id ?? ''))->name ?? '-' }}</span></div>
                         <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Location</span><span class="lm-wiz-review-value" id="wizRevLocation">{{ $editLocationName ?: '-' }}</span></div>
@@ -1143,7 +1143,7 @@
                     </div>
                 </div>
                 <div class="lm-wiz-card">
-                    <div class="lm-wiz-section-title"><i class="fa fa-calculator"></i> Loan Terms</div>
+                    <div class="lm-wiz-section-title"><i class="fa fa-calculator"></i> Installment Terms</div>
                     <div class="lm-wiz-review-grid">
                         <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Principal</span><span class="lm-wiz-review-value" id="wizRevPrincipal">${{ number_format($principalAfterDepositValue, 2) }}</span></div>
                         <div class="lm-wiz-review-row"><span class="lm-wiz-review-label">Interest Rate</span><span class="lm-wiz-review-value" id="wizRevInterest">{{ number_format($displayInterestRate ?? 0, 2) }}%</span></div>
@@ -2738,9 +2738,9 @@
             },
             success: function (res) {
                 if (window.toastr) {
-                    toastr.success(res.message || 'Loan updated successfully.');
+                    toastr.success(res.message || 'Installment updated successfully.');
                 } else {
-                    alert(res.message || 'Loan updated successfully.');
+                    alert(res.message || 'Installment updated successfully.');
                 }
                 if (res.data && res.data.sections_html) {
                     $('#loanEditSections').html(res.data.sections_html);

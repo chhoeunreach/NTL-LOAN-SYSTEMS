@@ -1,9 +1,9 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Loan User Detail')
+@section('title', 'Installment User Detail')
 
 @section('content_body')
 <section class="content-header">
-    <h1>Loan User Detail</h1>
+    <h1>Installment User Detail</h1>
 </section>
 
 <section class="content">
@@ -80,14 +80,14 @@
     @if($recentLoans->isNotEmpty())
     <div class="box box-default">
         <div class="box-header with-border">
-            <h3 class="box-title">Recent Loans Created</h3>
+            <h3 class="box-title">Recent Installments Created</h3>
         </div>
         <div class="box-body table-responsive">
             <table class="table table-bordered table-striped">
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Loan Number</th>
+                        <th>Installment Number</th>
                         <th>Status</th>
                         <th>Principal</th>
                         <th>Created</th>

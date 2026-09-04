@@ -1,9 +1,9 @@
 <div class="box box-warning">
-    <div class="box-header"><h3 class="box-title"><i class="fa fa-file-text-o"></i> Loan Terms</h3></div>
+    <div class="box-header"><h3 class="box-title"><i class="fa fa-file-text-o"></i> Installment Terms</h3></div>
     <div class="box-body row">
         <div class="col-sm-6 col-md-3">
             <div class="form-group">
-                <label>Loan Number</label>
+                <label>Installment Number</label>
                 <input type="text" name="loan_number" class="form-control" placeholder="Auto-generate if blank">
             </div>
         </div>
@@ -20,7 +20,7 @@
         </div>
         <div class="col-sm-6 col-md-3">
             <div class="form-group">
-                <label>Loan Date <span class="text-danger">*</span></label>
+                <label>Installment Date <span class="text-danger">*</span></label>
                 <input type="date" name="loan_date" class="form-control" value="{{ date('Y-m-d') }}">
             </div>
         </div>

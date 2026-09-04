@@ -339,7 +339,7 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>{{ $t('Search', 'ស្វែងរក') }}</label>
-                            <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $t('Loan, invoice, customer, phone', 'កម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ') }}">
+                            <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $t('Installment, invoice, customer, phone', 'កម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ') }}">
                         </div>
                     </div>
                     <div class="col-md-3">

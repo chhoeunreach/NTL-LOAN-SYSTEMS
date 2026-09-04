@@ -44,6 +44,14 @@
         </li>
 
         <li class="treeview">
+            <a href="#"><i class="fa fa-cubes"></i> <span>Installment Products</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
+            <ul class="treeview-menu">
+                <li><a href="{{ $lmUrl('loan-management.products.index', [], '/loan-management/products') }}"><i class="fa fa-list"></i> All Products</a></li>
+                <li><a href="{{ $lmUrl('loan-management.products.create', [], '/loan-management/products/create') }}"><i class="fa fa-plus-circle"></i> Add Product</a></li>
+            </ul>
+        </li>
+
+        <li class="treeview">
             <a href="#"><i class="fa fa-users"></i> Customer Management <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
             <ul class="treeview-menu">
                 <li><a href="{{ $lmUrl('loan-management.customers.index', [], '/loan-management/customers/list') }}"><i class="fa fa-user"></i> Customers</a></li>
@@ -76,7 +84,7 @@
             <a href="#"><i class="fa fa-bar-chart"></i> Reports <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
             <ul class="treeview-menu">
                 <li><a href="{{ $lmUrl('loan-management.reports.index', [], '/loan-management/reports/index') }}"><i class="fa fa-list-alt"></i> Installment Reports</a></li>
-                <li><a href="{{ $lmUrl('loan-management.reports.yearly-loan-summary', [], '/loan-management/reports/yearly-loan-summary') }}"><i class="fa fa-calendar"></i> {{ $lmText('Yearly Loan Summary', 'សង្ខេបកម្ចីប្រចាំឆ្នាំ') }}</a></li>
+                <li><a href="{{ $lmUrl('loan-management.reports.yearly-loan-summary', [], '/loan-management/reports/yearly-loan-summary') }}"><i class="fa fa-calendar"></i> {{ $lmText('Yearly Installment Summary', 'សង្ខេបកម្ចីប្រចាំឆ្នាំ') }}</a></li>
                 <li><a href="{{ $lmUrl('loan-management.payments.index', ['payment_type' => 'monthly'], '/loan-management/payments/index?payment_type=monthly') }}"><i class="fa fa-money"></i> Collection Payment Reports</a></li>
                 <li><a href="{{ $lmUrl('loan-management.payments.index', ['payment_type' => 'loan'], '/loan-management/payments/index?payment_type=loan') }}"><i class="fa fa-bank"></i> Deposit Payment Reports</a></li>
             </ul>
@@ -85,7 +93,7 @@
         <li class="treeview">
             <a href="#"><i class="fa fa-cogs"></i> Tools <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
             <ul class="treeview-menu">
-                <li><a href="{{ $lmUrl('loan-management.tools.loan-import-export', [], '/loan-management/tools/loan-import-export') }}"><i class="fa fa-file-excel-o"></i> Loan Import/Export</a></li>
+                <li><a href="{{ $lmUrl('loan-management.tools.loan-import-export', [], '/loan-management/tools/loan-import-export') }}"><i class="fa fa-file-excel-o"></i> Installment Import/Export</a></li>
                 <li><a href="{{ $lmUrl('loan-management.tools.monthly-import-export', [], '/loan-management/tools/monthly-import-export') }}"><i class="fa fa-exchange"></i> Monthly Payments Import/Export</a></li>
                 <li><a href="{{ $lmUrl('loan-management.gps.index', [], '/loan-management/gps') }}"><i class="fa fa-map"></i> GPS Tracking</a></li>
                 <li><a href="{{ $lmUrl('loan-management.activity-logs.index', [], '/loan-management/tools/activity-logs') }}"><i class="fa fa-history"></i> Activity Logs</a></li>

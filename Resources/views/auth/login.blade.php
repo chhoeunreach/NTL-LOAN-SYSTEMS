@@ -2,9 +2,12 @@
     $businessSettings = \Modules\LoanManagement\Services\BusinessSettingsService::get();
     $businessLogoUrl = \Modules\LoanManagement\Services\BusinessSettingsService::publicLogoUrl();
     $loginBackgroundUrl = \Modules\LoanManagement\Services\BusinessSettingsService::loginBackgroundUrl();
-    $businessName = $businessSettings['business_name'] ?: 'Loan Management';
-    $systemName = $businessSettings['system_name'] ?: 'Loan Management';
+    $businessName = $businessSettings['business_name'] ?: 'Installment Management';
+    $systemName = $businessSettings['system_name'] ?: 'Installment Management';
     $systemSubtitle = $businessSettings['system_subtitle'] ?: 'Dedicated loan operation workspace';
+
+    $currentAdmin = Auth::guard('web')->user() ?? Auth::user();
+    $currentCustomer = Auth::guard('customer_loan')->user();
 @endphp
 <!doctype html>
 <html lang="en">
@@ -134,6 +137,77 @@
         .login-box .form-control:focus {
             border-color: var(--login-primary);
             box-shadow: 0 0 0 3px color-mix(in srgb, var(--login-primary) 16%, transparent);
+        }
+        .portal-nav-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #edf2f7;
+            border-radius: 10px;
+            padding: 4px;
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+        .portal-tab {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 9px 12px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #64748b;
+            text-decoration: none;
+            transition: all .15s ease-in-out;
+        }
+        .portal-tab:hover {
+            color: #0f172a;
+            background: rgba(255,255,255,.6);
+            text-decoration: none;
+        }
+        .portal-tab.active {
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(15,23,42,.08);
+            text-decoration: none;
+        }
+        .session-card {
+            margin: 0 0 16px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 13px;
+        }
+        .session-card.customer { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+        .session-card.admin { background: #fdf4ff; border: 1px solid #f5d0fe; color: #86198f; }
+        .session-card-info { min-width: 0; }
+        .session-card-info strong { display: block; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .session-card-info span { display: block; font-size: 11px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .session-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .session-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: #fff;
+            color: inherit;
+            border: 1px solid currentColor;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 11px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: opacity .15s;
+        }
+        .session-btn:hover { opacity: .85; text-decoration: none; color: inherit; }
+        .session-btn.danger { border-color: #fca5a5; color: #dc2626; background: #fff; }
+        .session-btn.danger:hover { background: #fef2f2; color: #b91c1c; }
+        @media (max-width: 520px) {
+            .session-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .session-card-actions { width: 100%; justify-content: flex-end; }
         }
         .demo-login-card {
             display: block;
@@ -376,7 +450,7 @@
                 <p>{{ $systemSubtitle }}</p>
                 <div class="brand-points" aria-label="Workspace highlights">
                     <div class="brand-point">
-                        <strong>Loans</strong>
+                        <strong>Installments</strong>
                         <span>Approve, monitor, and collect installments from one workspace.</span>
                     </div>
                     <div class="brand-point">
@@ -408,11 +482,52 @@
                     </div>
                 </div>
 
+                <div class="portal-nav-tabs">
+                    @if(Route::has('loan-management.public.customer-login'))
+                        <a href="{{ route('loan-management.public.customer-login') }}" class="portal-tab" @if($currentAdmin) onclick="return confirm('You are currently signed in as Administrator ({{ $currentAdmin->name ?? $currentAdmin->username ?? 'Staff' }}). Are you sure you want to log out first to access Customer Portal?');" @endif>
+                            👤 Customer Portal
+                        </a>
+                    @endif
+                    <a href="{{ route('login') }}" class="portal-tab active">
+                        ⚡ Admin & Staff
+                    </a>
+                </div>
+
+                @if($currentAdmin)
+                    <div class="session-card admin" style="border-left: 4px solid #a855f7;">
+                        <div class="session-card-info">
+                            <strong style="font-size: 13px;">⚡ Signed in as Admin: {{ $currentAdmin->name ?? $currentAdmin->username ?? 'Staff' }}</strong>
+                            <span style="font-size: 12px; margin-top: 2px;">To switch accounts, please log out first.</span>
+                        </div>
+                        <div class="session-card-actions">
+                            <a href="{{ route('loan-management.dashboard') }}" class="session-btn">Admin Panel</a>
+                            <form method="POST" action="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('login')) }}" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to log out from admin session?');">
+                                @csrf
+                                <button type="submit" class="session-btn danger" title="Log out admin">Log Out</button>
+                            </form>
+                        </div>
+                    </div>
+                @elseif($currentCustomer)
+                    <div class="session-card customer" style="border-left: 4px solid #2563eb;">
+                        <div class="session-card-info">
+                            <strong style="font-size: 13px;">👤 Signed in as Customer: {{ $currentCustomer->name }}</strong>
+                            <span style="font-size: 12px; margin-top: 2px;">To sign in as Admin, please log out customer first.</span>
+                        </div>
+                        <div class="session-card-actions">
+                            <a href="{{ route('loan-management.public.customer-dashboard') }}" class="session-btn">Customer Dashboard</a>
+                            <form method="POST" action="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('login')) }}" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to log out from your customer account?');">
+                                @csrf
+                                <button type="submit" class="session-btn danger" title="Log out customer">Log Out Customer</button>
+                            </form>
+                        </div>
+                    </div>
+                @endif
+
                 @if ($errors->any())
                     <div class="alert alert-danger">{{ $errors->first() }}</div>
                 @endif
 
-                <form method="post" action="{{ route('login') }}">
+                <form method="post" action="{{ route('login') }}" id="adminLoginForm">
                     @csrf
                     <div class="form-group">
                         <label for="email">Email or username</label>
@@ -459,6 +574,57 @@
     </main>
     <script>
         (function () {
+            var adminLoginForm = document.getElementById('adminLoginForm');
+            var hasCustomerSession = @json((bool)$currentCustomer);
+            var customerName = @json($currentCustomer ? $currentCustomer->name : '');
+            var hasAdminSession = @json((bool)$currentAdmin);
+            var adminName = @json($currentAdmin ? ($currentAdmin->name ?? $currentAdmin->username ?? 'Staff') : '');
+
+            if (adminLoginForm) {
+                adminLoginForm.addEventListener('submit', function (e) {
+                    if (hasCustomerSession) {
+                        var msg = customerName
+                            ? "You are currently logged in as Customer (" + customerName + "). Are you sure you want to log out from your customer account and continue to Admin login?"
+                            : "You are currently logged in as a Customer. Are you sure you want to log out and sign in as Admin?";
+                        if (!confirm(msg)) {
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                });
+            }
+
+            // If admin is active and clicks any Customer Portal link, confirm logout & redirect to that link
+            var customerPortalLinks = document.querySelectorAll('a[href*="customer/login"], a[href*="customer-login"]');
+            customerPortalLinks.forEach(function (link) {
+                link.addEventListener('click', function (e) {
+                    if (hasAdminSession) {
+                        e.preventDefault();
+                        var targetHref = link.href;
+                        var msg = adminName
+                            ? "You are currently logged in as Admin (" + adminName + "). Are you sure you want to log out and go to Customer Portal?"
+                            : "You are currently logged in as Admin. Are you sure you want to log out and go to Customer Portal?";
+                        if (confirm(msg)) {
+                            var logoutForm = document.createElement('form');
+                            logoutForm.method = 'POST';
+                            logoutForm.action = '{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect=' + encodeURIComponent(targetHref);
+                            var csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = '_token';
+                            csrfInput.value = '{{ csrf_token() }}';
+                            logoutForm.appendChild(csrfInput);
+                            var redirectInput = document.createElement('input');
+                            redirectInput.type = 'hidden';
+                            redirectInput.name = 'redirect';
+                            redirectInput.value = targetHref;
+                            logoutForm.appendChild(redirectInput);
+                            document.body.appendChild(logoutForm);
+                            logoutForm.submit();
+                        }
+                    }
+                });
+            });
+
             var password = document.getElementById('password');
             var toggle = document.getElementById('loginPasswordToggle');
             if (!password || !toggle) return;

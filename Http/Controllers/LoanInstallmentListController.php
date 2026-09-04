@@ -836,10 +836,12 @@ class LoanInstallmentListController extends Controller
         ];
 
         if ($this->loanTableExists('loans')) {
-            $statusCounts['all'] = (int) DB::connection('mysql_loan')->table('loans')->whereNull('deleted_at')->count();
+            $baseQuery = DB::connection('mysql_loan')->table('loans');
+            $this->excludeDeletedLoanRows($baseQuery, 'loans');
 
-            $counts = DB::connection('mysql_loan')->table('loans')
-                ->whereNull('deleted_at')
+            $statusCounts['all'] = (int) (clone $baseQuery)->count();
+
+            $counts = (clone $baseQuery)
                 ->selectRaw('LOWER(COALESCE(status, "pending")) as st, count(*) as cnt')
                 ->groupBy(DB::raw('LOWER(COALESCE(status, "pending"))'))
                 ->pluck('cnt', 'st')
@@ -848,18 +850,19 @@ class LoanInstallmentListController extends Controller
             foreach (['pending', 'approved', 'active', 'completed', 'rejected', 'cancelled'] as $st) {
                 $statusCounts[$st] = (int) ($counts[$st] ?? 0);
             }
+            $statusCounts['completed'] += (int) ($counts['closed'] ?? 0);
         }
 
         if ($this->loanTableExists('loan_customers') && $this->loanTableHasCol('loan_customers', 'blacklist_status')) {
-            $statusCounts['blacklist'] = (int) DB::connection('mysql_loan')->table('loan_customers')
-                ->where('blacklist_status', 1)
-                ->whereNull('deleted_at')
-                ->count();
+            $blacklistQuery = DB::connection('mysql_loan')->table('loan_customers')
+                ->where('blacklist_status', 1);
+            $this->excludeDeletedLoanRows($blacklistQuery, 'loan_customers');
+            $statusCounts['blacklist'] = (int) $blacklistQuery->count();
         } elseif ($this->loanTableExists('loans') && $this->hasCol('blacklisted_at')) {
-            $statusCounts['blacklist'] = (int) DB::connection('mysql_loan')->table('loans')
-                ->whereNotNull('blacklisted_at')
-                ->whereNull('deleted_at')
-                ->count();
+            $blacklistQuery = DB::connection('mysql_loan')->table('loans')
+                ->whereNotNull('blacklisted_at');
+            $this->excludeDeletedLoanRows($blacklistQuery, 'loans');
+            $statusCounts['blacklist'] = (int) $blacklistQuery->count();
         }
 
         return $statusCounts;
@@ -927,6 +930,9 @@ class LoanInstallmentListController extends Controller
                 ($this->hasCol('assigned_to') ? 'l.assigned_to' : 'NULL').' as assigned_to, '.
                 ($this->hasCol('collector_name_snapshot') ? 'l.collector_name_snapshot' : ($this->hasCol('collector_id') ? "CONCAT('Collector #', l.collector_id)" : 'NULL')).' as collector_name_snapshot'
             );
+        if ($this->hasCol('deleted_at')) {
+            $q->whereNull('l.deleted_at');
+        }
 
         $listDateColumn = $this->hasCol('loan_date') ? 'loan_date' : ($this->hasCol('created_at') ? 'created_at' : null);
         if ($listDateColumn) {
@@ -934,7 +940,14 @@ class LoanInstallmentListController extends Controller
             if ($startDate) $q->whereDate('l.'.$listDateColumn, '>=', $startDate);
             if ($endDate) $q->whereDate('l.'.$listDateColumn, '<=', $endDate);
         }
-        if ($request->filled('status') && $this->hasCol('status')) $q->where('l.status', $request->status);
+        if ($request->filled('status') && $this->hasCol('status')) {
+            $statusFilter = strtolower((string) $request->status);
+            if ($statusFilter === 'completed') {
+                $q->whereIn(DB::raw('LOWER(COALESCE(l.status, "pending"))'), ['completed', 'closed']);
+            } else {
+                $q->whereRaw('LOWER(COALESCE(l.status, "pending")) = ?', [$statusFilter]);
+            }
+        }
         if ($request->filled('location_name')) {
             $locationFilter = (string) $request->location_name;
             $q->where(function ($query) use ($locationFilter) {

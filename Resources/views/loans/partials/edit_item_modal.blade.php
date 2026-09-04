@@ -23,7 +23,7 @@
                 <span aria-hidden="true">&times;</span>
             </button>
             <h4 class="modal-title">
-                <i class="fa fa-cube"></i> {{ $isCreate ? 'Add Loan Item' : 'Edit Loan Item' }}
+                <i class="fa fa-cube"></i> {{ $isCreate ? 'Add Installment Item' : 'Edit Installment Item' }}
             </h4>
         </div>
 
@@ -31,7 +31,7 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="well well-sm">
-                        <strong>Loan #:</strong> {{ $loanRow->loan_number ?? $loanRow->id }}<br>
+                        <strong>Installment #:</strong> {{ $loanRow->loan_number ?? $loanRow->id }}<br>
                         <strong>Customer:</strong> {{ $loanRow->customer_name_snapshot ?? '-' }}
                     </div>
                 </div>
@@ -150,7 +150,7 @@ $(function () {
             dataType: 'json',
             success: function (res) {
                 if (window.toastr) {
-                    toastr.success(res.message || 'Loan item updated successfully');
+                    toastr.success(res.message || 'Installment item updated successfully');
                 }
 
                 $('.view_modal').modal('hide');

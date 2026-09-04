@@ -8,7 +8,7 @@
             <h3 class="box-title">{{ $title ?? 'Page' }}</h3>
         </div>
         <div class="box-body">
-            <p>This standalone page is available through the Loan Management menu.</p>
+            <p>This standalone page is available through the Installment Management menu.</p>
         </div>
     </div>
 @endsection

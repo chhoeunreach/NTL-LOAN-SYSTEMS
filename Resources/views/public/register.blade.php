@@ -49,7 +49,7 @@
                     <span class="logo">@if($businessLogoUrl)<img src="{{ $businessLogoUrl }}" alt="{{ $businessName }}">@else{{ strtoupper(mb_substr($businessName, 0, 1)) }}@endif</span>
                     <span>{{ $businessName }}</span>
                 </a>
-                <a class="link" href="{{ route('loan-management.public.customer-login') }}">Already registered?</a>
+                <a class="link" href="{{ route('loan-management.public.customer-login') }}" @if($customerUser) onclick="return confirm('You are currently logged in as Customer ({{ $customerUser->name }}). Are you sure you want to log out first to switch or sign in to another account?');" @endif>Already registered?</a>
             </header>
             <div class="body">
                 <h1>Customer Registration</h1>

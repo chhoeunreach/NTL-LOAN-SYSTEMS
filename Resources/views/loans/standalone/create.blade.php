@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Create Loan')
+@section('title', 'Create Installment')
 
 @section('content_body')
 <style>
@@ -118,7 +118,7 @@
 </style>
 
 <section class="content-header no-print">
-    <h1>Create Loan</h1>
+    <h1>Create Installment</h1>
     <div class="pull-right">
         <a href="{{ route('loan-management.loans.calculator') }}" class="btn btn-sm btn-default">
             <i class="fa fa-calculator"></i> Calculator
@@ -144,7 +144,7 @@
                         <i class="fa fa-table"></i> Preview Schedule
                     </button>
                     <button type="button" class="btn btn-primary" id="btnCreateLoan" data-action="create_approve">
-                        <i class="fa fa-plus"></i> Create Loan
+                        <i class="fa fa-plus"></i> Create Installment
                     </button>
                     <a href="{{ route('loan-management.loans') }}" class="btn btn-danger">
                         <i class="fa fa-times"></i> Cancel
@@ -157,18 +157,18 @@
     <div class="box box-solid lm-recent-loans">
         <div class="box-header with-border">
             <div>
-                <h3 class="lm-recent-loans-title"><i class="fa fa-clock-o"></i> Recently Created Loans</h3>
+                <h3 class="lm-recent-loans-title"><i class="fa fa-clock-o"></i> Recently Created Installments</h3>
                 <p class="lm-recent-loans-subtitle">Latest loans for quick review after creating a new one.</p>
             </div>
             <a href="{{ route('loan-management.loans') }}" class="btn btn-default btn-sm">
-                <i class="fa fa-list"></i> View All Loans
+                <i class="fa fa-list"></i> View All Installments
             </a>
         </div>
         <div class="box-body table-responsive">
             <table class="table table-bordered table-hover lm-recent-loans-table">
                 <thead>
                     <tr>
-                        <th>Loan</th>
+                        <th>Installment</th>
                         <th>Customer</th>
                         <th>Date</th>
                         <th class="text-right">Principal</th>
@@ -943,9 +943,9 @@
             contentType: false,
             success: function(res){
                 if (window.toastr) {
-                    toastr.success(res.message || 'Loan created successfully');
+                    toastr.success(res.message || 'Installment created successfully');
                 } else {
-                    alert(res.message || 'Loan created successfully');
+                    alert(res.message || 'Installment created successfully');
                 }
                 if (res?.data?.loan_id) {
                     window.location.href = urls.loanList + '/' + res.data.loan_id + '/view';

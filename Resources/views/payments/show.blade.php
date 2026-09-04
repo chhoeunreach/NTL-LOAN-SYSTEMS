@@ -85,11 +85,11 @@
     <div class="row">
         <div class="col-md-6">
             <div class="box box-info">
-                <div class="box-header with-border"><h3 class="box-title">Loan</h3></div>
+                <div class="box-header with-border"><h3 class="box-title">Installment</h3></div>
                 <div class="box-body">
                     @if($loan)
-                        <p><strong>Loan #:</strong>
-                            <a href="{{ route('loan-management.loans.view', $loan->id) }}">{{ $loan->loan_number ?? ('Loan #'.$loan->id) }}</a>
+                        <p><strong>Installment #:</strong>
+                            <a href="{{ route('loan-management.loans.view', $loan->id) }}">{{ $loan->loan_number ?? ('Installment #'.$loan->id) }}</a>
                         </p>
                         <p><strong>Customer:</strong> {{ $loan->customer_name_snapshot ?? '-' }}</p>
                         <p><strong>Phone:</strong> {{ $loan->customer_phone_snapshot ?? '-' }}</p>

@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', $title ?? 'Loan Summary')
+@section('title', $title ?? 'Installment Summary')
 
 @php
     $isKhmer = $isKhmer ?? session('user.language', config('app.locale')) === 'km';
@@ -23,7 +23,7 @@
     $rowMoney = fn ($value) => $isDaily && ! $hasMetricValue($value) ? '' : $money($value);
     $rowNumber = fn ($value) => $isDaily && ! $hasMetricValue($value) ? '' : $number($value);
     $periodLabel = $isMonthly ? $bi('Month', 'ខែ') : $bi('Date', 'ថ្ងៃ');
-    $reportTitle = $isMonthly ? $bi('Monthly Loan Summary', 'របាយការណ៍សង្ខេបកម្ចីប្រចាំខែ') : $bi('Daily Loan Summary', 'របាយការណ៍សង្ខេបកម្ចីប្រចាំថ្ងៃ');
+    $reportTitle = $isMonthly ? $bi('Monthly Installment Summary', 'របាយការណ៍សង្ខេបកម្ចីប្រចាំខែ') : $bi('Daily Installment Summary', 'របាយការណ៍សង្ខេបកម្ចីប្រចាំថ្ងៃ');
     $dateFrom = $filters['date_from'] ?? ($isMonthly ? (($filters['start_year'] ?? now()->format('Y')).'-01-01') : now()->toDateString());
     $dateTo = $filters['date_to'] ?? ($isMonthly ? (($filters['end_year'] ?? now()->format('Y')).'-12-31') : now()->toDateString());
     $dateRangeDisplay = \Carbon\Carbon::parse($dateFrom)->format('m-d-Y').' - '.\Carbon\Carbon::parse($dateTo)->format('m-d-Y');
@@ -100,7 +100,7 @@
     <div class="yls-header">
         <div>
             <h1 class="yls-title">{{ $reportTitle }}</h1>
-            <p class="yls-subtitle">{{ $bi('Loan, schedule, collection, deposit, and overdue totals.', 'សរុបកម្ចី កាលវិភាគ ការប្រមូលប្រាក់ ប្រាក់កក់ និងហួសកំណត់') }}</p>
+            <p class="yls-subtitle">{{ $bi('Installment, schedule, collection, deposit, and overdue totals.', 'សរុបកម្ចី កាលវិភាគ ការប្រមូលប្រាក់ ប្រាក់កក់ និងហួសកំណត់') }}</p>
         </div>
         <a class="btn btn-success"
            href="{{ $isMonthly ? route('loan-management.reports.monthly-loan-summary', array_merge(request()->query(), ['export' => 'csv'])) : route('loan-management.reports.daily-loan-summary', array_merge(request()->query(), ['export' => 'csv'])) }}">
@@ -144,7 +144,7 @@
                 </div>
                 <div class="form-group" style="margin:0;">
                     <label>{{ $bi('Search', 'ស្វែងរក') }}</label>
-                    <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $bi('Loan, customer, phone', 'កម្ចី អតិថិជន ទូរស័ព្ទ') }}">
+                    <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $bi('Installment, customer, phone', 'កម្ចី អតិថិជន ទូរស័ព្ទ') }}">
                 </div>
                 <div class="yls-filter-actions">
                     <button type="submit" class="btn btn-primary">{{ $bi('Filter', 'ចម្រោះ') }}</button>

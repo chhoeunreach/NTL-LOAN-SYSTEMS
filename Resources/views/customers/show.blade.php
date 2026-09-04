@@ -60,8 +60,8 @@
         </div>
     </div></div>
 
-    <div class="box box-default"><div class="box-header"><h3 class="box-title">Loans</h3></div><div class="box-body">
-        <table class="table table-bordered"><thead><tr><th>ID</th><th>Loan Number</th><th>Status</th><th>Balance</th></tr></thead><tbody>
+    <div class="box box-default"><div class="box-header"><h3 class="box-title">Installments</h3></div><div class="box-body">
+        <table class="table table-bordered"><thead><tr><th>ID</th><th>Installment Number</th><th>Status</th><th>Balance</th></tr></thead><tbody>
             @forelse($loans as $l)<tr><td>{{ $l->id }}</td><td>{{ $l->loan_number ?? '-' }}</td><td>{{ $l->status ?? '-' }}</td><td>{{ $l->balance_amount ?? 0 }}</td></tr>@empty<tr><td colspan="4" class="text-center">No loans</td></tr>@endforelse
         </tbody></table>
     </div></div>

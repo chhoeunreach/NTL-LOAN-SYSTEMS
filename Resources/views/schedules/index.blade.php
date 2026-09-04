@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Loan Schedule')
+@section('title', 'Installment Schedule')
 
 @php
     $isKhmer = $isKhmer ?? session('user.language', config('app.locale')) === 'km';
@@ -73,12 +73,12 @@
 <section class="content-header ls-page">
     <div class="ls-header">
         <div>
-            <h1 class="ls-title">{{ $t('Loan Schedule', 'កាលវិភាគកម្ចី') }}</h1>
+            <h1 class="ls-title">{{ $t('Installment Schedule', 'កាលវិភាគកម្ចី') }}</h1>
             <p class="ls-subtitle">{{ $t('Track installment due dates, balances, overdue days, and collection actions.', 'តាមដានថ្ងៃត្រូវបង់ សមតុល្យ ថ្ងៃហួសកំណត់ និងសកម្មភាពប្រមូលប្រាក់។') }}</p>
         </div>
         <div class="ls-header-actions">
-            <a href="{{ route('loan-management.loans') }}" class="btn btn-default btn-sm"><i class="fa fa-list"></i> {{ $t('All Loans', 'កម្ចីទាំងអស់') }}</a>
-            <a href="{{ route('loan-management.loans.create') }}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> {{ $t('New Loan', 'កម្ចីថ្មី') }}</a>
+            <a href="{{ route('loan-management.loans') }}" class="btn btn-default btn-sm"><i class="fa fa-list"></i> {{ $t('All Installments', 'កម្ចីទាំងអស់') }}</a>
+            <a href="{{ route('loan-management.loans.create') }}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> {{ $t('New Installment', 'កម្ចីថ្មី') }}</a>
         </div>
     </div>
 </section>
@@ -154,7 +154,7 @@
                         </select>
                     </div>
                     <div>
-                        <label>{{ $t('Loan Status', 'ស្ថានភាពកម្ចី') }}</label>
+                        <label>{{ $t('Installment Status', 'ស្ថានភាពកម្ចី') }}</label>
                         <select name="loan_status" class="form-control">
                             <option value="">{{ $t('All loan statuses', 'គ្រប់ស្ថានភាពកម្ចី') }}</option>
                             @foreach($loanStatusOptions as $key => $label)
@@ -168,7 +168,7 @@
                     </div>
                     <div>
                         <label>{{ $t('Search', 'ស្វែងរក') }}</label>
-                        <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="{{ $t('Loan, invoice, customer, phone', 'កម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ') }}">
+                        <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="{{ $t('Installment, invoice, customer, phone', 'កម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ') }}">
                     </div>
                     <div>
                         <label>{{ $t('Rows Per Page', 'ចំនួនក្នុងមួយទំព័រ') }}</label>
@@ -201,7 +201,7 @@
                         <th>{{ $t('Action', 'សកម្មភាព') }}</th>
                         <th>{{ $t('Due Date', 'ថ្ងៃត្រូវបង់') }}</th>
                         <th>{{ $t('Installment #', 'លេខរំលស់') }}</th>
-                        <th>{{ $t('Loan #', 'លេខកម្ចី') }}</th>
+                        <th>{{ $t('Installment #', 'លេខកម្ចី') }}</th>
                         <th>{{ $t('Invoice', 'វិក្កយបត្រ') }}</th>
                         <th>{{ $t('Customer', 'អតិថិជន') }}</th>
                         <th>{{ $t('Phone', 'ទូរស័ព្ទ') }}</th>
@@ -209,7 +209,7 @@
                         <th>{{ $t('Collector', 'អ្នកប្រមូល') }}</th>
                         <th>{{ $t('Frequency', 'ប្រភេទបង់') }}</th>
                         <th>{{ $t('Schedule Status', 'ស្ថានភាព') }}</th>
-                        <th>{{ $t('Loan Status', 'ស្ថានភាពកម្ចី') }}</th>
+                        <th>{{ $t('Installment Status', 'ស្ថានភាពកម្ចី') }}</th>
                         <th class="text-right">{{ $t('Principal', 'ប្រាក់ដើម') }}</th>
                         <th class="text-right">{{ $t('Interest', 'ការប្រាក់') }}</th>
                         <th class="text-right">{{ $t('Amount Due', 'ត្រូវបង់') }}</th>

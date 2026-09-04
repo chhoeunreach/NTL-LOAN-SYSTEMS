@@ -4,7 +4,7 @@
 @php
     $tabs = [
         'today_due' => 'Today Due',
-        'late_loans' => 'Late Loans',
+        'late_loans' => 'Late Installments',
         'promise_to_pay' => 'Promise To Pay',
         'broken_promise' => 'Broken Promise',
         'follow_up_needed' => 'Follow Up Needed',
@@ -35,7 +35,7 @@
                 <table class="table table-bordered table-striped">
                     <thead>
                         <tr>
-                            <th>Loan #</th>
+                            <th>Installment #</th>
                             <th>Customer</th>
                             <th>Status</th>
                             <th>Due Date</th>

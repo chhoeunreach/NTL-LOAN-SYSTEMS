@@ -14,7 +14,7 @@
 
     <a href="{{ route('loan-management.loans') }}" class="{{ str_starts_with($currentRoute, 'loan-management.loans') ? 'active' : '' }}">
         <i class="fa fa-credit-card"></i>
-        <span>Loans</span>
+        <span>Installments</span>
     </a>
 
     <a href="{{ route('loan-management.monthly-payments.index') }}" class="{{ str_starts_with($currentRoute, 'loan-management.monthly-payments') ? 'active' : '' }}">

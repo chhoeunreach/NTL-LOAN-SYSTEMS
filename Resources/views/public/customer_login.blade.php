@@ -50,13 +50,46 @@
             background: #fff; border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
             box-shadow: 0 24px 70px -18px rgba(15,23,42,.18);
         }
-        .brand-row { display: flex; align-items: center; gap: 12px; padding: 22px 26px 0; }
+        .brand-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 24px 0; }
         .brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); font-weight: 800; text-decoration: none; }
+        .btn-back-home { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 700; text-decoration: none; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--line); }
+        .btn-back-home:hover { background: var(--soft); color: var(--ink); }
         .logo {
-            width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+            width: 42px; height: 42px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
             overflow: hidden; background: {{ $themeColor }}14; color: var(--primary); border: 1px solid {{ $themeColor }}2e; flex: 0 0 auto;
         }
         .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .portal-nav-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 4px;
+            gap: 4px;
+            margin: 18px 0 0;
+        }
+        .portal-tab {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 9px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #64748b;
+            text-decoration: none;
+            transition: all .15s ease-in-out;
+        }
+        .portal-tab:hover {
+            color: #0f172a;
+            background: rgba(255,255,255,.6);
+        }
+        .portal-tab.active {
+            background: #fff;
+            color: #0f172a;
+            box-shadow: 0 2px 8px rgba(15,23,42,.08);
+        }
         .body { padding: 22px 26px 26px; }
         h1 { margin: 0; font-size: 22px; letter-spacing: -.3px; }
         .sub { margin: 8px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
@@ -345,7 +378,43 @@
             50% { transform: scale(1.02); }
             100% { transform: scale(1); }
         }
+        .session-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 9px;
+            font-size: 13px;
+            margin-top: 14px;
+        }
+        .session-card.customer { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+        .session-card.admin { background: #fdf4ff; border: 1px solid #f5d0fe; color: #86198f; }
+        .session-card-info { min-width: 0; }
+        .session-card-info strong { display: block; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .session-card-info span { display: block; font-size: 11px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .session-card-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        .session-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: #fff;
+            color: inherit;
+            border: 1px solid currentColor;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 11px;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: opacity .15s;
+        }
+        .session-btn:hover { opacity: .85; text-decoration: none; color: inherit; }
+        .session-btn.danger { border-color: #fca5a5; color: #dc2626; background: #fff; }
+        .session-btn.danger:hover { background: #fef2f2; color: #b91c1c; }
         @media (max-width: 520px) {
+            .session-card { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .session-card-actions { width: 100%; justify-content: flex-end; }
             body {
                 min-height: 100dvh;
                 align-items: start;
@@ -451,10 +520,27 @@
                     </span>
                     <span>{{ $businessName }}</span>
                 </a>
+                <a href="{{ route('loan-management.public.home') }}" class="btn-back-home">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                    Website
+                </a>
             </div>
             <div class="body">
-                <h1>Welcome back</h1>
-                <p class="sub">Sign in with your phone number and password to view your dashboard.</p>
+                <div class="portal-nav-tabs">
+                    <a href="{{ route('loan-management.public.customer-login') }}" class="portal-tab active">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        Customer Portal
+                    </a>
+                    <a href="{{ route('login') }}" class="portal-tab" @if($currentCustomer) onclick="return confirm('You are currently signed in as Customer ({{ $currentCustomer->name }}). Are you sure you want to log out first to access Admin & Staff Login?');" @endif>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        Admin & Staff
+                    </a>
+                </div>
+
+                <div style="margin-top: 18px;">
+                    <h1 style="margin: 0; font-size: 22px; letter-spacing: -.3px;">Customer Sign In</h1>
+                    <p class="sub">Sign in to view your loans, installment payments, and profile.</p>
+                </div>
 
                 @if ($errors->any())
                     <div class="banner error">{{ $errors->first() }}</div>
@@ -463,25 +549,31 @@
                 @endif
 
                 @if($currentCustomer)
-                    <div class="session-card customer">
+                    <div class="session-card customer" style="border-left: 4px solid #2563eb;">
                         <div class="session-card-info">
-                            <strong>👤 Currently: {{ $currentCustomer->name }}</strong>
-                            <span>Phone: {{ $currentCustomer->phone ?: $currentCustomer->username }}</span>
+                            <strong style="font-size: 13px;">⚠️ Signed in as Customer: {{ $currentCustomer->name }}</strong>
+                            <span style="font-size: 12px; margin-top: 2px;">To switch accounts, please log out first.</span>
                         </div>
                         <div class="session-card-actions">
                             <a href="{{ route('loan-management.public.customer-dashboard') }}" class="session-btn">My Dashboard</a>
+                            <form method="POST" action="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to log out from this customer account?');">
+                                @csrf
+                                <button type="submit" class="session-btn danger" title="Log out current customer">Log Out</button>
+                            </form>
                         </div>
                     </div>
-                @endif
-
-                @if($currentAdmin)
-                    <div class="session-card admin">
+                @elseif($currentAdmin)
+                    <div class="session-card admin" style="border-left: 4px solid #a855f7;">
                         <div class="session-card-info">
-                            <strong>⚡ Admin: {{ $currentAdmin->name ?? $currentAdmin->username ?? 'Administrator' }}</strong>
-                            <span>Admin session is active</span>
+                            <strong style="font-size: 13px;">⚡ Signed in as Admin: {{ $currentAdmin->name ?? $currentAdmin->username ?? 'Staff' }}</strong>
+                            <span style="font-size: 12px; margin-top: 2px;">To sign in as customer, please log out admin first.</span>
                         </div>
                         <div class="session-card-actions">
-                            <a href="{{ route('loan-management.dashboard') }}" class="session-btn">Admin Panel</a>
+                            <a href="{{ route('loan-management.dashboard') }}" class="session-btn">Admin Dashboard</a>
+                            <form method="POST" action="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" style="margin: 0; display: inline;" onsubmit="return confirm('Are you sure you want to log out from admin session?');">
+                                @csrf
+                                <button type="submit" class="session-btn danger" title="Log out admin session">Log Out Admin</button>
+                            </form>
                         </div>
                     </div>
                 @endif
@@ -615,9 +707,43 @@
 
             var form = document.getElementById('loginForm');
             var submit = document.getElementById('submitBtn');
-            form.addEventListener('submit', function () {
+            var hasAdminSession = @json((bool)$currentAdmin);
+            var adminName = @json($currentAdmin ? ($currentAdmin->name ?? $currentAdmin->username ?? 'Staff') : '');
+            var hasCustomerSession = @json((bool)$currentCustomer);
+            var customerName = @json($currentCustomer ? $currentCustomer->name : '');
+
+            form.addEventListener('submit', function (e) {
+                if (hasAdminSession) {
+                    var msg = adminName
+                        ? "You are currently logged in as Admin (" + adminName + "). Are you sure you want to log out from your admin account and continue to Customer login?"
+                        : "You are currently logged in as Admin. Are you sure you want to log out and sign in as Customer?";
+                    if (!confirm(msg)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                }
                 submit.classList.add('loading');
                 submit.disabled = true;
+            });
+
+            // If customer is active and clicks any Admin Login link/tab, confirm logout & redirect to that link direction
+            var adminLinks = document.querySelectorAll('a[href="{{ route('login') }}"], a[href*="/login"]');
+            adminLinks.forEach(function (link) {
+                var href = link.getAttribute('href') || '';
+                if (href.indexOf('login') !== -1 && href.indexOf('customer') === -1) {
+                    link.addEventListener('click', function (e) {
+                        if (hasCustomerSession) {
+                            e.preventDefault();
+                            var targetHref = link.href;
+                            var msg = customerName
+                                ? "You are currently logged in as Customer (" + customerName + "). Are you sure you want to log out and go to Admin Login?"
+                                : "You are currently logged in as a Customer. Are you sure you want to log out and go to Admin Login?";
+                            if (confirm(msg)) {
+                                window.location.href = '{{ route('loan-management.public.customer-logout') }}?redirect=' + encodeURIComponent(targetHref);
+                            }
+                        }
+                    });
+                }
             });
 
             // Demo Auto-Fill & Copy Logic
@@ -757,11 +883,37 @@
                     if (passDisplay) passDisplay.textContent = pass;
 
                     var phoneChip = document.getElementById('chipPhone');
-                    if (phoneChip) phoneChip.setAttribute('data-val', phone);
-
                     autofillAndCopy(currentCredentials, true);
                 });
             });
+
+            // Form Submit Session Confirmation
+            var loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', function (e) {
+                    @if($currentCustomer)
+                        if (!confirm('You are currently signed in as Customer ({{ $currentCustomer->name }}).\n\nProceeding will log out your current session and sign in with the new credentials. Are you sure you want to continue?')) {
+                            e.preventDefault();
+                            var submitBtn = loginForm.querySelector('.button');
+                            if (submitBtn) {
+                                submitBtn.classList.remove('loading');
+                                submitBtn.disabled = false;
+                            }
+                            return false;
+                        }
+                    @elseif($currentAdmin)
+                        if (!confirm('You are currently signed in as Administrator ({{ $currentAdmin->name ?? $currentAdmin->username ?? 'Staff' }}).\n\nProceeding will log out your admin session and sign in to the Customer Portal. Are you sure?')) {
+                            e.preventDefault();
+                            var submitBtn = loginForm.querySelector('.button');
+                            if (submitBtn) {
+                                submitBtn.classList.remove('loading');
+                                submitBtn.disabled = false;
+                            }
+                            return false;
+                        }
+                    @endif
+                });
+            }
         })();
     </script>
 </body>

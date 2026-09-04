@@ -3,7 +3,7 @@
         <table class="table table-striped table-bordered">
             <thead>
                 <tr>
-                    <th>Loan #</th>
+                    <th>Installment #</th>
                     <th>Customer</th>
                     <th>Phone</th>
                     <th>Status</th>

@@ -64,7 +64,7 @@
                 <div class="row">
                     <div class="col-md-3">
                         <div class="form-group">
-                            <label>Loan #</label>
+                            <label>Installment #</label>
                             <input type="text" class="form-control" value="{{ $loan->loan_number ?? $payment->loan_number_snapshot ?? $payment->loan_id }}" readonly>
                         </div>
                     </div>

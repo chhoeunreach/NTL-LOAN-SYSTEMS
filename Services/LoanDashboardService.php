@@ -132,6 +132,18 @@ class LoanDashboardService
             ->limit(max(1, min($limit, 25)));
 
         return $query->get()->map(function ($row) {
+            $balance = round((float) ($row->balance_amount ?? 0), 2);
+            $status = $row->status ?: '-';
+            if ($balance > 0 && ! empty($row->next_due_date)) {
+                try {
+                    if (Carbon::parse($row->next_due_date)->lt(Carbon::today())) {
+                        $status = 'overdue';
+                    }
+                } catch (\Throwable $e) {
+                    // Keep the stored status if the date cannot be parsed.
+                }
+            }
+
             return [
                 'id' => (int) $row->id,
                 'customer_id' => (int) ($row->customer_id ?? 0),
@@ -141,8 +153,8 @@ class LoanDashboardService
                 'customer_name' => $row->customer_name ?: '-',
                 'customer_phone' => $row->customer_phone ?: '-',
                 'location_name' => $row->location_name ?: null,
-                'balance_amount' => round((float) ($row->balance_amount ?? 0), 2),
-                'status' => $row->status ?: '-',
+                'balance_amount' => $balance,
+                'status' => $status,
                 'next_due_date' => $row->next_due_date,
             ];
         })->all();
@@ -419,7 +431,19 @@ class LoanDashboardService
             }
         }
 
+        $pendingLoanCount = 0;
+        if ($this->tableExists('loans')) {
+            $pendingLoanQuery = DB::connection($this->connection)->table('loans')
+                ->whereIn('status', ['pending', 'draft', 'pending_approval']);
+            if ($this->columnExists('loans', 'deleted_at')) {
+                $pendingLoanQuery->whereNull('deleted_at');
+            }
+            $pendingLoanCount = (int) $pendingLoanQuery->count();
+        }
+
         return array_merge([
+            'total_loans' => (int) ($summary['total_loans'] ?? 0),
+            'pending_requests' => $pendingLoanCount,
             'active_loans' => (int) ($summary['active_loans'] ?? 0),
             'today_collection' => $collection['collection_amount_today'],
             'overdue_amount' => (float) ($summary['total_balance'] ?? 0),

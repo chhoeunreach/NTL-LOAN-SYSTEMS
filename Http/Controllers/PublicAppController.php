@@ -2,14 +2,18 @@
 
 namespace Modules\LoanManagement\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Modules\LoanManagement\Entities\LoanCustomer;
+use Modules\LoanManagement\Entities\LoanProduct;
 use Modules\LoanManagement\Services\BusinessSettingsService;
+use Modules\LoanManagement\Services\CreateStandaloneLoanService;
 use Modules\LoanManagement\Services\LoanCustomerService;
 
 class PublicAppController extends Controller
@@ -24,9 +28,15 @@ class PublicAppController extends Controller
                 : redirect('/login');
         }
 
+        $products = $this->catalogProducts();
+        $categories = collect($products)->pluck('category')->filter(fn ($c) => trim((string)$c) !== '')->unique()->values()->all();
+        $brands = collect($products)->pluck('brand')->filter(fn ($b) => trim((string)$b) !== '')->unique()->values()->all();
+
         return view('loanmanagement::public.home', [
             'settings' => BusinessSettingsService::get(),
-            'products' => $this->catalogProducts(),
+            'products' => $products,
+            'categories' => $categories,
+            'brands' => $brands,
         ]);
     }
 
@@ -74,6 +84,11 @@ class PublicAppController extends Controller
 
         $customer = LoanCustomer::query()->find($customerId);
         if ($customer) {
+            // Disallow concurrent logins: log out admin/web session if active
+            if (Auth::guard('web')->check() || Auth::check()) {
+                Auth::guard('web')->logout();
+                Auth::logout();
+            }
             Auth::guard('customer_loan')->login($customer);
             $request->session()->regenerate();
         }
@@ -85,6 +100,10 @@ class PublicAppController extends Controller
 
     public function customerLogin()
     {
+        if (Auth::guard('customer_loan')->check()) {
+            return redirect()->route('loan-management.public.customer-dashboard');
+        }
+
         $demoCustomers = LoanCustomer::query()
             ->where('can_login', 1)
             ->where('status', 'active')
@@ -116,6 +135,12 @@ class PublicAppController extends Controller
             ->where('status', 'active')
             ->first();
 
+        // Disallow concurrent logins: log out admin/web session if active
+        if (Auth::guard('web')->check() || Auth::check()) {
+            Auth::guard('web')->logout();
+            Auth::logout();
+        }
+
         if (! $customer || ! Auth::guard('customer_loan')->attempt(['id' => $customer->id, 'password' => $credentials['password']], $request->boolean('remember'))) {
             return back()->withErrors(['login' => 'These credentials do not match our records.'])->onlyInput('login');
         }
@@ -129,9 +154,12 @@ class PublicAppController extends Controller
     public function customerLogout(Request $request)
     {
         Auth::guard('customer_loan')->logout();
-        if (! Auth::guard('web')->check() && ! Auth::check()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $redirectTo = $request->query('redirect') ?? $request->input('redirect');
+        if ($redirectTo && (str_starts_with($redirectTo, '/') || filter_var($redirectTo, FILTER_VALIDATE_URL))) {
+            return redirect($redirectTo);
         }
 
         return redirect()->route('loan-management.public.home');
@@ -146,27 +174,370 @@ class PublicAppController extends Controller
 
         $loans = DB::connection('mysql_loan')->table('loans')
             ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
             ->orderByDesc('id')
-            ->limit(20)
+            ->limit(30)
             ->get();
 
         $payments = DB::connection('mysql_loan')->table('loan_payments')
             ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
             ->orderByDesc('id')
-            ->limit(10)
+            ->limit(15)
             ->get();
+
+        $pendingLoans = $loans->filter(function ($l) {
+            return in_array($l->status, ['pending', 'draft', 'pending_approval'], true);
+        })->values();
+
+        $activeLoans = $loans->filter(function ($l) {
+            return in_array($l->status, ['active', 'approved', 'in_progress'], true);
+        })->values();
+
+        $completedLoans = $loans->filter(function ($l) {
+            return in_array($l->status, ['completed', 'paid', 'closed'], true);
+        })->values();
+
+        $cancelledLoans = $loans->filter(function ($l) {
+            return in_array($l->status, ['cancelled', 'rejected', 'declined'], true);
+        })->values();
 
         return view('loanmanagement::public.customer_dashboard', [
             'settings' => BusinessSettingsService::get(),
             'customer' => $customer,
             'loans' => $loans,
+            'pendingLoans' => $pendingLoans,
+            'activeLoans' => $activeLoans,
+            'completedLoans' => $completedLoans,
+            'cancelledLoans' => $cancelledLoans,
+            'totalLoanCount' => $loans->count(),
+            'pendingCount' => $pendingLoans->count(),
+            'activeCount' => $activeLoans->count(),
+            'completedCount' => $completedLoans->count(),
             'payments' => $payments,
         ]);
     }
 
+    public function cancelCustomerLoanRequest(Request $request, int $id)
+    {
+        $customer = Auth::guard('customer_loan')->user();
+        if (! $customer) {
+            return redirect()->route('loan-management.public.customer-login');
+        }
+
+        $loan = DB::connection('mysql_loan')->table('loans')
+            ->where('id', $id)
+            ->where('customer_id', $customer->id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $loan) {
+            return back()->withErrors(['error' => 'Loan request not found.']);
+        }
+
+        if (! in_array($loan->status, ['pending', 'draft', 'pending_approval'], true)) {
+            return back()->withErrors(['error' => 'Only pending loan requests can be cancelled.']);
+        }
+
+        DB::connection('mysql_loan')->table('loans')
+            ->where('id', $id)
+            ->update([
+                'status' => 'cancelled',
+                'updated_at' => now(),
+            ]);
+
+        if (Schema::connection('mysql_loan')->hasTable('loan_status_logs')) {
+            DB::connection('mysql_loan')->table('loan_status_logs')->insert([
+                'loan_id' => $id,
+                'status' => 'cancelled',
+                'from_status' => $loan->status,
+                'to_status' => 'cancelled',
+                'changed_by' => null,
+                'changed_by_name_snapshot' => 'Customer: ' . $customer->name,
+                'note' => 'Customer cancelled their own installment loan request.',
+                'changed_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return back()->with('status', 'Your installment loan request (#' . ($loan->loan_number ?? $loan->id) . ') has been cancelled successfully.');
+    }
+
+    public function updateProfilePhoto(Request $request)
+    {
+        $customer = Auth::guard('customer_loan')->user();
+        if (! $customer) {
+            return redirect()->route('loan-management.public.customer-login');
+        }
+
+        $request->validate([
+            'profile_photo' => 'required|image|mimes:jpeg,png,jpg,webp,gif|max:5120',
+        ]);
+
+        if ($request->hasFile('profile_photo')) {
+            $file = $request->file('profile_photo');
+            $disk = 'public';
+            $folder = 'loan-customers/'.$customer->id;
+            $path = $file->store($folder, $disk);
+
+            $payload = [
+                'fileable_type' => 'loan_customer',
+                'fileable_id' => $customer->id,
+                'category' => 'customer_photo',
+                'disk' => $disk,
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size_bytes' => $file->getSize(),
+                'uploaded_by' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            if (Schema::connection('mysql_loan')->hasTable('loan_files')) {
+                $columns = Schema::connection('mysql_loan')->getColumnListing('loan_files');
+                $fileId = (int) DB::connection('mysql_loan')->table('loan_files')->insertGetId(array_intersect_key($payload, array_flip($columns)));
+
+                if (Schema::connection('mysql_loan')->hasColumn('loan_customers', 'customer_photo_file_id')) {
+                    DB::connection('mysql_loan')->table('loan_customers')->where('id', $customer->id)->update([
+                        'customer_photo_file_id' => $fileId,
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+        }
+
+        return back()->with('status', 'Profile photo updated successfully!');
+    }
+
+    public function customerLoanRequest(Request $request)
+    {
+        $customer = Auth::guard('customer_loan')->user();
+        if (! $customer) {
+            return redirect()->route('loan-management.public.customer-login');
+        }
+
+        $defaultInterestRate = (float) (BusinessSettingsService::get()['default_interest_rate'] ?? 1.5);
+        $locations = [];
+        if (Schema::connection('mysql_loan')->hasTable('loan_business_locations')) {
+            $locations = DB::connection('mysql_loan')->table('loan_business_locations')
+                ->where('status', 'active')
+                ->whereNull('deleted_at')
+                ->select(['id', 'name'])
+                ->get();
+        }
+
+        return view('loanmanagement::public.customer_loan_request', [
+            'settings' => BusinessSettingsService::get(),
+            'customer' => $customer,
+            'defaultInterestRate' => $defaultInterestRate,
+            'locations' => $locations,
+            'catalogProducts' => $this->catalogProducts(),
+        ]);
+    }
+
+    public function storeCustomerLoanRequest(Request $request, CreateStandaloneLoanService $loanService)
+    {
+        $customer = Auth::guard('customer_loan')->user();
+        if (! $customer) {
+            return redirect()->route('loan-management.public.customer-login');
+        }
+
+        $validated = $request->validate([
+            'principal_amount' => 'required|numeric|min:1',
+            'duration_months' => 'required|integer|min:1|max:120',
+            'interest_rate' => 'nullable|numeric|min:0',
+            'interest_type' => 'nullable|string|in:flat,reducing_balance',
+            'payment_frequency' => 'nullable|string|in:monthly,weekly,daily',
+            'first_due_date' => 'nullable|date',
+            'down_payment' => 'nullable|numeric|min:0',
+            'business_location_id' => 'nullable|integer',
+            'items_json' => 'nullable|string',
+            'khmer_name' => 'nullable|string|max:255',
+            'id_card_number' => 'nullable|string|max:100',
+            'phone' => 'nullable|string|max:50',
+            'alternate_phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:1000',
+            'workplace' => 'nullable|string|max:255',
+            'monthly_income' => 'nullable|numeric|min:0',
+            'guarantor_name' => 'nullable|string|max:255',
+            'guarantor_phone' => 'nullable|string|max:50',
+            'guarantor_relationship' => 'nullable|string|max:100',
+            'note' => 'nullable|string|max:2000',
+            'id_card_front' => 'nullable|image|mimes:jpeg,png,jpg,webp,pdf|max:10240',
+            'id_card_back' => 'nullable|image|mimes:jpeg,png,jpg,webp,pdf|max:10240',
+            'income_proof' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
+            'collateral_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+        ]);
+
+        // Update customer profile with any newly provided details
+        $customerUpdates = [];
+        if (! empty($validated['khmer_name'])) $customerUpdates['khmer_name'] = $validated['khmer_name'];
+        if (! empty($validated['id_card_number'])) $customerUpdates['id_card_number'] = $validated['id_card_number'];
+        if (! empty($validated['workplace'])) $customerUpdates['workplace'] = $validated['workplace'];
+        if (isset($validated['monthly_income'])) $customerUpdates['monthly_income'] = (float) $validated['monthly_income'];
+        if (! empty($validated['alternate_phone'])) $customerUpdates['alternate_phone'] = $validated['alternate_phone'];
+        if (! empty($validated['address'])) $customerUpdates['address'] = $validated['address'];
+        if (! empty($validated['guarantor_name'])) $customerUpdates['family_contact_name'] = $validated['guarantor_name'];
+        if (! empty($validated['guarantor_phone'])) $customerUpdates['family_contact_phone'] = $validated['guarantor_phone'];
+
+        if (! empty($customerUpdates)) {
+            $customerUpdates['updated_at'] = now();
+            DB::connection('mysql_loan')->table('loan_customers')->where('id', $customer->id)->update($customerUpdates);
+        }
+
+        $items = [];
+        if (! empty($validated['items_json'])) {
+            $decoded = json_decode($validated['items_json'], true);
+            if (is_array($decoded)) {
+                foreach ($decoded as $item) {
+                    $qty = max(1, (int) ($item['qty'] ?? 1));
+                    $price = (float) ($item['price'] ?? 0);
+                    $items[] = [
+                        'item_name' => $item['name'] ?? 'Product',
+                        'product_name' => $item['name'] ?? 'Product',
+                        'sku' => $item['sku'] ?? null,
+                        'price' => $price,
+                        'unit_price' => $price,
+                        'qty' => $qty,
+                        'quantity' => $qty,
+                        'subtotal' => round($price * $qty, 2),
+                    ];
+                }
+            }
+        }
+
+        $loanDate = now()->toDateString();
+        $firstDueDate = ! empty($validated['first_due_date'])
+            ? Carbon::parse($validated['first_due_date'])->toDateString()
+            : now()->addMonth()->toDateString();
+
+        $loanData = [
+            'action_type' => 'create_pending',
+            'customer_id' => $customer->id,
+            'customer_name' => $customer->name,
+            'customer_phone' => $customer->phone ?: $customer->username,
+            'customer_address' => $validated['address'] ?? $customer->address,
+            'province_name' => $customer->province,
+            'district_name' => $customer->district,
+            'commune_name' => $customer->commune,
+            'village_name' => $customer->village,
+            'business_location_id' => $validated['business_location_id'] ?? null,
+            'loan_date' => $loanDate,
+            'principal_amount' => (float) $validated['principal_amount'],
+            'down_payment' => (float) ($validated['down_payment'] ?? 0),
+            'duration_months' => (int) $validated['duration_months'],
+            'interest_rate' => (float) ($validated['interest_rate'] ?? 0),
+            'interest_type' => $validated['interest_type'] ?? 'flat',
+            'payment_frequency' => $validated['payment_frequency'] ?? 'monthly',
+            'first_due_date' => $firstDueDate,
+            'guarantor_name' => $validated['guarantor_name'] ?? null,
+            'guarantor_phone' => $validated['guarantor_phone'] ?? null,
+            'note' => $validated['note'] ?? 'Online installment loan request from customer portal.',
+            'items' => $items,
+        ];
+
+        try {
+            $loanId = $loanService->createStandaloneLoan($loanData);
+
+            // Handle file attachments if uploaded
+            $fileCategories = [
+                'id_card_front' => 'id_front',
+                'id_card_back' => 'id_back',
+                'income_proof' => 'income_proof',
+                'collateral_photo' => 'collateral',
+            ];
+
+            if (Schema::connection('mysql_loan')->hasTable('loan_files')) {
+                $columns = Schema::connection('mysql_loan')->getColumnListing('loan_files');
+                foreach ($fileCategories as $inputName => $category) {
+                    if ($request->hasFile($inputName)) {
+                        $file = $request->file($inputName);
+                        $disk = 'public';
+                        $folder = 'loan-files/'.$loanId;
+                        $path = $file->store($folder, $disk);
+
+                        $filePayload = [
+                            'fileable_type' => 'loan',
+                            'fileable_id' => $loanId,
+                            'category' => $category,
+                            'disk' => $disk,
+                            'path' => $path,
+                            'original_name' => $file->getClientOriginalName(),
+                            'mime_type' => $file->getClientMimeType(),
+                            'size_bytes' => $file->getSize(),
+                            'uploaded_by' => null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+
+                        DB::connection('mysql_loan')->table('loan_files')->insert(
+                            array_intersect_key($filePayload, array_flip($columns))
+                        );
+                    }
+                }
+            }
+
+            if (! empty($validated['guarantor_name']) && Schema::connection('mysql_loan')->hasTable('loan_guarantors')) {
+                $gColumns = Schema::connection('mysql_loan')->getColumnListing('loan_guarantors');
+                $gPayload = [
+                    'loan_id' => $loanId,
+                    'customer_id' => $customer->id,
+                    'name' => $validated['guarantor_name'],
+                    'phone' => $validated['guarantor_phone'] ?? null,
+                    'relationship' => $validated['guarantor_relationship'] ?? null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+                DB::connection('mysql_loan')->table('loan_guarantors')->insert(
+                    array_intersect_key($gPayload, array_flip($gColumns))
+                );
+            }
+
+            return redirect()
+                ->route('loan-management.public.customer-dashboard')
+                ->with('status', 'Your installment loan request (ID #'.$loanId.') has been submitted successfully and is pending review.');
+        } catch (\Throwable $e) {
+            Log::error('Customer loan request error: '.$e->getMessage(), ['exception' => $e]);
+            return back()->withErrors(['error' => 'Unable to submit loan request: '.$e->getMessage()])->withInput();
+        }
+    }
+
     protected function catalogProducts(): array
     {
-        if (Schema::hasTable('products')) {
+        $products = [];
+
+        // 1. Standalone Loan Products (Modules\LoanManagement\Entities\LoanProduct)
+        if (Schema::connection('mysql_loan')->hasTable('loan_products')) {
+            $loanProducts = LoanProduct::query()
+                ->whereNull('deleted_at')
+                ->orderByDesc('id')
+                ->get();
+
+            foreach ($loanProducts as $lp) {
+                $meta = is_array($lp->meta_json) ? $lp->meta_json : (json_decode((string) $lp->meta_json, true) ?: []);
+                $products[] = [
+                    'id' => $lp->id,
+                    'product_id' => $lp->id,
+                    'variation_id' => 0,
+                    'name' => $lp->name,
+                    'sku' => $lp->sku ?: '',
+                    'imei' => $lp->imei ?: '',
+                    'price' => round((float) $lp->selling_price, 2),
+                    'cost_price' => round((float) ($lp->cost_price ?? 0), 2),
+                    'image_url' => $lp->image_url,
+                    'brand' => $lp->brand ?: ($meta['brand'] ?? ''),
+                    'category' => $lp->category ?: ($meta['category'] ?? 'General'),
+                    'min_down_payment_percent' => $lp->min_down_payment_percent,
+                    'description' => $lp->description ?: ($meta['description'] ?? ''),
+                    'qty_available' => (int) ($lp->qty_available ?? 1),
+                ];
+            }
+        }
+
+        // 2. POS Products (if available and not already populated)
+        if (empty($products) && Schema::hasTable('products')) {
             $query = DB::table('products as p');
 
             if (Schema::hasTable('variations')) {
@@ -197,28 +568,13 @@ class PublicAppController extends Controller
                 });
             }
 
-            return $query
-                ->select($selects)
-                ->orderByDesc('p.id')
-                ->limit(12)
-                ->get()
-                ->map(fn ($row) => $this->formatCatalogProduct($row))
-                ->values()
-                ->all();
+            $posProducts = $query->select($selects)->orderByDesc('p.id')->limit(24)->get();
+            foreach ($posProducts as $row) {
+                $products[] = $this->formatCatalogProduct($row);
+            }
         }
 
-        if (! Schema::connection('mysql_loan')->hasTable('loan_products')) {
-            return [];
-        }
-
-        return DB::connection('mysql_loan')->table('loan_products')
-            ->selectRaw('id as product_id, name, sku, NULL as image, main_variation_id as variation_id, NULL as variation_name, sku as sub_sku, selling_price as price')
-            ->orderByDesc('id')
-            ->limit(12)
-            ->get()
-            ->map(fn ($row) => $this->formatCatalogProduct($row))
-            ->values()
-            ->all();
+        return $products;
     }
 
     protected function formatCatalogProduct(object $row): array
@@ -235,8 +591,15 @@ class PublicAppController extends Controller
             'variation_id' => (int) ($row->variation_id ?? 0),
             'name' => $name,
             'sku' => trim((string) ($row->sub_sku ?? $row->sku ?? '')),
+            'imei' => '',
             'price' => round((float) ($row->price ?? 0), 2),
+            'cost_price' => 0.0,
             'image_url' => $this->productImageUrl((string) ($row->image ?? '')),
+            'brand' => '',
+            'category' => 'General',
+            'min_down_payment_percent' => 0,
+            'description' => '',
+            'qty_available' => 1,
         ];
     }
 

@@ -54,7 +54,7 @@
             <div class="row">
                 <div class="col-md-4">
                     <div class="well well-sm">
-                        <strong>Loan #:</strong> {{ $loanRow->loan_number ?? $loanRow->id }}<br>
+                        <strong>Installment #:</strong> {{ $loanRow->loan_number ?? $loanRow->id }}<br>
                         <strong>Customer:</strong> {{ $loanRow->customer_name_snapshot ?? '-' }}
                     </div>
                 </div>

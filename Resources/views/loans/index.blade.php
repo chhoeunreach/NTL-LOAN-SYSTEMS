@@ -936,7 +936,7 @@
 <section class="content no-print">
     <div class="lm-mobile-section-tabs">
         <a href="{{ route('loan-management.loans') }}" class="active">
-            <i class="fa fa-credit-card"></i> {{ $text('Loans', 'កម្ចី') }}
+            <i class="fa fa-credit-card"></i> {{ $text('Installments', 'កម្ចី') }}
         </a>
         <a href="{{ route('loan-management.monthly-payments.index') }}">
             <i class="fa fa-money"></i> {{ $text('Collection', 'ការប្រមូលប្រាក់') }}
@@ -946,12 +946,12 @@
     <div class="lm-loan-list-shell">
         <div class="lm-loan-list-hero">
             <div>
-                <h1><i class="fa fa-university"></i> {{ $text('All Loans', 'កម្ចីទាំងអស់') }}</h1>
+                <h1><i class="fa fa-university"></i> {{ $text('All Installments', 'កម្ចីទាំងអស់') }}</h1>
                 <p>{{ $text('Monitor installment accounts, collection progress, and customer balances in one workspace.', 'តាមដានគណនីរំលស់ ការប្រមូលប្រាក់ និងសមតុល្យអតិថិជននៅកន្លែងតែមួយ។') }}</p>
             </div>
             <div class="lm-loan-list-hero-actions">
                 <a href="{{ route('loan-management.loans.create') }}" class="btn btn-primary">
-                    <i class="fa fa-plus-circle"></i> {{ $text('New Loan', 'កម្ចីថ្មី') }}
+                    <i class="fa fa-plus-circle"></i> {{ $text('New Installment', 'កម្ចីថ្មី') }}
                 </a>
                 <button type="button" class="btn btn-default" onclick="window.print()">
                     <i class="fa fa-print"></i> {{ $text('Print', 'បោះពុម្ព') }}
@@ -964,7 +964,7 @@
             <div class="lm-status-card status-card-all active" data-status="" title="{{ $text('Show all loans', 'បង្ហាញកម្ចីទាំងអស់') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-th-large"></i></div>
                 <div class="lm-status-card-content">
-                    <span class="lm-status-card-label">{{ $text('All Loans', 'កម្ចីទាំងអស់') }}</span>
+                    <span class="lm-status-card-label">{{ $text('All Installments', 'កម្ចីទាំងអស់') }}</span>
                     <strong class="lm-status-card-count" id="count_all">{{ $statusCounts['all'] ?? 0 }}</strong>
                 </div>
                 <div class="lm-status-card-indicator"></div>
@@ -1086,7 +1086,7 @@
             <table class="table table-bordered table-striped" id="loan_list_table" width="100%">
                 <thead>
                     <tr>
-                        <th>{{ $text('Loan #', 'លេខកម្ចី') }}</th>
+                        <th>{{ $text('Installment #', 'លេខកម្ចី') }}</th>
                         <th>{{ $text('Date', 'កាលបរិច្ឆេទ') }}</th>
                         <th>{{ $text('Customer', 'អតិថិជន') }}</th>
                         <th>{{ $text('Phone', 'ទូរស័ព្ទ') }}</th>
@@ -1288,7 +1288,7 @@ function escapeHtml(value) {
     }
 
     var loanTable = null;
-    var exportTitle = @json($text('All Loans', 'កម្ចីទាំងអស់'));
+    var exportTitle = @json($text('All Installments', 'កម្ចីទាំងអស់'));
     var tableButtons = [];
     if ($.fn.dataTable && $.fn.dataTable.Buttons) {
         tableButtons = [

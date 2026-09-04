@@ -1,9 +1,9 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Loan Users')
+@section('title', 'Installment Users')
 
 @section('content_body')
 <section class="content-header">
-    <h1>Loan Users</h1>
+    <h1>Installment Users</h1>
 </section>
 
 <section class="content">
@@ -12,7 +12,7 @@
     @else
         <div class="box box-primary">
             <div class="box-header with-border">
-                <h3 class="box-title">All Loan Users</h3>
+                <h3 class="box-title">All Installment Users</h3>
                 <div class="box-tools">
                     @can('loan_management.create')
                         <a href="{{ route('loan-management.users.create') }}" class="btn btn-primary btn-sm">

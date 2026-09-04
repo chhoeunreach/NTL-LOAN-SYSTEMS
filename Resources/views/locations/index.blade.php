@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Loan Locations')
+@section('title', 'Installment Locations')
 
 @section('loan_css')
     <style>
@@ -60,7 +60,7 @@
 @section('content_body')
 <section class="content-header">
     <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">
-        Loan Locations
+        Installment Locations
         <small class="tw-text-sm md:tw-text-base tw-text-gray-700 tw-font-semibold">Manage loan branches, invoice prefixes, print assets, and Telegram routing</small>
     </h1>
 </section>
@@ -124,7 +124,7 @@
         </form>
     @endcomponent
 
-    @component('components.widget', ['class' => 'box-primary', 'title' => 'All Loan Locations'])
+    @component('components.widget', ['class' => 'box-primary', 'title' => 'All Installment Locations'])
         @slot('tool')
             <div class="box-tools">
                 <a href="{{ route('loan-management.locations.template') }}"
@@ -163,7 +163,7 @@
                         <th>Address</th>
                         <th>Phone</th>
                         <th>Telegram Number</th>
-                        <th>Loan Invoice Prefix</th>
+                        <th>Installment Invoice Prefix</th>
                         <th>Assets</th>
                         <th>Status</th>
                         <th>Action</th>
@@ -268,7 +268,7 @@
                     @csrf
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="loanLocationAddModalLabel">Add Loan Location</h4>
+                        <h4 class="modal-title" id="loanLocationAddModalLabel">Add Installment Location</h4>
                     </div>
                     <div class="modal-body">
                         @include('loanmanagement::locations.partials.form', ['location' => null])
@@ -289,7 +289,7 @@
                     @csrf
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="loanLocationImportModalLabel">Import Loan Locations</h4>
+                        <h4 class="modal-title" id="loanLocationImportModalLabel">Import Installment Locations</h4>
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-info">
@@ -327,7 +327,7 @@
                     @method('PUT')
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="loanLocationEditModalLabel">Edit Loan Location</h4>
+                        <h4 class="modal-title" id="loanLocationEditModalLabel">Edit Installment Location</h4>
                     </div>
                     <div class="modal-body">
                         @include('loanmanagement::locations.partials.form', ['location' => null])
@@ -500,7 +500,7 @@
                 form.find('input[name="telegram_number"]').val(button.data('telegram_number') || '');
                 form.find('select[name="status"]').val(button.data('status') || 'active');
                 form.find('textarea[name="address"]').val(button.data('address') || '');
-                $('#loanLocationEditModalLabel').text('Edit Loan Location: ' + (button.data('name') || ''));
+                $('#loanLocationEditModalLabel').text('Edit Installment Location: ' + (button.data('name') || ''));
             });
 
             $(document).on('click', '.loan-location-assets-btn', function() {

@@ -6,7 +6,7 @@
     <div class="lm-page-header" style="margin-bottom: 18px;">
         <div>
             <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #0f172a;">Activity Logs</h1>
-            <p style="margin: 6px 0 0; color: #64748b;">Loan Management activity history</p>
+            <p style="margin: 6px 0 0; color: #64748b;">Installment Management activity history</p>
         </div>
     </div>
 
@@ -25,7 +25,7 @@
         </div>
         <div class="col-md-3 col-sm-6">
             <div class="lm-card" style="padding: 16px;">
-                <div style="color:#64748b;text-transform:uppercase;font-size:12px;font-weight:700;">Loan Records</div>
+                <div style="color:#64748b;text-transform:uppercase;font-size:12px;font-weight:700;">Installment Records</div>
                 <div style="font-size:28px;font-weight:800;color:#0f172a;">{{ number_format($summary['loans']) }}</div>
             </div>
         </div>
@@ -44,7 +44,7 @@
                     <div class="form-group">
                         <label for="activity_search">Search</label>
                         <input type="text" class="form-control" id="activity_search" name="search"
-                               value="{{ $filters['search'] }}" placeholder="Loan, customer, user, status...">
+                               value="{{ $filters['search'] }}" placeholder="Installment, customer, user, status...">
                     </div>
                 </div>
                 <div class="col-md-3">
@@ -92,7 +92,7 @@
     <div class="lm-card" style="overflow: hidden;">
         <div style="padding: 16px 18px; border-bottom: 1px solid #e5e7eb; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
             <div>
-                <h3 style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Loan Management Timeline</h3>
+                <h3 style="margin:0;font-size:18px;font-weight:700;color:#0f172a;">Installment Management Timeline</h3>
                 <p style="margin:4px 0 0;color:#64748b;">Latest recorded activity from this module</p>
             </div>
         </div>

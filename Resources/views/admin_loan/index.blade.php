@@ -121,7 +121,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $text('Admin Loan', 'រដ្ឋបាលកម្ចី') }}</title>
+    <title>{{ $text('Admin Installment', 'រដ្ឋបាលកម្ចី') }}</title>
     @include('layouts.partials.css')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -860,7 +860,7 @@
                         </div>
                         <div>
                             <label>{{ $text('Search', 'ស្វែងរក') }}</label>
-                            <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="{{ $text('Loan #, invoice, customer, phone', 'លេខកម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ') }}">
+                            <input type="text" name="search" value="{{ $filters['search'] }}" placeholder="{{ $text('Installment #, invoice, customer, phone', 'លេខកម្ចី វិក្កយបត្រ អតិថិជន ទូរស័ព្ទ') }}">
                         </div>
                         <button type="submit">{{ $text('Filter', 'ចម្រោះ') }}</button>
                         <a href="{{ route('loan-management.admin-loan') }}">{{ $text('Reset', 'កំណត់ឡើងវិញ') }}</a>
@@ -882,14 +882,14 @@
                     <section class="admin-loan-fallback">
                         <div class="admin-loan-fallback-head">
                             <div>
-                                <h1 class="admin-loan-fallback-title">{{ $text('Loan Applications', 'ពាក្យស្នើសុំកម្ចី') }}</h1>
+                                <h1 class="admin-loan-fallback-title">{{ $text('Installment Applications', 'ពាក្យស្នើសុំកម្ចី') }}</h1>
                                 <div class="admin-loan-fallback-subtitle">
                                     {{ $text('Yearly installment summary by loan status and collection performance.', 'សង្ខេបកម្ចីរំលស់ប្រចាំឆ្នាំតាមស្ថានភាពកម្ចី និងការប្រមូលប្រាក់។') }}
                                 </div>
                             </div>
                             <div class="admin-loan-fallback-actions">
                                 <a class="admin-loan-fallback-action primary" href="{{ route('loan-management.loans.create') }}">
-                                    <i class="fa fa-plus-circle"></i>&nbsp;{{ $text('New Loan', 'កម្ចីថ្មី') }}
+                                    <i class="fa fa-plus-circle"></i>&nbsp;{{ $text('New Installment', 'កម្ចីថ្មី') }}
                                 </a>
                                 <a class="admin-loan-fallback-action" href="{{ route('loan-management.admin-loan.export', $adminLoanFilterPayload) }}">
                                     <i class="fa fa-file-excel-o"></i>&nbsp;{{ $text('Export XLSX', 'នាំចេញ XLSX') }}
@@ -916,7 +916,7 @@
                             </div>
                         </div>
 
-                        <div class="admin-loan-fallback-tabs" role="tablist" aria-label="{{ $text('Loan application reports', 'របាយការណ៍ពាក្យស្នើសុំកម្ចី') }}">
+                        <div class="admin-loan-fallback-tabs" role="tablist" aria-label="{{ $text('Installment application reports', 'របាយការណ៍ពាក្យស្នើសុំកម្ចី') }}">
                             <button type="button" class="admin-loan-fallback-tab is-active" data-admin-loan-fallback-tab="yearly">{{ $text('Yearly', 'ប្រចាំឆ្នាំ') }}</button>
                             <button type="button" class="admin-loan-fallback-tab" data-admin-loan-fallback-tab="monthly">{{ $text('Monthly', 'ប្រចាំខែ') }}</button>
                         </div>
@@ -1076,10 +1076,10 @@
     <div class="admin-loan-detail-modal" id="adminLoanDetailModal" aria-hidden="true">
         <div class="admin-loan-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="adminLoanDetailTitle">
             <div class="admin-loan-detail-head">
-                <div class="admin-loan-detail-title" id="adminLoanDetailTitle">{{ $text('Loan Details', 'ព័ត៌មានលម្អិតកម្ចី') }}</div>
+                <div class="admin-loan-detail-title" id="adminLoanDetailTitle">{{ $text('Installment Details', 'ព័ត៌មានលម្អិតកម្ចី') }}</div>
                 <button type="button" class="admin-loan-detail-close" id="adminLoanDetailClose">{{ $text('Close', 'បិទ') }}</button>
             </div>
-            <iframe class="admin-loan-detail-frame" id="adminLoanDetailFrame" title="{{ $text('Loan Details', 'ព័ត៌មានលម្អិតកម្ចី') }}"></iframe>
+            <iframe class="admin-loan-detail-frame" id="adminLoanDetailFrame" title="{{ $text('Installment Details', 'ព័ត៌មានលម្អិតកម្ចី') }}"></iframe>
         </div>
     </div>
     <script>
@@ -1223,7 +1223,7 @@
 
             function adminLoanGroupLabel(group) {
                 var labels = {
-                    all: targetLanguage === 'km' ? 'កម្ចីទាំងអស់' : 'All Loans',
+                    all: targetLanguage === 'km' ? 'កម្ចីទាំងអស់' : 'All Installments',
                     registered: targetLanguage === 'km' ? 'អតិថិជនចុះឈ្មោះរំលស់' : 'Registered Installments',
                     generalPaid: targetLanguage === 'km' ? 'អតិថិជនរំលស់បានបង់ទូរទៅ' : 'General Installments Paid',
                     paidOff: targetLanguage === 'km' ? 'អតិថិជនរំលស់បានបង់ផ្ដាច់' : 'Settled / Fully Paid Off',

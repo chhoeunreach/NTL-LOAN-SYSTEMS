@@ -74,7 +74,7 @@
                     <div class="col-md-3">
                         <div class="form-group">
                             <label>Search</label>
-                            <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="Loan, customer, phone, address">
+                            <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="Installment, customer, phone, address">
                         </div>
                     </div>
                     <div class="col-md-2">
@@ -129,7 +129,7 @@
                 <thead>
                     <tr>
                         <th>Visit Date</th>
-                        <th>Loan #</th>
+                        <th>Installment #</th>
                         <th>Customer</th>
                         <th>Collector</th>
                         <th>Result</th>
@@ -149,7 +149,7 @@
                             <td>{{ !empty($visit->visited_at) ? \Carbon\Carbon::parse($visit->visited_at)->format('d-m-Y H:i') : '-' }}</td>
                             <td>
                                 @if(Route::has('loan-management.loans.view') && !empty($visit->loan_id))
-                                    <a href="{{ route('loan-management.loans.view', $visit->loan_id) }}">{{ $visit->loan_number ?? ('Loan #'.$visit->loan_id) }}</a>
+                                    <a href="{{ route('loan-management.loans.view', $visit->loan_id) }}">{{ $visit->loan_number ?? ('Installment #'.$visit->loan_id) }}</a>
                                 @else
                                     {{ $visit->loan_number ?? '-' }}
                                 @endif

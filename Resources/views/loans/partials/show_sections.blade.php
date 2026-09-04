@@ -9,7 +9,7 @@
 @endphp
 
 <div class="box box-solid">
-    <div class="box-header"><h3 class="box-title">Loan Items Snapshot</h3></div>
+    <div class="box-header"><h3 class="box-title">Installment Items Snapshot</h3></div>
     <div class="box-body table-responsive">
         <table class="table table-bordered">
             <thead><tr><th>Product</th><th>SKU</th><th>Brand</th><th>Color</th><th>Storage</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>IMEI</th><th>Serial</th><th>Lot</th></tr></thead>
@@ -37,7 +37,7 @@
 </div>
 
 <div class="box box-solid">
-    <div class="box-header"><h3 class="box-title">Loan Product Items Snapshot</h3></div>
+    <div class="box-header"><h3 class="box-title">Installment Product Items Snapshot</h3></div>
     <div class="box-body table-responsive">
         <table class="table table-bordered">
             <thead><tr><th>Product ID</th><th>Variation ID</th><th>IMEI</th><th>Serial</th><th>Location Snapshot</th><th>Unit Price</th><th>Total Price</th></tr></thead>

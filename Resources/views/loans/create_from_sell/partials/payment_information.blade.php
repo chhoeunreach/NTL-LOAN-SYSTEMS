@@ -5,7 +5,7 @@
             <div class="col-md-12">
                 <div class="alert alert-info" style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;">
                     <div style="flex:1 1 220px;min-width:220px;">
-                        <strong>Loan Location:</strong> {{ $loanLocation->name ?? ($sell['transaction']->location_name_snapshot ?? '-') }}<br>
+                        <strong>Installment Location:</strong> {{ $loanLocation->name ?? ($sell['transaction']->location_name_snapshot ?? '-') }}<br>
                         @if(!empty($loanLocation->phone))
                             <strong>Phone:</strong> {{ $loanLocation->phone }}<br>
                         @endif

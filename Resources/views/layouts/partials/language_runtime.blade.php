@@ -2,14 +2,14 @@
 <script>
 (function() {
     var dictionary = {
-        'Loan Management': 'គ្រប់គ្រងកម្ចី',
+        'Installment Management': 'គ្រប់គ្រងកម្ចី',
         'Dedicated loan operation workspace': 'កន្លែងធ្វើការសម្រាប់ប្រតិបត្តិការកម្ចី',
         'Dashboard': 'ផ្ទាំងគ្រប់គ្រង',
-        'Admin Loan': 'រដ្ឋបាលកម្ចី',
-        'Loan Operations': 'ប្រតិបត្តិការកម្ចី',
-        'All Loans': 'កម្ចីទាំងអស់',
-        'Create Loan': 'បង្កើតកម្ចី',
-        'Loan Calculator': 'ម៉ាស៊ីនគណនាកម្ចី',
+        'Admin Installment': 'រដ្ឋបាលកម្ចី',
+        'Installment Operations': 'ប្រតិបត្តិការកម្ចី',
+        'All Installments': 'កម្ចីទាំងអស់',
+        'Create Installment': 'បង្កើតកម្ចី',
+        'Installment Calculator': 'ម៉ាស៊ីនគណនាកម្ចី',
         'Calc': 'គណនា',
         'Due Today': 'ដល់កំណត់ថ្ងៃនេះ',
         'Partial Payments': 'បង់ប្រាក់មិនទាន់គ្រប់',
@@ -53,7 +53,7 @@
         'Deposit Payment Reports': 'របាយការណ៍ប្រាក់កក់',
         'Collection Reports': 'របាយការណ៍ប្រមូលប្រាក់',
         'Tools': 'ឧបករណ៍',
-        'Loan Import/Export': 'នាំចូល/នាំចេញកម្ចី',
+        'Installment Import/Export': 'នាំចូល/នាំចេញកម្ចី',
         'Monthly Payments Import/Export': 'នាំចូល/នាំចេញការបង់ប្រចាំខែ',
         'Send Notification': 'ផ្ញើការជូនដំណឹង',
         'GPS Tracking': 'តាមដាន GPS',
@@ -63,7 +63,7 @@
         'Locations': 'ទីតាំង',
         'Payment Methods': 'វិធីបង់ប្រាក់',
         'Soon': 'ឆាប់ៗនេះ',
-        'New Loan': 'កម្ចីថ្មី',
+        'New Installment': 'កម្ចីថ្មី',
         'From POS': 'ពី POS',
         'Overdue': 'ហួសកំណត់',
         'POS Sell': 'លក់ POS',
@@ -150,10 +150,10 @@
         'Use Original': 'ប្រើរូបដើម',
         'Use Original Photo': 'ប្រើរូបដើម',
         'Use Cropped Photo': 'ប្រើរូបដែលបានកាត់',
-        'Loan Terms': 'លក្ខខណ្ឌកម្ចី',
+        'Installment Terms': 'លក្ខខណ្ឌកម្ចី',
         'Location': 'ទីតាំង',
         'Collector': 'អ្នកប្រមូលប្រាក់',
-        'Loan Date': 'កាលបរិច្ឆេទកម្ចី',
+        'Installment Date': 'កាលបរិច្ឆេទកម្ចី',
         'First Due Date': 'ថ្ងៃដល់កំណត់លើកទី១',
         'Duration': 'រយៈពេល',
         'Duration Months': 'រយៈពេលខែ',
@@ -172,12 +172,12 @@
         'Reference Number': 'លេខយោង',
         'Schedule Preview': 'មើលកាលវិភាគបង់ប្រាក់',
         'Preview Schedule': 'មើលកាលវិភាគ',
-        'Create Loan': 'បង្កើតកម្ចី',
-        'Loan created successfully': 'បានបង្កើតកម្ចីដោយជោគជ័យ',
-        'Recently Created Loans': 'កម្ចីដែលបានបង្កើតថ្មីៗ',
+        'Create Installment': 'បង្កើតកម្ចី',
+        'Installment created successfully': 'បានបង្កើតកម្ចីដោយជោគជ័យ',
+        'Recently Created Installments': 'កម្ចីដែលបានបង្កើតថ្មីៗ',
         'Latest loans for quick review after creating a new one.': 'កម្ចីចុងក្រោយសម្រាប់ពិនិត្យរហ័សបន្ទាប់ពីបង្កើតថ្មី។',
-        'View All Loans': 'មើលកម្ចីទាំងអស់',
-        'Loan': 'កម្ចី',
+        'View All Installments': 'មើលកម្ចីទាំងអស់',
+        'Installment': 'កម្ចី',
         'Customer': 'អតិថិជន',
         'Date': 'កាលបរិច្ឆេទ',
         'Status': 'ស្ថានភាព',
@@ -189,11 +189,11 @@
         'Approved': 'បានអនុម័ត',
         'Pending': 'កំពុងរង់ចាំ',
         'No loans created yet.': 'មិនទាន់មានកម្ចីត្រូវបានបង្កើត។',
-        'Loan Locations': 'ទីតាំងកម្ចី',
+        'Installment Locations': 'ទីតាំងកម្ចី',
         'Manage loan branches, invoice prefixes, print assets, and Telegram routing': 'គ្រប់គ្រងសាខាកម្ចី បុព្វបទវិក្កយបត្រ ទ្រព្យសម្បត្តិបោះពុម្ព និង Telegram',
-        'All Loan Locations': 'ទីតាំងកម្ចីទាំងអស់',
+        'All Installment Locations': 'ទីតាំងកម្ចីទាំងអស់',
         'Location ID': 'លេខសម្គាល់ទីតាំង',
-        'Loan Invoice Prefix': 'បុព្វបទវិក្កយបត្រកម្ចី',
+        'Installment Invoice Prefix': 'បុព្វបទវិក្កយបត្រកម្ចី',
         'Assets': 'ទ្រព្យសម្បត្តិ',
         'Sync POS Locations': 'ធ្វើសមកាលកម្មទីតាំង POS',
         'No locations found.': 'រកមិនឃើញទីតាំង។',
@@ -211,8 +211,8 @@
         'Quick Actions': 'សកម្មភាពរហ័ស',
         'Collect Payment': 'ប្រមូលប្រាក់',
         'Print Invoice': 'បោះពុម្ពវិក្កយបត្រ',
-        'Edit Loan': 'កែប្រែកម្ចី',
-        'Loan Items': 'ទំនិញកម្ចី',
+        'Edit Installment': 'កែប្រែកម្ចី',
+        'Installment Items': 'ទំនិញកម្ចី',
         'Add Item': 'បន្ថែមទំនិញ',
         'Edit Item': 'កែប្រែទំនិញ',
         'Delete Item': 'លុបទំនិញ',
@@ -220,8 +220,8 @@
         'Show': 'បង្ហាញ',
         'All': 'ទាំងអស់',
         'All Locations': 'ទីតាំងទាំងអស់',
-        'Search loan #, customer name, phone...': 'ស្វែងរកលេខកម្ចី ឈ្មោះអតិថិជន លេខទូរស័ព្ទ...',
-        'Search by name, phone, or loan # to collect payment.': 'ស្វែងរកតាមឈ្មោះ លេខទូរស័ព្ទ ឬលេខកម្ចីដើម្បីប្រមូលប្រាក់។',
+        'Search installment #, customer name, phone...': 'ស្វែងរកលេខកម្ចី ឈ្មោះអតិថិជន លេខទូរស័ព្ទ...',
+        'Search by name, phone, or installment # to collect payment.': 'ស្វែងរកតាមឈ្មោះ លេខទូរស័ព្ទ ឬលេខកម្ចីដើម្បីប្រមូលប្រាក់។',
         'Type to search for payment collection.': 'វាយដើម្បីស្វែងរកសម្រាប់ប្រមូលប្រាក់។',
         'Search customer name or phone for fast payment.': 'ស្វែងរកឈ្មោះអតិថិជន ឬលេខទូរស័ព្ទសម្រាប់បង់ប្រាក់រហ័ស។',
         'No loans found for this search.': 'រកមិនឃើញកម្ចីសម្រាប់ការស្វែងរកនេះ។',
@@ -254,8 +254,8 @@
         'Payment added successfully': 'បានបន្ថែមការបង់ប្រាក់ដោយជោគជ័យ',
         'Failed to save payment': 'រក្សាទុកការបង់ប្រាក់បរាជ័យ',
         'Edit Payment Schedule': 'កែប្រែកាលវិភាគបង់ប្រាក់',
-        'Edit Loan Item': 'កែប្រែទំនិញកម្ចី',
-        'Add Loan Item': 'បន្ថែមទំនិញកម្ចី',
+        'Edit Installment Item': 'កែប្រែទំនិញកម្ចី',
+        'Add Installment Item': 'បន្ថែមទំនិញកម្ចី',
         'Auto Balance': 'គណនាសមតុល្យស្វ័យប្រវត្តិ',
         'Auto Total': 'គណនាសរុបស្វ័យប្រវត្តិ',
         'Name': 'ឈ្មោះ',
@@ -364,3 +364,106 @@
 })();
 </script>
 @endif
+<script>
+(function() {
+    var skipTags = { SCRIPT: true, STYLE: true, TEXTAREA: true, CODE: true, PRE: true };
+    var attrs = ['placeholder', 'title', 'aria-label', 'data-title', 'data-original-title', 'alt'];
+
+    function normalizeInstallmentWords(value) {
+        return String(value || '')
+            .replace(/\bLoans\b/g, 'Installments')
+            .replace(/\bLoan\b/g, 'Installment')
+            .replace(/\bloans\b/g, 'installments')
+            .replace(/\bloan\b/g, 'installment');
+    }
+
+    function shouldSkip(node) {
+        while (node && node.nodeType === Node.ELEMENT_NODE) {
+            if (skipTags[node.tagName]) return true;
+            node = node.parentElement;
+        }
+        return false;
+    }
+
+    function normalizeAttributes(element) {
+        attrs.forEach(function(attr) {
+            if (!element.hasAttribute || !element.hasAttribute(attr)) return;
+            var oldValue = element.getAttribute(attr);
+            var newValue = normalizeInstallmentWords(oldValue);
+            if (newValue !== oldValue) element.setAttribute(attr, newValue);
+        });
+    }
+
+    function normalizeNode(root) {
+        if (!root) return;
+        if (root.nodeType === Node.TEXT_NODE) {
+            if (root.nodeValue && /\bloan(s)?\b/i.test(root.nodeValue) && !shouldSkip(root.parentElement)) {
+                root.nodeValue = normalizeInstallmentWords(root.nodeValue);
+            }
+            return;
+        }
+
+        if (root.nodeType === Node.ELEMENT_NODE) {
+            if (skipTags[root.tagName]) return;
+            normalizeAttributes(root);
+        }
+
+        var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
+            acceptNode: function(node) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    return skipTags[node.tagName] ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+                }
+                return node.nodeValue && /\bloan(s)?\b/i.test(node.nodeValue) && !shouldSkip(node.parentElement)
+                    ? NodeFilter.FILTER_ACCEPT
+                    : NodeFilter.FILTER_REJECT;
+            }
+        });
+
+        var nodes = [];
+        while (walker.nextNode()) nodes.push(walker.currentNode);
+        nodes.forEach(function(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                node.nodeValue = normalizeInstallmentWords(node.nodeValue);
+            } else {
+                normalizeAttributes(node);
+            }
+        });
+    }
+
+    function boot() {
+        normalizeNode(document.body);
+        window.loanNormalizeInstallmentWords = normalizeNode;
+
+        new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(normalizeNode);
+                } else if (mutation.type === 'characterData') {
+                    normalizeNode(mutation.target);
+                } else if (mutation.type === 'attributes') {
+                    normalizeAttributes(mutation.target);
+                }
+            });
+        }).observe(document.body, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+            attributes: true,
+            attributeFilter: attrs
+        });
+
+        var sweeps = 0;
+        var sweepTimer = window.setInterval(function() {
+            normalizeNode(document.body);
+            sweeps += 1;
+            if (sweeps >= 8) window.clearInterval(sweepTimer);
+        }, 500);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
+})();
+</script>

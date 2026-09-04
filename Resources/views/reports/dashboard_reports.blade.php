@@ -49,7 +49,7 @@
     $duplicateReason = function ($row, $loanCounts, $customerCounts) use ($normalizeDuplicateKey, $t) {
         $reasons = [];
         if (($loanCounts[$normalizeDuplicateKey($row->loan_number ?? '')] ?? 0) > 1) {
-            $reasons[] = $t('Duplicate Loan #', 'លេខកម្ចីស្ទួន');
+            $reasons[] = $t('Duplicate Installment #', 'លេខកម្ចីស្ទួន');
         }
         if (($customerCounts[$normalizeDuplicateKey($row->customer_name ?? '')] ?? 0) > 1) {
             $reasons[] = $t('Duplicate Customer', 'អតិថិជនស្ទួន');
@@ -718,7 +718,7 @@
     </div>
 
     <div class="lm-report-print-title">
-        <h2>{{ $periodTitle }} {{ $t('Loan and Collection Report', 'របាយការណ៍កម្ចី និងការប្រមូលប្រាក់') }}</h2>
+        <h2>{{ $periodTitle }} {{ $t('Installment and Collection Report', 'របាយការណ៍កម្ចី និងការប្រមូលប្រាក់') }}</h2>
         <p>{{ \Carbon\Carbon::parse($filters['date_from'])->format('d-m-Y') }} - {{ \Carbon\Carbon::parse($filters['date_to'])->format('d-m-Y') }}</p>
     </div>
 
@@ -727,7 +727,7 @@
             <div class="info-box">
                 <span class="info-box-icon bg-aqua"><i class="fa fa-file-text-o"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">{{ $t('Loans', 'កម្ចី') }}</span>
+                    <span class="info-box-text">{{ $t('Installments', 'កម្ចី') }}</span>
                     <span class="info-box-number">{{ $number($cards['loan_count'] ?? 0) }}</span>
                     <small>{{ $money($cards['principal_total'] ?? 0) }}</small>
                 </div>
@@ -747,7 +747,7 @@
             <div class="info-box">
                 <span class="info-box-icon bg-blue"><i class="fa fa-bank"></i></span>
                 <div class="info-box-content">
-                    <span class="info-box-text">{{ $t('Loan/Deposit Payments', 'ប្រាក់កក់កម្ចី') }}</span>
+                    <span class="info-box-text">{{ $t('Installment/Deposit Payments', 'ប្រាក់កក់កម្ចី') }}</span>
                     <span class="info-box-number">{{ $money($cards['deposit_total'] ?? 0) }}</span>
                     <small>{{ $number($cards['deposit_count'] ?? 0) }} {{ $t('payments', 'ការបង់ប្រាក់') }}</small>
                 </div>
@@ -759,7 +759,7 @@
                 <div class="info-box-content">
                     <span class="info-box-text">{{ $t('Outstanding Balance', 'សមតុល្យនៅសល់') }}</span>
                     <span class="info-box-number">{{ $money($cards['balance_total'] ?? 0) }}</span>
-                    <small>{{ $t('Loan total', 'សរុបកម្ចី') }} {{ $money($cards['loan_total'] ?? 0) }}</small>
+                    <small>{{ $t('Installment total', 'សរុបកម្ចី') }} {{ $money($cards['loan_total'] ?? 0) }}</small>
                 </div>
             </div>
         </div>
@@ -878,7 +878,7 @@
                                     <tr>
                                         <th class="lm-col-no">{{ $t('No', 'ល.រ') }}</th>
                                         <th class="lm-col-date">{{ $t('Date', 'ថ្ងៃ') }}</th>
-                                        <th class="lm-col-payment-loan">{{ $t('Loan #', 'លេខកម្ចី') }}</th>
+                                        <th class="lm-col-payment-loan">{{ $t('Installment #', 'លេខកម្ចី') }}</th>
                                         <th>{{ $t('Customer', 'អតិថិជន') }}</th>
                                         <th class="lm-col-method">{{ $t('Method', 'ប្រភេទវិធីបង់') }}</th>
                                         <th class="text-right lm-col-payment-amount">{{ $t('Amount', 'ចំនួនប្រាក់') }}</th>
@@ -916,13 +916,13 @@
                         </div>
 
                         <div class="table-responsive lm-recent-table-wrap">
-                            <h4 class="lm-recent-panel-heading">{{ $t('Recent Loans', 'កម្ចីថ្មីៗ') }}</h4>
+                            <h4 class="lm-recent-panel-heading">{{ $t('Recent Installments', 'កម្ចីថ្មីៗ') }}</h4>
                             <table class="table table-bordered table-hover loan-recent-activity-datatable lm-report-table" id="loan_recent_loans_table">
                                 <thead>
                                     <tr>
                                         <th class="lm-col-no">{{ $t('No', 'ល.រ') }}</th>
                                         <th class="lm-col-date">{{ $t('Date', 'ថ្ងៃ') }}</th>
-                                        <th class="lm-col-loan">{{ $t('Loan #', 'លេខកម្ចី') }}</th>
+                                        <th class="lm-col-loan">{{ $t('Installment #', 'លេខកម្ចី') }}</th>
                                         <th>{{ $t('Customer', 'អតិថិជន') }}</th>
                                         <th>{{ $t('Product', 'ទំនិញ') }}</th>
                                         <th class="lm-col-method">{{ $t('Method', 'ប្រភេទវិធីបង់') }}</th>
@@ -940,7 +940,7 @@
                                                 <span class="lm-loan-ref-line">
                                                     <span class="lm-detail-link js-loan-recent-detail-modal"
                                                           data-url="{{ route('loan-management.loans.view', ['loan' => $loan->id, '_lm_modal' => 1]) }}"
-                                                          data-title="{{ $t('Loan Detail', 'ព័ត៌មានលម្អិតកម្ចី') }}">{{ $loan->loan_number ?? ('#'.$loan->id) }}</span>
+                                                          data-title="{{ $t('Installment Detail', 'ព័ត៌មានលម្អិតកម្ចី') }}">{{ $loan->loan_number ?? ('#'.$loan->id) }}</span>
                                                 </span>
                                             </td>
                                             <td>{{ $loan->customer_name ?: '-' }}</td>
@@ -1282,7 +1282,7 @@
         html += loanRecentActivityTableFromDom('.lm-payment-method-summary', '');
         html += '<div class="recent-grid">';
         html += '<div>' + loanRecentActivityTableFromDataTable('#loan_recent_payments_table', @json($t('Recent Collected Payments', 'ការបង់ប្រាក់ថ្មីៗ'))) + '</div>';
-        html += '<div>' + loanRecentActivityTableFromDataTable('#loan_recent_loans_table', @json($t('Recent Loans', 'កម្ចីថ្មីៗ'))) + '</div>';
+        html += '<div>' + loanRecentActivityTableFromDataTable('#loan_recent_loans_table', @json($t('Recent Installments', 'កម្ចីថ្មីៗ'))) + '</div>';
         html += '</div></body></html>';
 
         var printWindow = window.open('', '_blank');
@@ -1392,7 +1392,7 @@
 
         html += '<h2>' + esc(@json($recentActivityReportTitle)) + '</h2>';
         html += fullPaymentTable(@json($t('Recent Collected Payments', 'ការបង់ប្រាក់ថ្មីៗ')));
-        html += tableFromDataTable('#loan_recent_loans_table', @json($t('Recent Loans', 'កម្ចីថ្មីៗ')));
+        html += tableFromDataTable('#loan_recent_loans_table', @json($t('Recent Installments', 'កម្ចីថ្មីៗ')));
         html += '</body></html>';
 
         var blob = new Blob([html], {type: 'application/vnd.ms-excel;charset=utf-8;'});
