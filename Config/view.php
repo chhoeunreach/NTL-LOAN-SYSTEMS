@@ -2,7 +2,7 @@
 
 return [
     'paths' => [
-        base_path('Resources/views'),
+        __DIR__ . '/../Resources/views',
     ],
-    'compiled' => env('VIEW_COMPILED_PATH', realpath(storage_path('framework/views')) ?: storage_path('framework/views')),
+    'compiled' => env('VIEW_COMPILED_PATH') ?: (realpath(storage_path('framework/views')) ?: storage_path('framework/views')),
 ];
