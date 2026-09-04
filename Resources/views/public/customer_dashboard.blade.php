@@ -27,8 +27,6 @@
         .btn-topbar svg { width: 16px; height: 16px; }
         .btn-admin-pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e9d5ff; background: #faf5ff; color: #7e22ce; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; text-decoration: none; transition: all .15s ease-in-out; }
         .btn-admin-pill:hover { background: #f3e8ff; border-color: #d8b4fe; }
-        .logout { border: 1px solid #fee2e2; background: #fff; color: #dc2626; border-radius: 6px; height: 40px; padding: 0 14px; font-weight: 800; font-size: 14px; cursor: pointer; transition: all .15s ease-in-out; }
-        .logout:hover { background: #fef2f2; border-color: #fca5a5; }
         .wrap { width: min(1180px, calc(100% - 32px)); margin: 26px auto 44px; }
         .hero { background: var(--public-primary); color: #fff; border-radius: 8px; padding: 26px; margin-bottom: 18px; }
         .hero h1 { margin: 0; font-size: 30px; letter-spacing: 0; }
@@ -41,6 +39,10 @@
         .info-row { display: grid; gap: 4px; }
         .info-row span { color: #64748b; font-size: 12px; font-weight: 800; text-transform: uppercase; }
         .info-row strong { color: #0f172a; font-size: 14px; overflow-wrap: anywhere; }
+        .profile-actions { padding: 14px 18px 18px; border-top: 1px solid #edf2f7; background: #fafbfc; }
+        .btn-profile-logout { width: 100%; min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #fee2e2; background: #fff; color: #dc2626; border-radius: 6px; font-weight: 800; font-size: 14px; cursor: pointer; transition: all .15s ease-in-out; }
+        .btn-profile-logout:hover { background: #fef2f2; border-color: #fca5a5; }
+        .btn-profile-logout svg { width: 16px; height: 16px; }
         .stack { display: grid; gap: 18px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 11px 12px; border-bottom: 1px solid #edf2f7; text-align: left; font-size: 13px; vertical-align: top; }
@@ -87,10 +89,6 @@
                         ⚡ Admin Panel
                     </a>
                 @endif
-                <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0;">
-                    @csrf
-                    <button class="logout" type="submit">Logout</button>
-                </form>
             </div>
         </div>
     </header>
@@ -135,6 +133,19 @@
                     <div class="info-row"><span>GPS Tracking</span><strong>{{ $customer->allow_gps_tracking ? 'Enabled' : 'Disabled' }}</strong></div>
                     <div class="info-row"><span>Last Login</span><strong>{{ $customer->last_login_at ?: '-' }}</strong></div>
                     <div class="info-row"><span>Status</span><strong>{{ $customer->status ?: 'active' }}</strong></div>
+                </div>
+                <div class="profile-actions">
+                    <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0; width: 100%;">
+                        @csrf
+                        <button class="btn-profile-logout" type="submit">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                <polyline points="16 17 21 12 16 7"></polyline>
+                                <line x1="21" y1="12" x2="9" y2="12"></line>
+                            </svg>
+                            Log Out from Customer Account
+                        </button>
+                    </form>
                 </div>
             </section>
 
