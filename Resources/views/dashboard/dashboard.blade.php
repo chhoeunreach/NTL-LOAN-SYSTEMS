@@ -82,6 +82,9 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="lm-collect-payment-mobile-list" id="loanDashboardQuickSearchMobile">
+                            <div class="lm-mobile-loan-empty">Type to search for payment collection.</div>
+                        </div>
                         <div class="lm-quick-box__footer"><i class="fa fa-bolt"></i> Search customer name or phone for fast payment.</div>
                     </div>
 
@@ -593,13 +596,27 @@
             }
         }
 
-        function quickSearchRowHtml(row) {
+        var quickSearchRows = [];
+
+        function quickSearchUrls(row) {
             var detailUrl = "{{ url('loan-management/loans') }}/" + row.id + "/view?_lm_modal=1";
             var editUrl = "{{ url('loan-management/loans') }}/" + row.id + "/edit?_lm_modal=1";
             var printModalUrl = "{{ url('loan-management/loans') }}/" + row.id + "/print-modal";
             var payUrl = "{{ url('loan-management/loans') }}/" + row.id + "/payment/create?return_to={{ rawurlencode(route('loan-management.dashboard')) }}";
             var collectionUrl = "{{ url('loan-management/loans') }}/" + row.id + "/payments/collection-modal";
             var copyInfoUrl = "{{ url('loan-management/loans') }}/" + row.id + "/payment/copy-info";
+            return {
+                detail: detailUrl,
+                edit: editUrl,
+                printModal: printModalUrl,
+                pay: payUrl,
+                collection: collectionUrl,
+                copyInfo: copyInfoUrl
+            };
+        }
+
+        function quickSearchRowHtml(row) {
+            var urls = quickSearchUrls(row);
             var telegramLinkUrl = row.customer_id ? "{{ url('loan-management/customers') }}/" + row.customer_id + "/telegram/link" : '';
             var telegramAction = '';
             var tgStatus = row.telegram_linked
@@ -635,7 +652,7 @@
                 + '<div class="lm-customer-profile__info">'
                     + '<div class="lm-customer-cell">'
                     + '<div class="lm-customer-hover">'
-                    + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Loan Detail" data-url="' + detailUrl + '">' + esc(row.customer_name) + '</a>'
+                    + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '">' + esc(row.customer_name) + '</a>'
                     + hoverTelegram
                     + '</div>'
                     + '<span class="lm-row-subtitle">' + esc(row.loan_number) + (row.customer_phone && row.customer_phone !== '-' ? ' &middot; ' + esc(row.customer_phone) : '') + (row.location_name ? ' &middot; ' + esc(row.location_name) : '') + '</span>'
@@ -647,12 +664,12 @@
                 + '<td class="lm-pay-due">' + dueLabel + '</td>'
                 + '<td class="text-right lm-pay-balance">' + money(row.balance_amount) + '</td>'
                 + '<td class="text-center lm-pay-action">'
-                + '<button type="button" class="btn btn-success btn-xs lm-pay-btn btn-modal" data-href="' + payUrl + '" data-container=".view_modal" title="Collect payment for ' + esc(row.customer_name) + '"><i class="fa fa-money"></i> <span>Pay</span></button>'
-                + '<button type="button" class="btn btn-default btn-xs lm-print-btn btn-modal" data-href="' + printModalUrl + '" data-container=".view_modal" title="Print loan for ' + esc(row.customer_name) + '"><i class="fa fa-print"></i> <span>Print</span></button>'
+                + '<button type="button" class="btn btn-success btn-xs lm-pay-btn btn-modal" data-href="' + urls.pay + '" data-container=".view_modal" title="Collect payment for ' + esc(row.customer_name) + '"><i class="fa fa-money"></i> <span>Pay</span></button>'
+                + '<button type="button" class="btn btn-default btn-xs lm-print-btn btn-modal" data-href="' + urls.printModal + '" data-container=".view_modal" title="Print loan for ' + esc(row.customer_name) + '"><i class="fa fa-print"></i> <span>Print</span></button>'
                 + '<div class="lm-pay-more dropdown">'
                 + '<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" title="More actions"><i class="fa fa-ellipsis-h"></i></button>'
                 + '<ul class="dropdown-menu dropdown-menu-right lm-action-menu__list">'
-                + '<li><button type="button" class="js-loan-detail-modal" data-title="Loan Detail" data-url="' + detailUrl + '"><i class="fa fa-eye"></i> View Loan</button></li>'
+                + '<li><button type="button" class="js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '"><i class="fa fa-eye"></i> View Loan</button></li>'
                 + telegramAction
                 + '</ul>'
                 + '</div>'
@@ -660,12 +677,50 @@
                 + '</tr>';
         }
 
+        function quickSearchMobileCardHtml(row) {
+            var urls = quickSearchUrls(row);
+            var dueLabel = row.next_due_date ? esc(row.next_due_date) : '-';
+            var loanMeta = esc(row.loan_number || '-') + (row.customer_phone && row.customer_phone !== '-' ? ' &middot; ' + esc(row.customer_phone) : '');
+            var customerInitial = (row.customer_name && row.customer_name !== '-' ? String(row.customer_name).charAt(0).toUpperCase() : 'C');
+            var customerAvatar = row.customer_photo_url
+                ? '<span class="lm-customer-profile__avatar"><img src="' + esc(row.customer_photo_url) + '" alt=""></span>'
+                : '<span class="lm-customer-profile__avatar">' + esc(customerInitial) + '</span>';
+            var isOverdue = row.status && (String(row.status).toLowerCase() === 'overdue' || String(row.status).toLowerCase() === 'late');
+            var statusClass = isOverdue ? ' lm-pay-status--overdue' : '';
+            var statusBadge = row.status ? '<span class="lm-pay-status' + statusClass + '">' + esc(row.status) + '</span>' : '';
+
+            return '<article class="lm-collect-payment-card" data-loan-id="' + esc(row.id) + '">'
+                + '<div class="lm-collect-payment-card__header">'
+                + '<div class="lm-customer-profile">' + customerAvatar
+                + '<span class="lm-customer-profile__info">'
+                + '<a href="#" class="lm-row-title lm-dashboard-frame-link js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '">' + esc(row.customer_name || '-') + '</a>'
+                + '<span class="lm-row-subtitle">' + loanMeta + '</span>'
+                + '</span></div>'
+                + statusBadge
+                + '</div>'
+                + '<div class="lm-collect-payment-card__grid">'
+                + '<div><small>Due</small><strong>' + dueLabel + '</strong></div>'
+                + '<div><small>Balance</small><strong>' + money(row.balance_amount) + '</strong></div>'
+                + (row.location_name ? '<div><small>Location</small><strong>' + esc(row.location_name) + '</strong></div>' : '')
+                + '</div>'
+                + '<div class="lm-collect-payment-card__actions">'
+                + '<button type="button" class="btn btn-success btn-sm btn-modal" data-href="' + urls.pay + '" data-container=".view_modal"><i class="fa fa-money"></i> Pay</button>'
+                + '<button type="button" class="btn btn-default btn-sm btn-modal" data-href="' + urls.printModal + '" data-container=".view_modal"><i class="fa fa-print"></i> Print</button>'
+                + '<button type="button" class="btn btn-default btn-sm js-loan-detail-modal" data-title="Loan Detail" data-url="' + urls.detail + '"><i class="fa fa-eye"></i> View</button>'
+                + '</div>'
+                + '</article>';
+        }
+
         function renderQuickSearch(rows) {
             var html = '';
+            var mobileHtml = '';
+            quickSearchRows = rows || [];
             (rows || []).forEach(function (row) {
                 html += quickSearchRowHtml(row);
+                mobileHtml += quickSearchMobileCardHtml(row);
             });
             $('[data-loan-table="dashboard_quick_search"]').html(html || '<tr><td colspan="4" class="text-center">No loans found for this search.</td></tr>');
+            $('#loanDashboardQuickSearchMobile').html(mobileHtml || '<div class="lm-mobile-loan-empty">No loans found for this search.</div>');
         }
 
         function refreshQuickSearchRow(loanId) {
@@ -688,6 +743,11 @@
                     } else {
                         $('[data-loan-table="dashboard_quick_search"]').prepend($newRow);
                     }
+                    quickSearchRows = quickSearchRows.filter(function (item) {
+                        return String(item.id) !== String(loanId);
+                    });
+                    quickSearchRows.unshift(row);
+                    $('#loanDashboardQuickSearchMobile').html(quickSearchRows.map(quickSearchMobileCardHtml).join(''));
                     $newRow.addClass('success');
                     window.setTimeout(function () { $newRow.removeClass('success'); }, 900);
                 });
@@ -759,6 +819,7 @@
                 })
                 .catch(function () {
                     $('[data-loan-table="dashboard_quick_search"]').html('<tr><td colspan="4" class="text-center text-danger">Search failed.</td></tr>');
+                    $('#loanDashboardQuickSearchMobile').html('<div class="lm-mobile-loan-empty text-danger">Search failed.</div>');
                 });
         }
 

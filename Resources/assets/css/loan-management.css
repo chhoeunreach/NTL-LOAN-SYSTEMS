@@ -1951,8 +1951,75 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     z-index: 2;
     background: var(--lm-bg-subtle);
 }
+.lm-collect-payment-mobile-list { display: none; }
+.lm-collect-payment-card {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius);
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(15,23,42,.06);
+}
+.lm-collect-payment-card + .lm-collect-payment-card { margin-top: 10px; }
+.lm-collect-payment-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+.lm-collect-payment-card__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+.lm-collect-payment-card__grid > div {
+    min-width: 0;
+    padding: 9px 10px;
+    border-radius: var(--lm-radius-sm);
+    background: var(--lm-bg-subtle);
+    border: 1px solid var(--lm-border-light);
+}
+.lm-collect-payment-card__grid small {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--lm-muted);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+.lm-collect-payment-card__grid strong {
+    display: block;
+    color: var(--lm-text);
+    font-size: 13px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+}
+.lm-collect-payment-card__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+.lm-collect-payment-card__actions .btn {
+    width: 100%;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: var(--lm-radius-sm);
+    font-weight: 700;
+}
 @media (max-width: 767px) {
-    .lm-collect-payment-scroll { max-height: 360px; overflow: auto; }
+    .lm-dashboard-panel--quick-payment .lm-table-wrap.lm-collect-payment-scroll { display: none; }
+    .lm-collect-payment-mobile-list {
+        display: block;
+        max-height: min(64vh, 520px);
+        overflow-y: auto;
+        padding-right: 2px;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 /* ============================================================
