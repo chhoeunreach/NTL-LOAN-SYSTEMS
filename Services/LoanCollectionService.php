@@ -665,7 +665,7 @@ class LoanCollectionService
             return '0';
         }
 
-        return '(CASE WHEN ('.$this->scheduledDueThroughExpression($loanAlias, 'CURDATE()').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
+        return '(CASE WHEN ('.$this->scheduledDueThroughExpression($loanAlias, 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
     }
 
     protected function scheduledDueThroughExpression(string $loanAlias, string $dateExpression): string
