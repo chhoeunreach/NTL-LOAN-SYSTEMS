@@ -132,21 +132,25 @@ class LoanDashboardService
             $dueNow = round((float) ($row->due_now_amount ?? 0), 2);
             $status = $row->status ?: '-';
             $isOverdue = (bool) ($row->is_overdue ?? false);
+            $today = Carbon::today()->toDateString();
+            $nextDue = ! empty($row->next_due_date) ? substr((string) $row->next_due_date, 0, 10) : null;
 
             if ($this->canReadPaymentSchedules()) {
                 if ($balance <= 0) {
                     $status = 'completed';
                 } elseif ($isOverdue) {
                     $status = 'overdue';
-                } elseif ($dueNow > 0) {
-                    $status = 'due';
-                } elseif (! empty($row->next_due_date)) {
+                } elseif ($nextDue === $today || ($dueNow > 0 && $nextDue && $nextDue <= $today)) {
+                    $status = 'due_today';
+                } elseif (! empty($nextDue)) {
                     $status = 'upcoming';
                 } else {
                     $status = 'active';
                 }
             } elseif ($balance > 0 && $isOverdue) {
                 $status = 'overdue';
+            } elseif ($balance > 0 && ($nextDue === $today || $dueNow > 0)) {
+                $status = 'due_today';
             }
 
             return [
@@ -1177,7 +1181,7 @@ class LoanDashboardService
             return "(CASE WHEN {$loanAlias}.collection_status IN ('overdue','delinquent') AND ".$this->loanBalanceExpression($loanAlias).' > 0 THEN 1 ELSE 0 END)';
         }
 
-        return '(CASE WHEN ('.$this->scheduledDueThroughExpression($loanAlias, 'CURDATE()').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
+        return '(CASE WHEN ('.$this->scheduledDueThroughExpression($loanAlias, 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
     }
 
     protected function installmentDueNowExpression(string $loanAlias): string

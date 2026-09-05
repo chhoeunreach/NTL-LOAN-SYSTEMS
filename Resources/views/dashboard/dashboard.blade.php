@@ -933,14 +933,14 @@
             if (isKhmer) {
                 if (isOverdue) statusLabel = 'ហួសកំណត់';
                 else if (isUpcoming) statusLabel = 'ជិតដល់ថ្ងៃបង់';
-                else if (isDue) statusLabel = 'ត្រូវបង់';
+                else if (isDue) statusLabel = 'ដល់ថ្ងៃត្រូវបង់';
                 else if (statusLabel === 'ACTIVE') statusLabel = 'សកម្ម';
                 else if (statusLabel === 'PENDING') statusLabel = 'រង់ចាំ';
                 else if (statusLabel === 'COMPLETED') statusLabel = 'បញ្ចប់';
             } else if (isUpcoming) {
                 statusLabel = 'UPCOMING';
             } else if (isDue) {
-                statusLabel = 'DUE';
+                statusLabel = 'DUE TODAY';
             }
             var statusBadge = isOverdue
                 ? '<span class="lm-pay-status lm-pay-status--overdue">' + esc(statusLabel) + '</span>'
@@ -1009,13 +1009,13 @@
             if (isKhmer) {
                 if (isOverdue) statusLabel = 'ហួសកំណត់';
                 else if (isUpcoming) statusLabel = 'ជិតដល់ថ្ងៃបង់';
-                else if (isDue) statusLabel = 'ត្រូវបង់';
+                else if (isDue) statusLabel = 'ដល់ថ្ងៃត្រូវបង់';
                 else if (statusLabel === 'ACTIVE') statusLabel = 'សកម្ម';
                 else if (statusLabel === 'PENDING') statusLabel = 'រង់ចាំ';
             } else if (isUpcoming) {
                 statusLabel = 'UPCOMING';
             } else if (isDue) {
-                statusLabel = 'DUE';
+                statusLabel = 'DUE TODAY';
             }
             var statusBadge = row.status ? '<span class="lm-pay-status' + statusClass + '">' + esc(statusLabel) + '</span>' : '';
 
