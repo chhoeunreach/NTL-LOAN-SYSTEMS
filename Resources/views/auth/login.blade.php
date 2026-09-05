@@ -5,6 +5,18 @@
     $businessName = $businessSettings['business_name'] ?: 'Installment Management';
     $systemName = $businessSettings['system_name'] ?: 'Installment Management';
     $systemSubtitle = $businessSettings['system_subtitle'] ?: 'Dedicated loan operation workspace';
+    $isDemoAdminEnabled = !empty($businessSettings['demo_admin_login_enabled']);
+
+    $defaultAdminLogin = 'admin@example.com';
+    $defaultAdminPass = 'password';
+    if ($isDemoAdminEnabled) {
+        try {
+            $demoAdmin = \App\User::where('status', 'active')->where('allow_login', 1)->first();
+            if ($demoAdmin) {
+                $defaultAdminLogin = $demoAdmin->email ?: $demoAdmin->username ?: 'admin@example.com';
+            }
+        } catch (\Throwable $e) {}
+    }
 
     $currentAdmin = Auth::guard('web')->user() ?? Auth::user();
     $currentCustomer = Auth::guard('customer_loan')->user();
@@ -209,68 +221,159 @@
             .session-card { flex-direction: column; align-items: flex-start; gap: 8px; }
             .session-card-actions { width: 100%; justify-content: flex-end; }
         }
-        .demo-login-card {
-            display: block;
-            width: 100%;
-            margin: 0 0 18px;
-            padding: 14px;
-            border: 1px solid #dbe4ef;
-            border-radius: 8px;
-            background: #f8fafc;
+
+        /* Demo Admin Credentials Widget */
+        .demo-admin-box {
+            margin-top: 18px;
+            background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1.5px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 14px 16px;
+            transition: border-color .2s, box-shadow .2s, transform .2s;
             text-align: left;
-            color: #0f172a;
-            font: inherit;
-            cursor: pointer;
-            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
         }
-        .demo-login-card:hover,
-        .demo-login-card:focus {
+        .demo-admin-box:hover {
             border-color: var(--login-primary);
-            box-shadow: 0 10px 24px rgba(15, 23, 42, .10);
-            outline: 0;
-            transform: translateY(-1px);
+            box-shadow: 0 8px 24px -6px rgba(15, 23, 42, .08);
         }
-        .demo-login-head {
+        .demo-admin-head {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
             margin-bottom: 10px;
         }
-        .demo-login-title {
-            color: #334155;
+        .demo-admin-title {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
             font-size: 12px;
-            font-weight: 900;
+            font-weight: 800;
             text-transform: uppercase;
+            letter-spacing: .5px;
+            color: #334155;
         }
-        .demo-login-action {
+        .demo-admin-title svg { color: var(--login-primary); }
+        .demo-admin-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(37, 99, 235, .1);
             color: var(--login-primary);
-            font-size: 12px;
-            font-weight: 900;
-            white-space: nowrap;
+            border: 1px solid rgba(37, 99, 235, .2);
         }
-        .demo-login-row {
+        .demo-admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 360px) {
+            .demo-admin-grid { grid-template-columns: 1fr; }
+        }
+        .demo-admin-chip {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            min-height: 34px;
-            border-top: 1px solid #e2e8f0;
-            color: #475569;
-            font-size: 13px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 7px 10px;
+            cursor: pointer;
+            transition: all .15s ease;
+            user-select: none;
         }
-        .demo-login-row:first-of-type { border-top: 0; }
-        .demo-login-row strong {
+        .demo-admin-chip:hover {
+            border-color: var(--login-primary);
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+        .chip-admin-content {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .chip-admin-label {
+            font-size: 10px;
+            font-weight: 700;
             color: #64748b;
-            font-size: 11px;
             text-transform: uppercase;
+            letter-spacing: .4px;
         }
-        .demo-login-value {
-            overflow-wrap: anywhere;
+        .chip-admin-val {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 12px;
+            font-weight: 700;
             color: #0f172a;
-            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-        .demo-login-card-bottom { margin: 14px 0 0; }
+        .btn-copy-admin-chip {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #64748b;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all .15s ease;
+            margin-left: 6px;
+            padding: 0;
+        }
+        .demo-admin-chip:hover .btn-copy-admin-chip {
+            background: var(--login-primary);
+            border-color: var(--login-primary);
+            color: #fff;
+        }
+        .btn-demo-admin-autofill {
+            width: 100%;
+            height: 40px;
+            background: #fff;
+            border: 1.5px solid var(--login-primary);
+            color: var(--login-primary);
+            border-radius: 8px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all .2s ease;
+            box-shadow: 0 2px 8px -2px rgba(37, 99, 235, .15);
+        }
+        .btn-demo-admin-autofill:hover {
+            background: var(--login-primary);
+            color: #fff;
+            box-shadow: 0 6px 16px -4px rgba(37, 99, 235, .4);
+            transform: translateY(-1px);
+        }
+        .btn-demo-admin-autofill.filled {
+            background: #10b981 !important;
+            border-color: #10b981 !important;
+            color: #fff !important;
+            box-shadow: 0 6px 16px -4px rgba(16, 185, 129, .5) !important;
+        }
+        .demo-fill-highlight {
+            animation: inputPulse .7s ease-in-out;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, .25) !important;
+        }
+        @keyframes inputPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
         .login-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 16px; color: #64748b; font-size: 12px; }
         .login-options label { display: inline-flex; align-items: center; gap: 7px; margin: 0; color: #475569; font-size: 12px; text-transform: none; }
         .login-button {
@@ -304,86 +407,27 @@
                 min-height: 100dvh;
                 background: #f8fafc;
             }
-            .login-brand-panel {
-                min-height: auto;
-                padding: 22px 20px 52px;
-                background: linear-gradient(145deg, rgba(15, 23, 42, .96), rgba(30, 58, 95, .92));
-                border-radius: 0 0 24px 24px;
-            }
-            .login-shell.has-photo .login-brand-panel {
-                background-image: linear-gradient(145deg, rgba(7, 18, 33, .92), rgba(22, 43, 68, .76)), var(--login-background);
-                background-size: cover;
-                background-position: center;
-            }
-            .brand-copy {
-                padding: 22px 0 0;
-            }
-            .brand-copy h1 {
-                font-size: 32px;
-            }
-            .brand-points { grid-template-columns: 1fr; }
+            .login-brand-panel { display: none; }
             .login-panel {
                 min-height: auto;
-                margin-top: -34px;
-                padding: 0 18px 34px;
+                padding: 24px 16px;
                 background: transparent;
                 backdrop-filter: none;
                 place-items: start center;
             }
             .login-box {
-                padding: 26px;
+                padding: 28px 22px;
                 margin-top: -8px;
                 border-radius: 18px;
                 border-color: rgba(226, 232, 240, .92);
             }
-        }
-        @media (max-width: 560px) {
-            body { background: #f8fafc; }
-            .login-brand-panel { padding: 18px 16px 46px; }
-            .brand-mark { max-width: 100%; }
-            .brand-mark > span:last-child {
-                min-width: 0;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            .brand-logo { width: 40px; height: 40px; }
-            .brand-copy { padding-top: 14px; }
-            .brand-copy h1 { font-size: 23px; line-height: 1.18; }
-            .brand-copy p {
-                max-width: 300px;
-                margin-top: 8px;
-                font-size: 13px;
-                line-height: 1.5;
-            }
-            .brand-points { display: none; }
-            .login-panel { margin-top: -30px; padding: 0 12px 24px; background: transparent; }
-            .login-box {
-                width: 100%;
-                padding: 20px 16px 18px;
-                border-radius: 18px;
-                box-shadow: 0 18px 46px rgba(15, 23, 42, .16);
-            }
-            .login-box-head {
-                align-items: flex-start;
-                gap: 10px;
-                margin-bottom: 18px;
-                padding-bottom: 14px;
-                border-bottom: 1px solid #eef2f7;
-            }
-            .login-box-logo { width: 42px; height: 42px; border-radius: 12px; }
-            .login-kicker { min-height: 20px; margin-bottom: 4px; font-size: 10px; }
-            .login-title { font-size: 22px; line-height: 1.15; }
-            .login-subtitle { font-size: 13px; line-height: 1.45; }
-            .form-group { margin-bottom: 14px; }
-            .login-box label { margin-bottom: 6px; font-size: 11px; letter-spacing: .04em; }
             .login-box .form-control,
             .login-button { height: 48px; border-radius: 10px; font-size: 15px; }
             .login-button { margin-top: 4px; box-shadow: 0 12px 22px rgba(37, 99, 235, .18); }
             .login-password-row .form-control { padding-right: 74px; }
             .login-password-toggle { right: 7px; top: 7px; height: 34px; min-width: 58px; border-radius: 8px; }
-            .login-options { margin-bottom: 14px; }
-            .login-meta { margin-top: 14px; }
+        }
+        @media (max-width: 560px) {
             .login-links {
                 display: grid;
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -401,34 +445,9 @@
                 background: #fff;
                 text-align: center;
             }
-            .demo-login-card {
-                padding: 14px;
-                border-radius: 13px;
-                background: linear-gradient(180deg, #ffffff, #f8fafc);
-                border-style: dashed;
-            }
-            .demo-login-card-bottom { margin-top: 12px; }
-            .demo-login-head { margin-bottom: 8px; }
-            .demo-login-action {
-                min-height: 26px;
-                display: inline-flex;
-                align-items: center;
-                padding: 0 8px;
-                border-radius: 999px;
-                background: color-mix(in srgb, var(--login-primary) 10%, #fff);
-            }
-            .demo-login-row { align-items: flex-start; padding: 9px 0; }
-            .demo-login-value { max-width: 66%; text-align: right; overflow-wrap: anywhere; }
         }
         @media (max-width: 360px) {
             .login-box { padding: 20px 14px; }
-            .demo-login-head,
-            .demo-login-row {
-                display: grid;
-                grid-template-columns: 1fr;
-                gap: 4px;
-            }
-            .demo-login-value { max-width: 100%; text-align: left; }
         }
     </style>
 </head>
@@ -555,20 +574,45 @@
                         <a href="{{ route('loan-management.public.home') }}">Website</a>
                     @endif
                 </div>
-                <button type="button" class="demo-login-card demo-login-card-bottom" id="demoAdminLogin" data-email="admin@example.com" data-password="password">
-                    <span class="demo-login-head">
-                        <span class="demo-login-title">Demo Admin</span>
-                        <span class="demo-login-action" id="demoAdminLoginAction">Copy & fill</span>
-                    </span>
-                    <span class="demo-login-row">
-                        <strong>User</strong>
-                        <span class="demo-login-value">admin@example.com</span>
-                    </span>
-                    <span class="demo-login-row">
-                        <strong>Password</strong>
-                        <span class="demo-login-value">password</span>
-                    </span>
-                </button>
+
+                @if($isDemoAdminEnabled)
+                    <div class="demo-admin-box" id="demoAdminBox">
+                        <div class="demo-admin-head">
+                            <div class="demo-admin-title">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                                <span>Demo Admin Login</span>
+                            </div>
+                            <span class="demo-admin-badge">1-Click Demo</span>
+                        </div>
+
+                        <div class="demo-admin-grid">
+                            <div class="demo-admin-chip" id="chipAdminLogin" data-field="email" data-val="{{ $defaultAdminLogin }}" title="Click to copy & fill Login">
+                                <div class="chip-admin-content">
+                                    <span class="chip-admin-label">Email / User</span>
+                                    <span class="chip-admin-val">{{ $defaultAdminLogin }}</span>
+                                </div>
+                                <button type="button" class="btn-copy-admin-chip" title="Copy User">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                </button>
+                            </div>
+
+                            <div class="demo-admin-chip" id="chipAdminPass" data-field="password" data-val="{{ $defaultAdminPass }}" title="Click to copy & fill Password">
+                                <div class="chip-admin-content">
+                                    <span class="chip-admin-label">Password</span>
+                                    <span class="chip-admin-val">{{ $defaultAdminPass }}</span>
+                                </div>
+                                <button type="button" class="btn-copy-admin-chip" title="Copy Password">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn-demo-admin-autofill" id="btnQuickFillAdminDemo">
+                            <svg id="btnAdminFillIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                            <span id="btnAdminFillText">Click to Copy & Auto-Fill Admin</span>
+                        </button>
+                    </div>
+                @endif
             </div>
         </section>
     </main>
@@ -627,36 +671,81 @@
 
             var password = document.getElementById('password');
             var toggle = document.getElementById('loginPasswordToggle');
-            if (!password || !toggle) return;
-            toggle.addEventListener('click', function () {
-                var showing = password.type === 'text';
-                password.type = showing ? 'password' : 'text';
-                toggle.textContent = showing ? 'Show' : 'Hide';
-            });
+            if (toggle && password) {
+                toggle.addEventListener('click', function () {
+                    var showing = password.type === 'text';
+                    password.type = showing ? 'password' : 'text';
+                    toggle.textContent = showing ? 'Show' : 'Hide';
+                });
+            }
 
-            var demoButton = document.getElementById('demoAdminLogin');
-            var email = document.getElementById('email');
-            var demoAction = document.getElementById('demoAdminLoginAction');
-            if (!demoButton || !email) return;
+            var btnQuickFillAdmin = document.getElementById('btnQuickFillAdminDemo');
+            var emailInput = document.getElementById('email');
+            var passwordInput = document.getElementById('password');
 
-            demoButton.addEventListener('click', function () {
-                email.value = demoButton.getAttribute('data-email') || '';
-                password.value = demoButton.getAttribute('data-password') || '';
-                email.dispatchEvent(new Event('input', { bubbles: true }));
-                password.dispatchEvent(new Event('input', { bubbles: true }));
-
+            function applyDemoAdminCredentials(userVal, passVal) {
+                if (emailInput) {
+                    emailInput.value = userVal;
+                    emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    emailInput.classList.remove('demo-fill-highlight');
+                    void emailInput.offsetWidth;
+                    emailInput.classList.add('demo-fill-highlight');
+                }
+                if (passwordInput) {
+                    passwordInput.value = passVal;
+                    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    passwordInput.classList.remove('demo-fill-highlight');
+                    void passwordInput.offsetWidth;
+                    passwordInput.classList.add('demo-fill-highlight');
+                }
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(email.value + "\n" + password.value).catch(function () {});
+                    navigator.clipboard.writeText(userVal + "\n" + passVal).catch(function () {});
                 }
+            }
 
-                if (demoAction) {
-                    demoAction.textContent = 'Filled';
-                    window.setTimeout(function () {
-                        demoAction.textContent = 'Copy & fill';
-                    }, 1600);
-                }
+            if (btnQuickFillAdmin) {
+                btnQuickFillAdmin.addEventListener('click', function () {
+                    var userVal = @json($defaultAdminLogin);
+                    var passVal = @json($defaultAdminPass);
+                    applyDemoAdminCredentials(userVal, passVal);
 
-                password.focus();
+                    var btnText = document.getElementById('btnAdminFillText');
+                    if (btnText) {
+                        var origText = btnText.textContent;
+                        btnText.textContent = '✓ Admin Credentials Filled!';
+                        btnQuickFillAdmin.classList.add('filled');
+                        setTimeout(function () {
+                            btnText.textContent = origText;
+                            btnQuickFillAdmin.classList.remove('filled');
+                        }, 2000);
+                    }
+                });
+            }
+
+            var adminChips = document.querySelectorAll('.demo-admin-chip');
+            adminChips.forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    var field = chip.getAttribute('data-field');
+                    var val = chip.getAttribute('data-val') || '';
+                    if (field === 'email' && emailInput) {
+                        emailInput.value = val;
+                        emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        emailInput.classList.remove('demo-fill-highlight');
+                        void emailInput.offsetWidth;
+                        emailInput.classList.add('demo-fill-highlight');
+                        emailInput.focus();
+                    } else if (field === 'password' && passwordInput) {
+                        passwordInput.value = val;
+                        passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        passwordInput.classList.remove('demo-fill-highlight');
+                        void passwordInput.offsetWidth;
+                        passwordInput.classList.add('demo-fill-highlight');
+                        passwordInput.focus();
+                    }
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(val).catch(function () {});
+                    }
+                });
             });
         })();
     </script>
