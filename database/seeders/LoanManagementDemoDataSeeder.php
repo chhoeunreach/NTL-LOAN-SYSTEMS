@@ -110,14 +110,14 @@ class LoanManagementDemoDataSeeder extends Seeder
         }
 
         $customers = [
-            ['customer_code' => 'CUST-0001', 'name' => 'Sok Dara', 'khmer_name' => 'សុខ ដារ៉ា', 'phone' => '010111001', 'province' => 'Phnom Penh', 'district' => 'Toul Kork', 'commune' => 'Boeng Kak 2', 'village' => 'Village 3'],
-            ['customer_code' => 'CUST-0002', 'name' => 'Chan Sophea', 'khmer_name' => 'ចាន់ សុភា', 'phone' => '010111002', 'province' => 'Phnom Penh', 'district' => 'Mean Chey', 'commune' => 'Stung Meanchey', 'village' => 'Village 7'],
-            ['customer_code' => 'CUST-0003', 'name' => 'Mao Vicheka', 'khmer_name' => 'ម៉ៅ វិច្ឆិកា', 'phone' => '010111003', 'province' => 'Kandal', 'district' => 'Takhmao', 'commune' => 'Doeum Mien', 'village' => 'Village 1'],
-            ['customer_code' => 'CUST-0004', 'name' => 'Kim Sreypov', 'khmer_name' => 'គឹម ស្រីពៅ', 'phone' => '010111004', 'province' => 'Siem Reap', 'district' => 'Krong Siem Reap', 'commune' => 'Svay Dangkum', 'village' => 'Village 4'],
-            ['customer_code' => 'CUST-0005', 'name' => 'Ly Ratha', 'khmer_name' => 'លី រដ្ឋា', 'phone' => '010111005', 'province' => 'Battambang', 'district' => 'Battambang', 'commune' => 'Svay Por', 'village' => 'Village 2'],
-            ['customer_code' => 'CUST-0006', 'name' => 'Touch Sopheak', 'khmer_name' => 'ទូច សុភ័ក្ត្រ', 'phone' => '010111006', 'province' => 'Phnom Penh', 'district' => 'Sen Sok', 'commune' => 'Teuk Thla', 'village' => 'Village 9'],
-            ['customer_code' => 'CUST-0007', 'name' => 'Heng Pisey', 'khmer_name' => 'ហេង ពិសី', 'phone' => '010111007', 'province' => 'Kampong Cham', 'district' => 'Kampong Cham', 'commune' => 'Veal Vong', 'village' => 'Village 6'],
-            ['customer_code' => 'CUST-0008', 'name' => 'Pov Kimsan', 'khmer_name' => 'ពៅ គីមសាន', 'phone' => '010111008', 'province' => 'Phnom Penh', 'district' => 'Chbar Ampov', 'commune' => 'Nirouth', 'village' => 'Village 5'],
+            ['customer_code' => 'CUST-0001', 'name' => 'Sok Dara', 'khmer_name' => 'សុខ ដារ៉ា', 'phone' => '010111001', 'occupation' => 'Store Owner', 'workplace' => 'Central Market', 'province' => 'Phnom Penh', 'district' => 'Toul Kork', 'commune' => 'Boeng Kak 2', 'village' => 'Village 3'],
+            ['customer_code' => 'CUST-0002', 'name' => 'Chan Sophea', 'khmer_name' => 'ចាន់ សុភា', 'phone' => '010111002', 'occupation' => 'Accountant', 'workplace' => 'Vattanac Tower', 'province' => 'Phnom Penh', 'district' => 'Mean Chey', 'commune' => 'Stung Meanchey', 'village' => 'Village 7'],
+            ['customer_code' => 'CUST-0003', 'name' => 'Mao Vicheka', 'khmer_name' => 'ម៉ៅ វិច្ឆិកា', 'phone' => '010111003', 'occupation' => 'Pharmacist', 'workplace' => 'Takhmao Pharmacy', 'province' => 'Kandal', 'district' => 'Takhmao', 'commune' => 'Doeum Mien', 'village' => 'Village 1'],
+            ['customer_code' => 'CUST-0004', 'name' => 'Kim Sreypov', 'khmer_name' => 'គឹម ស្រីពៅ', 'phone' => '010111004', 'occupation' => 'Hotel Supervisor', 'workplace' => 'Angkor Paradise Resort', 'province' => 'Siem Reap', 'district' => 'Krong Siem Reap', 'commune' => 'Svay Dangkum', 'village' => 'Village 4'],
+            ['customer_code' => 'CUST-0005', 'name' => 'Ly Ratha', 'khmer_name' => 'លី រដ្ឋា', 'phone' => '010111005', 'occupation' => 'Civil Engineer', 'workplace' => 'Battambang Construction Co.', 'province' => 'Battambang', 'district' => 'Battambang', 'commune' => 'Svay Por', 'village' => 'Village 2'],
+            ['customer_code' => 'CUST-0006', 'name' => 'Touch Sopheak', 'khmer_name' => 'ទូច សុភ័ក្ត្រ', 'phone' => '010111006', 'occupation' => 'Delivery Driver', 'workplace' => 'Express Logistics', 'province' => 'Phnom Penh', 'district' => 'Sen Sok', 'commune' => 'Teuk Thla', 'village' => 'Village 9'],
+            ['customer_code' => 'CUST-0007', 'name' => 'Heng Pisey', 'khmer_name' => 'ហេង ពិសី', 'phone' => '010111007', 'occupation' => 'High School Teacher', 'workplace' => 'Hun Sen High School', 'province' => 'Kampong Cham', 'district' => 'Kampong Cham', 'commune' => 'Veal Vong', 'village' => 'Village 6'],
+            ['customer_code' => 'CUST-0008', 'name' => 'Pov Kimsan', 'khmer_name' => 'ពៅ គីមសាន', 'phone' => '010111008', 'occupation' => 'Restaurant Manager', 'workplace' => 'Riverfront Dining', 'province' => 'Phnom Penh', 'district' => 'Chbar Ampov', 'commune' => 'Nirouth', 'village' => 'Village 5'],
         ];
 
         $ids = [];

@@ -36,7 +36,7 @@ class LoanCollectionService
             'today-collection' => ['title' => "Today's Collection", 'where' => ['paid_today' => [true]]],
             'partial-payments' => ['title' => 'Partial Payments', 'where' => ['collection_status' => ['partial_payment']]],
             'closed-accounts' => ['title' => 'Closed Accounts', 'where' => ['collection_status' => ['closed']]],
-            'overdue-accounts' => ['title' => 'Overdue Accounts', 'where' => ['collection_status' => ['overdue']]],
+            'overdue-accounts' => ['title' => 'Overdue Accounts', 'where' => ['collection_status' => ['overdue', 'delinquent']]],
             'promise-to-pay' => ['title' => 'Promise To Pay', 'where' => ['collection_status' => ['ptp']]],
             'broken-promise' => ['title' => 'Broken Promise', 'where' => ['collection_status' => ['broken_ptp']]],
             'field-visit-required' => ['title' => 'Field Visit Required', 'where' => ['collection_status' => ['field_visit_required']]],
@@ -66,15 +66,14 @@ class LoanCollectionService
 
         $today = Carbon::today()->toDateString();
         $loans = $this->applyFilters(DB::connection($this->connection)->table('loans'), $filters);
+        $overdueLoans = $this->applyFilters($this->loanQuery(), $filters, 'l');
         $hasCollectionStatus = $this->hasLoanColumn('collection_status');
 
         return [
             'due_today' => $hasCollectionStatus
                 ? (int) (clone $loans)->where('collection_status', 'due_today')->count()
                 : $this->scheduleLoanCount('=', $today),
-            'overdue_accounts' => $hasCollectionStatus
-                ? (int) (clone $loans)->whereIn('collection_status', ['overdue', 'delinquent'])->count()
-                : $this->scheduleLoanCount('<', $today),
+            'overdue_accounts' => $this->overdueAccountsCount($overdueLoans, $today),
             'skip_customers' => $hasCollectionStatus ? (int) (clone $loans)->where('collection_status', 'skip_customer')->count() : 0,
             'broken_ptp' => $hasCollectionStatus ? (int) (clone $loans)->where('collection_status', 'broken_ptp')->count() : 0,
             'field_visits_today' => $this->fieldVisitsTodayCount($loans, $today),
@@ -190,8 +189,14 @@ class LoanCollectionService
 
     protected function loanQuery()
     {
-        return DB::connection($this->connection)->table('loans as l')
+        $query = DB::connection($this->connection)->table('loans as l')
             ->selectRaw('l.*');
+
+        if ($this->hasLoanColumn('deleted_at')) {
+            $query->whereNull('l.deleted_at');
+        }
+
+        return $query;
     }
 
     protected function applyPageDefinition($query, string $slug, array $definition): void
@@ -200,7 +205,9 @@ class LoanCollectionService
 
         if (! empty($statusValues)) {
             $query->where(function ($q) use ($slug, $statusValues) {
-                if ($this->hasLoanColumn('collection_status')) {
+                if ($slug === 'overdue-accounts' && $this->canReadSchedules()) {
+                    $q->whereRaw($this->installmentOverdueExpression('l').' = 1');
+                } elseif ($this->hasLoanColumn('collection_status')) {
                     $q->whereIn('l.collection_status', $statusValues);
                 }
 
@@ -229,7 +236,8 @@ class LoanCollectionService
         match ($slug) {
             'active-loans' => $this->orWhereActiveLoans($query),
             'closed-accounts' => $this->orWhereClosedAccounts($query),
-            'overdue-accounts', 'delinquent-accounts', 'recovery-management', 'debt-collection' => $this->orWhereHasSchedule($query, '<', Carbon::today()->toDateString()),
+            'overdue-accounts' => null,
+            'delinquent-accounts', 'recovery-management', 'debt-collection' => $this->orWhereHasSchedule($query, '<', Carbon::today()->toDateString()),
             'due-today' => $this->orWhereHasSchedule($query, '=', Carbon::today()->toDateString()),
             'today-collection' => $this->orWherePaidToday($query),
             'partial-payments' => $this->orWherePartialPayment($query),
@@ -399,10 +407,32 @@ class LoanCollectionService
                 $schedule->whereIn('s.status', $statuses);
             }
 
+            $schedule->whereRaw($this->scheduleBalanceExpression('s').' > 0');
+
             if ($this->hasScheduleColumn('deleted_at')) {
                 $schedule->whereNull('s.deleted_at');
             }
         });
+    }
+
+    protected function overdueAccountsCount($query, string $today): int
+    {
+        $query->where(function ($q) use ($today) {
+            if ($this->canReadSchedules()) {
+                $q->whereRaw($this->installmentOverdueExpression('l').' = 1');
+                return;
+            }
+
+            if ($this->hasLoanColumn('collection_status')) {
+                $q->whereIn('l.collection_status', ['overdue', 'delinquent'])
+                    ->whereRaw($this->loanBalanceExpression('l').' > 0');
+                return;
+            }
+
+            $q->whereRaw('1 = 0');
+        });
+
+        return (int) $query->count();
     }
 
     protected function applyCollectionOrdering($query): void
@@ -433,6 +463,10 @@ class LoanCollectionService
 
         if ($this->hasScheduleColumn('deleted_at')) {
             $query->whereNull('deleted_at');
+        }
+
+        if ($this->hasScheduleColumn('balance_amount') || $this->hasScheduleColumn('amount_balance')) {
+            $query->whereRaw($this->scheduleBalanceExpression().' > 0');
         }
 
         return (int) $query->distinct('loan_id')->count('loan_id');
@@ -521,9 +555,14 @@ class LoanCollectionService
         }
     }
 
-    protected function applyFilters($query, array $filters, string $alias = '') 
+    protected function applyFilters($query, array $filters, string $alias = '')
     {
         $prefix = $alias ? $alias.'.' : '';
+
+        if ($this->hasLoanColumn('deleted_at')) {
+            $query->whereNull($prefix.'deleted_at');
+        }
+
         foreach (['collection_status', 'overdue_bucket', 'risk_level', 'skip_level'] as $field) {
             if (! empty($filters[$field]) && Schema::connection($this->connection)->hasColumn('loans', $field)) {
                 $query->where($prefix.$field, $filters[$field]);
@@ -578,6 +617,111 @@ class LoanCollectionService
         return (float) DB::connection($this->connection)->table('loan_payments')
             ->whereDate($dateColumn, Carbon::today()->toDateString())
             ->sum($amountColumn);
+    }
+
+    protected function firstExistingLoanColumn(array $columns): ?string
+    {
+        foreach ($columns as $column) {
+            if ($this->hasLoanColumn($column)) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
+    protected function loanValueExpression(string $alias, array $columns, string $default = '0'): string
+    {
+        $column = $this->firstExistingLoanColumn($columns);
+
+        return $column ? $alias.'.'.$column : $default;
+    }
+
+    protected function loanBalanceExpression(string $alias = 'l'): string
+    {
+        $balanceColumn = $this->firstExistingLoanColumn(['balance_amount', 'amount_balance']);
+        $total = $this->loanTotalExpression($alias);
+        $paid = $this->loanPaidExpression($alias);
+        $fallback = 'GREATEST(('.$total.') - ('.$paid.'), 0)';
+
+        return $balanceColumn
+            ? 'COALESCE('.$alias.'.'.$balanceColumn.', '.$fallback.')'
+            : $fallback;
+    }
+
+    protected function loanTotalExpression(string $alias): string
+    {
+        return 'COALESCE('.$this->loanValueExpression($alias, ['total_payable', 'total_payable_amount', 'total_amount', 'principal_amount']).', 0)';
+    }
+
+    protected function loanPaidExpression(string $alias): string
+    {
+        return 'COALESCE('.$this->loanValueExpression($alias, ['paid_amount', 'amount_paid']).', 0)';
+    }
+
+    protected function installmentOverdueExpression(string $loanAlias): string
+    {
+        if (! $this->canReadSchedules()) {
+            return '0';
+        }
+
+        return '(CASE WHEN ('.$this->scheduledDueThroughExpression($loanAlias, 'CURDATE()').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
+    }
+
+    protected function scheduledDueThroughExpression(string $loanAlias, string $dateExpression): string
+    {
+        $conditions = [
+            's.loan_id = '.$loanAlias.'.id',
+            's.due_date <= '.$dateExpression,
+        ];
+
+        if ($this->hasScheduleColumn('status')) {
+            $conditions[] = "(s.status IS NULL OR s.status NOT IN ('cancelled','void','deleted'))";
+        }
+
+        if ($this->hasScheduleColumn('deleted_at')) {
+            $conditions[] = 's.deleted_at IS NULL';
+        }
+
+        return '(SELECT COALESCE(SUM('.$this->scheduleAmountExpression('s').'), 0) FROM loan_payment_schedules s WHERE '.implode(' AND ', $conditions).')';
+    }
+
+    protected function firstExistingScheduleColumn(array $columns): ?string
+    {
+        foreach ($columns as $column) {
+            if ($this->hasScheduleColumn($column)) {
+                return $column;
+            }
+        }
+
+        return null;
+    }
+
+    protected function scheduleAmountExpression(string $alias = ''): string
+    {
+        $prefix = $alias ? $alias.'.' : '';
+        $column = $this->firstExistingScheduleColumn(['schedule_amount', 'amount_due', 'total_amount', 'principal_amount']);
+
+        return 'COALESCE('.($column ? $prefix.$column : '0').', 0)';
+    }
+
+    protected function schedulePaidExpression(string $alias = ''): string
+    {
+        $prefix = $alias ? $alias.'.' : '';
+        $column = $this->firstExistingScheduleColumn(['paid_amount', 'amount_paid']);
+
+        return 'COALESCE('.($column ? $prefix.$column : '0').', 0)';
+    }
+
+    protected function scheduleBalanceExpression(string $alias = ''): string
+    {
+        $prefix = $alias ? $alias.'.' : '';
+        $balanceColumn = $this->firstExistingScheduleColumn(['balance_amount', 'amount_balance']);
+        $fallback = 'GREATEST(('.$this->scheduleAmountExpression($alias).') - ('.$this->schedulePaidExpression($alias).'), 0)';
+
+        return $balanceColumn
+            ? 'COALESCE('.$prefix.$balanceColumn.', '.$fallback.')'
+            : $fallback;
     }
 
     protected function daysPastDue(int $loanId): int

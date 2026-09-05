@@ -58,7 +58,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/dashboard/main', [LoanDashboardController::class, 'index'])->name('loan-management.dashboard.index');
         Route::get('/dashboard/data', [LoanDashboardController::class, 'data'])->name('loan-management.dashboard.data');
         Route::get('/dashboard/quick-search', [LoanDashboardController::class, 'quickSearch'])->name('loan-management.dashboard.quick-search');
-        Route::post('/language', [SettingsController::class, 'switchLanguage'])->name('loan-management.language.switch');
+        Route::match(['get', 'post'], '/language', [SettingsController::class, 'switchLanguage'])->name('loan-management.language.switch');
 
         Route::get('/admin-loan', [DashboardController::class, 'adminLoan'])->name('loan-management.admin-loan');
         Route::get('/admin-loan/export', [DashboardController::class, 'adminLoanExport'])->name('loan-management.admin-loan.export');

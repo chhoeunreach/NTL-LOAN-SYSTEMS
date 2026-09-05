@@ -196,11 +196,9 @@ class SettingsController extends Controller
 
     public function switchLanguage(Request $request)
     {
-        $data = $request->validate([
-            'language' => 'required|in:en,km',
-        ]);
+        $langParam = $request->input('language') ?? $request->query('language') ?? $request->query('lang');
+        $language = in_array($langParam, ['en', 'km'], true) ? $langParam : 'en';
 
-        $language = $data['language'];
         $user = $request->session()->get('user', []);
         $user['language'] = $language;
 
@@ -213,7 +211,12 @@ class SettingsController extends Controller
                 ->update(['language' => $language]);
         }
 
-        return back();
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'language' => $language])
+                ->withCookie(cookie()->forever('lm_lang', $language));
+        }
+
+        return back()->withCookie(cookie()->forever('lm_lang', $language));
     }
 
     public function invoicePrefix()

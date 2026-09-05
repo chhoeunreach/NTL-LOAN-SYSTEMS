@@ -22,6 +22,10 @@ class LoanDashboardController extends Controller
 
     public function index(Request $request)
     {
+        if ($request->has('lang') && in_array($request->query('lang'), ['en', 'km'], true)) {
+            session(['user.language' => $request->query('lang')]);
+        }
+
         $filters = $this->service->getFilters($request);
 
         $locations = $this->locationOptions();

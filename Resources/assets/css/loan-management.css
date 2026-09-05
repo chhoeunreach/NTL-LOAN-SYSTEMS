@@ -1382,6 +1382,86 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
 .lm-hero-metric-label { display: block; margin-bottom: 4px; color: rgba(255,255,255,.7); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
 .lm-hero-metric-value { display: block; font-size: 24px; font-weight: 800; line-height: 1.1; }
 
+/* Dashboard Top Bar */
+.lm-dashboard-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+.lm-dashboard-top-bar__right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.lm-dashboard-lang-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--lm-bg-subtle, #f8fafc);
+    border: 1px solid var(--lm-border);
+    border-radius: 999px;
+    padding: 3px 4px 3px 12px;
+}
+.lm-dashboard-lang-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--lm-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.lm-dashboard-lang-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #fff;
+    border: 1px solid var(--lm-border);
+    border-radius: 999px;
+    padding: 2px;
+}
+.lm-dashboard-lang-switch form {
+    margin: 0;
+    display: inline-block;
+}
+.lm-dashboard-lang-switch button {
+    height: 28px;
+    min-width: 68px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--lm-text-secondary);
+    cursor: pointer;
+    transition: all var(--lm-transition-fast);
+}
+.lm-dashboard-lang-switch button:hover:not(:disabled) {
+    background: var(--lm-bg-subtle, #f1f5f9);
+    color: var(--lm-text);
+}
+.lm-dashboard-lang-switch button.active,
+.lm-dashboard-lang-switch button:disabled {
+    background: var(--lm-primary);
+    color: #fff;
+    cursor: default;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+@media (max-width: 768px) {
+    .lm-dashboard-top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+    }
+    .lm-dashboard-top-bar__right {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
 /* Stat Cards */
 .lm-dashboard-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 12px; }
 .lm-stat-card {
@@ -1453,6 +1533,11 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     border-radius: 999px; background: var(--lm-primary-50);
     color: var(--lm-primary); font-size: 11px; font-weight: 700;
     white-space: nowrap;
+}
+.lm-dashboard-panel__badge--danger {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: var(--lm-danger);
 }
 .lm-dashboard-panel__actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .lm-dashboard-panel__body { padding: 16px 18px 18px; }
@@ -1549,6 +1634,98 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     top: 0;
     z-index: 2;
     background: var(--lm-bg-subtle);
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable {
+    width: auto !important;
+    min-width: 0;
+    table-layout: auto;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th,
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td {
+    padding: 1mm !important;
+    font-size: 12px;
+    line-height: 1.25;
+    vertical-align: middle;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(1),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(1) {
+    width: 190px;
+    max-width: 190px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(2),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(2) {
+    width: 82px;
+    white-space: nowrap;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(3),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(3) {
+    width: 62px;
+    white-space: nowrap;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(4),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(4),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(5),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(5),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(6),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(6) {
+    width: 78px;
+    white-space: nowrap;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable th:nth-child(7),
+.lm-overdue-customers-scroll #loanOverdueCustomersTable td:nth-child(7) {
+    width: 54px;
+    white-space: nowrap;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable .lm-customer-profile {
+    gap: 6px;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable .lm-customer-profile__avatar {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+    font-size: 11px;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable .lm-row-title {
+    font-size: 12px;
+    line-height: 1.2;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable .lm-row-subtitle {
+    margin-top: 1px;
+    font-size: 10.5px;
+    line-height: 1.15;
+}
+.lm-overdue-customers-scroll #loanOverdueCustomersTable .btn {
+    min-height: 22px;
+    padding: 1px 4px;
+    font-size: 10px;
+}
+.lm-profession-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.25;
+}
+.lm-profession-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--lm-text-main, #1e293b);
+    display: inline-flex;
+    align-items: center;
+}
+.lm-profession-title i {
+    font-size: 11px;
+    color: var(--lm-muted, #64748b);
+}
+.lm-profession-workplace {
+    font-size: 11px;
+    color: var(--lm-muted, #64748b);
 }
 .lm-overdue-mobile-list { display: none; }
 .lm-overdue-mobile-card {
@@ -1752,6 +1929,9 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     background: var(--lm-bg); color: var(--lm-muted);
 }
 .lm-pay-status--overdue { background: #fef2f2; color: var(--lm-danger); }
+.lm-pay-status--ok { background: #ecfdf5; color: #047857; }
+.lm-pay-status--upcoming { background: #ecfdf5; color: #047857; }
+.lm-pay-status--due { background: #fff7ed; color: #c2410c; }
 .lm-pay-row { position: relative; transition: background var(--lm-transition-fast); }
 .lm-pay-row:hover { background: #f0fdf4; z-index: 3000; }
 
@@ -1777,7 +1957,7 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     font-size: 13px; font-weight: 800;
 }
 .lm-customer-profile__avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.lm-customer-profile__info { min-width: 0; }
+.lm-customer-profile__info { min-width: 0; flex: 1 1 auto; }
 
 /* Side Stack */
 .lm-side-stack { display: flex; flex-direction: column; gap: 16px; }
@@ -2224,6 +2404,139 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
     top: 0;
     z-index: 2;
     background: var(--lm-bg-subtle);
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable {
+    width: auto !important;
+    min-width: 0;
+    table-layout: auto;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable th,
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable td {
+    vertical-align: middle;
+    padding: 1mm !important;
+    font-size: 12px;
+    line-height: 1.25;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable th {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-customer {
+    width: 190px;
+    max-width: 190px;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code {
+    width: clamp(78px, 10vw, 125px);
+    min-width: 78px;
+    max-width: 125px;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-date { width: 84px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-money { width: 88px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-status { width: 68px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-action { width: 135px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-customer,
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-customer .lm-row-title,
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-customer .lm-row-subtitle {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-date,
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-money,
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-status,
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-action {
+    white-space: nowrap;
+}
+.lm-pay-code {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 20px;
+    padding: 1px 3px;
+    border-radius: var(--lm-radius-sm);
+    background: #f8fafc;
+    border: 1px solid var(--lm-border-light);
+    color: var(--lm-text);
+    font-size: 11px;
+    font-weight: 800;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    line-height: 1.15;
+}
+.lm-collect-payment-scroll .lm-customer-profile {
+    gap: 6px;
+}
+.lm-collect-payment-scroll .lm-customer-profile__avatar {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+    font-size: 11px;
+}
+.lm-collect-payment-scroll .lm-row-title {
+    font-size: 12px;
+    line-height: 1.2;
+}
+.lm-collect-payment-scroll .lm-row-subtitle {
+    margin-top: 1px;
+    font-size: 10.5px;
+    line-height: 1.15;
+}
+.lm-collect-payment-scroll .lm-pay-status {
+    margin-top: 0;
+    padding: 1px 4px;
+    font-size: 9px;
+    letter-spacing: 0;
+}
+.lm-collect-payment-scroll .lm-pay-btn {
+    min-height: 22px;
+    padding: 1px 4px;
+    font-size: 10px;
+}
+.lm-collect-payment-scroll .lm-print-btn,
+.lm-collect-payment-scroll .lm-pay-more .btn {
+    min-height: 22px;
+    padding: 1px 4px;
+    font-size: 10px;
+}
+@media (max-width: 1199px) {
+    .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code {
+        width: clamp(70px, 12vw, 110px);
+        min-width: 70px;
+        max-width: 110px;
+    }
+
+    .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code .lm-pay-code {
+        font-size: 10px;
+        padding: 1px 2px;
+    }
+}
+.lm-pay-contact {
+    color: var(--lm-text-secondary);
+    font-weight: 600;
+}
+.lm-pay-paid {
+    color: #047857;
+    font-weight: 700;
+}
+.lm-pay-date {
+    display: block;
+    font-weight: 700;
+}
+.lm-pay-date-note {
+    display: block;
+    margin-top: 1px;
+    color: var(--lm-text-secondary);
+    font-size: 8.5px;
+    font-weight: 800;
+    line-height: 1.15;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 .lm-collect-payment-mobile-list { display: none; }
 .lm-collect-payment-card {
