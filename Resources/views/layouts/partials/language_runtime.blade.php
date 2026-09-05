@@ -303,19 +303,27 @@
     }
 
     function translateElementAttributes(element) {
+        if (!element || element.nodeType !== Node.ELEMENT_NODE) return;
         attrs.forEach(function(attr) {
             if (!element.hasAttribute || !element.hasAttribute(attr)) return;
-            var translated = translateText(element.getAttribute(attr));
-            if (translated) element.setAttribute(attr, translated);
+            var oldVal = element.getAttribute(attr);
+            var translated = translateText(oldVal);
+            if (translated && translated !== oldVal) {
+                element.setAttribute(attr, translated);
+            }
         });
     }
 
     function translateTextNode(node) {
+        if (!node || node.nodeType !== Node.TEXT_NODE || !node.nodeValue) return;
         var translated = translateText(node.nodeValue);
         if (!translated) return;
         var prefix = (node.nodeValue.match(/^\s*/) || [''])[0];
         var suffix = (node.nodeValue.match(/\s*$/) || [''])[0];
-        node.nodeValue = prefix + translated + suffix;
+        var newVal = prefix + translated + suffix;
+        if (newVal !== node.nodeValue) {
+            node.nodeValue = newVal;
+        }
     }
 
     function translate(root) {
@@ -323,6 +331,9 @@
         if (root.nodeType === Node.ELEMENT_NODE) {
             if (skipTags[root.tagName]) return;
             translateElementAttributes(root);
+        } else if (root.nodeType === Node.TEXT_NODE) {
+            translateTextNode(root);
+            return;
         }
 
         var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
@@ -345,15 +356,32 @@
         });
     }
 
+    var isTranslating = false;
     function boot() {
-        translate(document.body);
-        new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                mutation.addedNodes.forEach(function(node) {
-                    translate(node);
-                });
+        if (isTranslating) return;
+        isTranslating = true;
+        try {
+            translate(document.body);
+        } finally {
+            isTranslating = false;
+        }
+
+        try {
+            var observer = new MutationObserver(function(mutations) {
+                if (isTranslating) return;
+                isTranslating = true;
+                try {
+                    mutations.forEach(function(mutation) {
+                        mutation.addedNodes.forEach(function(node) {
+                            translate(node);
+                        });
+                    });
+                } finally {
+                    isTranslating = false;
+                }
             });
-        }).observe(document.body, { childList: true, subtree: true });
+            observer.observe(document.body, { childList: true, subtree: true });
+        } catch (e) {}
     }
 
     if (document.readyState === 'loading') {
@@ -370,7 +398,8 @@
     var attrs = ['placeholder', 'title', 'aria-label', 'data-title', 'data-original-title', 'alt'];
 
     function normalizeInstallmentWords(value) {
-        return String(value || '')
+        if (!value || typeof value !== 'string') return value;
+        return value
             .replace(/\bLoans\b/g, 'Installments')
             .replace(/\bLoan\b/g, 'Installment')
             .replace(/\bloans\b/g, 'installments')
@@ -386,6 +415,7 @@
     }
 
     function normalizeAttributes(element) {
+        if (!element || element.nodeType !== Node.ELEMENT_NODE) return;
         attrs.forEach(function(attr) {
             if (!element.hasAttribute || !element.hasAttribute(attr)) return;
             var oldValue = element.getAttribute(attr);
@@ -398,7 +428,10 @@
         if (!root) return;
         if (root.nodeType === Node.TEXT_NODE) {
             if (root.nodeValue && /\bloan(s)?\b/i.test(root.nodeValue) && !shouldSkip(root.parentElement)) {
-                root.nodeValue = normalizeInstallmentWords(root.nodeValue);
+                var updated = normalizeInstallmentWords(root.nodeValue);
+                if (updated !== root.nodeValue) {
+                    root.nodeValue = updated;
+                }
             }
             return;
         }
@@ -423,41 +456,47 @@
         while (walker.nextNode()) nodes.push(walker.currentNode);
         nodes.forEach(function(node) {
             if (node.nodeType === Node.TEXT_NODE) {
-                node.nodeValue = normalizeInstallmentWords(node.nodeValue);
+                var newText = normalizeInstallmentWords(node.nodeValue);
+                if (newText !== node.nodeValue) {
+                    node.nodeValue = newText;
+                }
             } else {
                 normalizeAttributes(node);
             }
         });
     }
 
+    var isNormalizing = false;
     function boot() {
-        normalizeNode(document.body);
+        if (isNormalizing) return;
+        isNormalizing = true;
+        try {
+            normalizeNode(document.body);
+        } finally {
+            isNormalizing = false;
+        }
+
         window.loanNormalizeInstallmentWords = normalizeNode;
 
-        new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(normalizeNode);
-                } else if (mutation.type === 'characterData') {
-                    normalizeNode(mutation.target);
-                } else if (mutation.type === 'attributes') {
-                    normalizeAttributes(mutation.target);
+        try {
+            var observer = new MutationObserver(function(mutations) {
+                if (isNormalizing) return;
+                isNormalizing = true;
+                try {
+                    mutations.forEach(function(mutation) {
+                        if (mutation.type === 'childList') {
+                            mutation.addedNodes.forEach(normalizeNode);
+                        }
+                    });
+                } finally {
+                    isNormalizing = false;
                 }
             });
-        }).observe(document.body, {
-            childList: true,
-            subtree: true,
-            characterData: true,
-            attributes: true,
-            attributeFilter: attrs
-        });
-
-        var sweeps = 0;
-        var sweepTimer = window.setInterval(function() {
-            normalizeNode(document.body);
-            sweeps += 1;
-            if (sweeps >= 8) window.clearInterval(sweepTimer);
-        }, 500);
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        } catch (e) {}
     }
 
     if (document.readyState === 'loading') {
