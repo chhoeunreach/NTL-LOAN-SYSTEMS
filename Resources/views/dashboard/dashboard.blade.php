@@ -488,7 +488,8 @@
                         <iframe
                             id="loanDashboardLiveChatFrame"
                             class="lm-live-chat-frame"
-                            src="{{ !empty($initialLiveChat['id']) ? route('loan-management.live-chat.detail', ['thread' => $initialLiveChat['id'], '_lm_embed' => 1]) : route('loan-management.live-chat', ['_lm_embed' => 1]) }}"
+                            src="about:blank"
+                            data-src="{{ !empty($initialLiveChat['id']) ? route('loan-management.live-chat.detail', ['thread' => $initialLiveChat['id'], '_lm_embed' => 1]) : route('loan-management.live-chat', ['_lm_embed' => 1]) }}"
                             title="{{ $lmText('Installment live chat dashboard', 'ផ្ទាំងការជជែកផ្ទាល់រំលស់') }}"></iframe>
                     </main>
 
@@ -1040,7 +1041,8 @@
                     $('#loanDashboardQuickSearchMobile').html(quickSearchRows.map(quickSearchMobileCardHtml).join(''));
                     $newRow.addClass('success');
                     window.setTimeout(function () { $newRow.removeClass('success'); }, 900);
-                });
+                })
+                .catch(function () {});
         }
 
         $(document).on('click', '.lm-dashboard-refresh-schedule-btn', function (event) {
@@ -1413,10 +1415,16 @@
             $('[data-dashboard-tab="' + tabKey + '"]').addClass('is-active').attr('aria-pressed', 'true');
             $('[data-dashboard-pane="' + tabKey + '"]').addClass('is-active');
 
-            if (tabKey === 'live' && !liveTabLoaded) {
-                liveTabLoaded = true;
-                loadLiveChatThreads();
-                refreshLoanDashboard();
+            if (tabKey === 'live') {
+                var $frame = $('#loanDashboardLiveChatFrame');
+                if ($frame.length && ($frame.attr('src') === 'about:blank' || !$frame.attr('src'))) {
+                    $frame.attr('src', $frame.data('src') || (liveChatFrameBaseUrl + '?_lm_embed=1'));
+                }
+                if (!liveTabLoaded) {
+                    liveTabLoaded = true;
+                    loadLiveChatThreads();
+                    refreshLoanDashboard();
+                }
             }
         }
 
@@ -1449,7 +1457,11 @@
             var openUrl = thread.id ? (liveChatFrameBaseUrl + '/' + encodeURIComponent(thread.id)) : liveChatFrameBaseUrl;
             var embedUrl = openUrl + (openUrl.indexOf('?') === -1 ? '?' : '&') + '_lm_embed=1';
             $('#loanDashboardLiveChatOpenBtn').attr('href', openUrl);
-            $('#loanDashboardLiveChatFrame').attr('src', embedUrl);
+            var $frame = $('#loanDashboardLiveChatFrame');
+            $frame.data('src', embedUrl);
+            if ($('[data-dashboard-pane="live"]').hasClass('is-active')) {
+                $frame.attr('src', embedUrl);
+            }
         }
 
         function renderLiveChatThreads() {
