@@ -101,9 +101,12 @@
 
         return $toKhmerNumber($date->format('j')).' ខែ'.($khmerMonths[(int) $date->format('n')] ?? $date->format('m')).' ឆ្នាំ'.$toKhmerNumber($date->format('Y'));
     };
-    $recentActivityLocationName = trim((string) ($locations[$recentActivityFilters['location_id'] ?? null] ?? Session::get('business.name', 'កម្ពុជាក្រោម')));
-    $recentActivityLocationName = $recentActivityLocationName !== '' ? $recentActivityLocationName : 'កម្ពុជាក្រោម';
-    $recentActivityReportPrefix = 'គ្នាយើង-'.$recentActivityLocationName.' ';
+    $reportBusinessName = trim((string) (\Modules\LoanManagement\Services\BusinessSettingsService::businessName() ?: Session::get('business.name', '')));
+    $reportBusinessBrand = $reportBusinessName !== '' ? $reportBusinessName : 'គ្នាយើង';
+    $selectedLocationName = ! empty($recentActivityFilters['location_id']) && ! empty($locations[$recentActivityFilters['location_id']])
+        ? trim((string) $locations[$recentActivityFilters['location_id']])
+        : '';
+    $recentActivityReportPrefix = $reportBusinessBrand.($selectedLocationName !== '' ? '-'.$selectedLocationName : '').' ';
     $recentActivityReportTitle = $recentActivityDateFrom->isSameDay($recentActivityDateTo)
         ? $recentActivityReportPrefix.'របាយការណ៍រំលស់ថ្ងៃទី'.$khmerReportDate($recentActivityDateFrom)
         : $recentActivityReportPrefix.'របាយការណ៍រំលស់ថ្ងៃទី'.$khmerReportDate($recentActivityDateFrom).' ដល់ថ្ងៃទី'.$khmerReportDate($recentActivityDateTo);
