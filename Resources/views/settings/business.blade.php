@@ -613,7 +613,7 @@
 
                 <div class="ultimate-divider"></div>
 
-                <h2 class="ultimate-section-title">{{ $lmText('Public CMS:', 'CMS សាធារណៈ៖') }}</h2>
+                <h2 class="ultimate-section-title">{{ $lmText('Public CMS & Portal Access:', 'CMS សាធារណៈ និងការចូលប្រើប្រាស់៖') }}</h2>
                 <div class="ultimate-business-grid">
                     <div class="ultimate-field ultimate-field-full" data-business-field>
                         <label for="cmsEnabledInput">{{ $lmText('Homepage CMS Module', 'ម៉ូឌុល CMS ទំព័រដើម') }}</label>
@@ -624,6 +624,37 @@
                         </label>
                         <div class="ultimate-help">
                             {{ $lmText('When disabled, visitors opening the homepage are sent to the admin login page. The CMS editor remains available for admins.', 'ពេលបិទ អ្នកចូលទំព័រដើមនឹងទៅទំព័រចូលប្រើអ្នកគ្រប់គ្រង។ អ្នកគ្រប់គ្រងនៅតែអាចកែ CMS បាន។') }}
+                        </div>
+                    </div>
+
+                    <div class="ultimate-field ultimate-field-full" data-business-field>
+                        <label>{{ $lmText('Customer Portal & Login Control', 'ការគ្រប់គ្រងច្រកចូលអតិថិជន') }}</label>
+                        <input type="hidden" name="customer_login_enabled" value="0">
+                        <label class="ultimate-help" style="display:flex;align-items:center;gap:10px;font-weight:700;color:#111827;margin-bottom:6px;">
+                            <input type="checkbox" id="customerLoginEnabledInput" name="customer_login_enabled" value="1" {{ old('customer_login_enabled', $settings['customer_login_enabled'] ?? true) ? 'checked' : '' }}>
+                            {{ $lmText('Enable Customer Login & Registration Portal', 'បើកដំណើរការទំព័រចូលប្រើ និងចុះឈ្មោះរបស់អតិថិជន') }}
+                        </label>
+                        <div class="ultimate-help">
+                            {{ $lmText('When enabled, customers can sign in to view installments, make requests, and check payment schedules.', 'នៅពេលបើក អតិថិជនអាចចូលមើលតារាងបង់ប្រាក់ ធ្វើសំណើរំលស់ និងពិនិត្យទិន្នន័យបាន។') }}
+                        </div>
+                    </div>
+
+                    <div class="ultimate-field ultimate-field-full" data-business-field>
+                        <label>{{ $lmText('Demo Logins Visibility', 'ការបង្ហាញគណនី Demo លើទំព័រចូលប្រើ') }}</label>
+                        
+                        <input type="hidden" name="demo_customer_login_enabled" value="0">
+                        <label class="ultimate-help" style="display:flex;align-items:center;gap:10px;font-weight:700;color:#111827;margin-bottom:8px;">
+                            <input type="checkbox" id="demoCustomerLoginInput" name="demo_customer_login_enabled" value="1" {{ old('demo_customer_login_enabled', $settings['demo_customer_login_enabled'] ?? true) ? 'checked' : '' }}>
+                            {{ $lmText('Show Demo Customer Login Widget (1-Click Auto-Fill)', 'បង្ហាញប្រអប់ Demo គណនីអតិថិជន (1-Click Auto-Fill) លើទំព័រចូលប្រើអតិថិជន') }}
+                        </label>
+
+                        <input type="hidden" name="demo_admin_login_enabled" value="0">
+                        <label class="ultimate-help" style="display:flex;align-items:center;gap:10px;font-weight:700;color:#111827;">
+                            <input type="checkbox" id="demoAdminLoginInput" name="demo_admin_login_enabled" value="1" {{ old('demo_admin_login_enabled', $settings['demo_admin_login_enabled'] ?? false) ? 'checked' : '' }}>
+                            {{ $lmText('Show Demo Admin Credentials on Admin Login', 'បង្ហាញព័ត៌មាន Demo អ្នកគ្រប់គ្រងនៅលើទំព័រចូលប្រើ Admin') }}
+                        </label>
+                        <div class="ultimate-help" style="margin-top:6px;">
+                            {{ $lmText('Disable these options in live production to protect system credentials.', 'បិទជម្រើសទាំងនេះនៅពេលដំណើរការផ្លូវការ (Production) ដើម្បីសុវត្ថិភាពប្រព័ន្ធ។') }}
                         </div>
                     </div>
                 </div>

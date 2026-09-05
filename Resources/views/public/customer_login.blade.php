@@ -613,6 +613,7 @@
                     </button>
 
                     <!-- Demo Customer Credentials (Click to Auto-Fill & Copy) -->
+                    @if(!empty($settings['demo_customer_login_enabled']))
                     <div class="demo-box" id="demoBox">
                         <div class="demo-head">
                             <div class="demo-title">
@@ -672,6 +673,7 @@
                             <span id="btnFillText">Click to Copy & Auto-Fill Demo</span>
                         </button>
                     </div>
+                    @endif
                 </form>
 
                 <div class="divider">Switch or Explore</div>

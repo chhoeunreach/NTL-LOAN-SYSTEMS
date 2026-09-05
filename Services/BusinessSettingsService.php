@@ -28,6 +28,9 @@ class BusinessSettingsService
         'logo_path' => null,
         'login_background_path' => null,
         'cms_enabled' => true,
+        'customer_login_enabled' => true,
+        'demo_customer_login_enabled' => true,
+        'demo_admin_login_enabled' => false,
         'home_headline' => 'Simple loan service for customers',
         'home_subtitle' => 'Register with NTL CO.LTD and our team will contact you about your loan request.',
         'home_body' => 'Fast customer registration, clear payment schedules, Telegram updates, and easy support from our branch team.',
@@ -65,6 +68,9 @@ class BusinessSettingsService
             'logo_path' => $data['logo_path'] ?? $current['logo_path'],
             'login_background_path' => $data['login_background_path'] ?? $current['login_background_path'],
             'cms_enabled' => filter_var($data['cms_enabled'] ?? $current['cms_enabled'], FILTER_VALIDATE_BOOLEAN),
+            'customer_login_enabled' => filter_var($data['customer_login_enabled'] ?? $current['customer_login_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'demo_customer_login_enabled' => filter_var($data['demo_customer_login_enabled'] ?? $current['demo_customer_login_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'demo_admin_login_enabled' => filter_var($data['demo_admin_login_enabled'] ?? $current['demo_admin_login_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'home_headline' => self::cleanText($data['home_headline'] ?? $current['home_headline'], 140),
             'home_subtitle' => self::cleanText($data['home_subtitle'] ?? $current['home_subtitle'], 220),
             'home_body' => self::cleanMultilineText($data['home_body'] ?? $current['home_body'], 1200, ''),
@@ -79,6 +85,21 @@ class BusinessSettingsService
         }
 
         file_put_contents($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    public static function isCustomerLoginEnabled(): bool
+    {
+        return (bool) (self::get()['customer_login_enabled'] ?? true);
+    }
+
+    public static function isDemoCustomerLoginEnabled(): bool
+    {
+        return (bool) (self::get()['demo_customer_login_enabled'] ?? true);
+    }
+
+    public static function isDemoAdminLoginEnabled(): bool
+    {
+        return (bool) (self::get()['demo_admin_login_enabled'] ?? false);
     }
 
     public static function businessName(): string

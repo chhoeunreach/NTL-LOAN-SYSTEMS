@@ -100,6 +100,11 @@ class PublicAppController extends Controller
 
     public function customerLogin()
     {
+        if (! BusinessSettingsService::isCustomerLoginEnabled()) {
+            return redirect()->route('loan-management.public.home')
+                ->with('status', 'Customer login portal is currently disabled by administrator.');
+        }
+
         if (Auth::guard('customer_loan')->check()) {
             return redirect()->route('loan-management.public.customer-dashboard');
         }
@@ -119,6 +124,11 @@ class PublicAppController extends Controller
 
     public function customerLoginStore(Request $request)
     {
+        if (! BusinessSettingsService::isCustomerLoginEnabled()) {
+            return redirect()->route('loan-management.public.home')
+                ->with('status', 'Customer login portal is currently disabled by administrator.');
+        }
+
         $credentials = $request->validate([
             'login' => 'required|string|max:255',
             'password' => 'required|string',
