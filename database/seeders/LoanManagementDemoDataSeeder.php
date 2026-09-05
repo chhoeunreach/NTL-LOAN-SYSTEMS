@@ -33,7 +33,7 @@ class LoanManagementDemoDataSeeder extends Seeder
             return 1;
         }
 
-        $role = Schema::hasTable('roles')
+        $role = (class_exists(Role::class) && Schema::hasTable('roles'))
             ? Role::query()->firstOrCreate(['name' => 'Admin', 'guard_name' => 'web'])
             : null;
 
