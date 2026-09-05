@@ -24,6 +24,36 @@
 @endphp
 
 <div class="lm-dashboard">
+    <div class="lm-dashboard-top-bar">
+        <div class="lm-dashboard-top-bar__left">
+            <h2 class="lm-dashboard-heading">
+                <i class="fa fa-tachometer"></i> {{ $lmText('Loan Dashboard', 'ផ្ទាំងគ្រប់គ្រងរំលស់') }}
+            </h2>
+            <span class="lm-dashboard-subheading">{{ $lmText('Real-time overview of installments, collections, and customer follow-ups', 'ទិដ្ឋភាពជាក់ស្តែងនៃរំលស់ ការប្រមូលប្រាក់ និងការតាមដានអតិថិជន') }}</span>
+        </div>
+        <div class="lm-dashboard-top-bar__right">
+            <div class="lm-dashboard-lang-toggle" title="{{ $lmText('Change language', 'ផ្លាស់ប្តូរភាសា') }}">
+                <span class="lm-dashboard-lang-label"><i class="fa fa-globe"></i> {{ $lmText('Language', 'ភាសា') }}:</span>
+                <div class="lm-language-switch lm-dashboard-lang-switch">
+                    <form method="POST" action="{{ route('loan-management.language.switch') }}" style="display:inline-block; margin:0;">
+                        @csrf
+                        <input type="hidden" name="language" value="en">
+                        <button type="submit" class="{{ !$lmIsKhmer ? 'active' : '' }}" {{ !$lmIsKhmer ? 'disabled' : '' }}>
+                            EN
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('loan-management.language.switch') }}" style="display:inline-block; margin:0;">
+                        @csrf
+                        <input type="hidden" name="language" value="km">
+                        <button type="submit" class="{{ $lmIsKhmer ? 'active' : '' }}" {{ $lmIsKhmer ? 'disabled' : '' }}>
+                            ខ្មែរ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="lm-dashboard-pane is-active" data-dashboard-pane="overview">
     <section class="lm-dashboard-cards">
         @foreach($cards as $card)
