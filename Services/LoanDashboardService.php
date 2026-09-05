@@ -320,7 +320,13 @@ class LoanDashboardService
                 $filters
             )
                 ->whereDate('s.due_date', '<', Carbon::today()->toDateString())
-                ->whereIn('s.status', ['unpaid', 'partial', 'late']);
+                ->whereRaw($this->scheduleBalanceExpression('s').' > 0')
+                ->when($this->columnExists('loan_payment_schedules', 'status'), function ($query) {
+                    $query->where(function ($st) {
+                        $st->whereIn('s.status', $this->openScheduleStatuses())
+                            ->orWhereNull('s.status');
+                    });
+                });
 
             $cards['overdue_loans'] = (int) (clone $overdue)->distinct('s.loan_id')->count('s.loan_id');
             $cards['late_customers'] = (int) (clone $overdue)->distinct('l.customer_id')->count('l.customer_id');
@@ -618,7 +624,13 @@ class LoanDashboardService
 
         $rows = $this->applyScheduleFilters(DB::connection($this->connection)->table('loan_payment_schedules as s')->join('loans as l', 'l.id', '=', 's.loan_id'), $filters)
             ->whereDate('s.due_date', '<', Carbon::today()->toDateString())
-            ->whereIn('s.status', ['unpaid', 'partial', 'late'])
+            ->whereRaw($this->scheduleBalanceExpression('s').' > 0')
+            ->when($this->columnExists('loan_payment_schedules', 'status'), function ($query) {
+                $query->where(function ($st) {
+                    $st->whereIn('s.status', $this->openScheduleStatuses())
+                        ->orWhereNull('s.status');
+                });
+            })
             ->selectRaw('DATEDIFF(CURDATE(), s.due_date) as overdue_days, '.$this->scheduleBalanceExpression('s').' as balance_amount')
             ->get();
 
@@ -742,17 +754,18 @@ class LoanDashboardService
         if (! $this->tableExists('loans')) return [];
 
         $overdueDateExpr = $this->overdueScheduleDateExpression();
-        $overdueDaysExpr = 'CASE WHEN '.$overdueDateExpr.' IS NOT NULL THEN DATEDIFF(CURDATE(), '.$overdueDateExpr.') '
-            .($this->columnExists('loans', 'days_past_due') ? 'ELSE COALESCE(l.days_past_due, 0)' : 'ELSE 0')
-            .' END';
+        $overdueDaysExpr = 'CASE WHEN '.$overdueDateExpr.' IS NOT NULL THEN GREATEST(DATEDIFF(CURDATE(), '.$overdueDateExpr.'), 1) '
+            .($this->columnExists('loans', 'days_past_due') ? 'WHEN COALESCE(l.days_past_due, 0) > 0 THEN l.days_past_due ' : '')
+            .'ELSE 1 END';
         $balanceExpr = $this->loanBalanceExpression('l');
         $dueNowExpr = $this->overdueScheduleDueNowExpression();
+        $dateToPayExpr = 'COALESCE('.$overdueDateExpr.', '.($this->columnExists('loans', 'due_date') ? 'l.due_date' : 'NULL').')';
 
         $query = $this->applyLoanDimensionFilters($this->loanQueryWithCustomer('l'), $filters, 'l');
         $this->whereOverdueInstallment($query);
 
         return $query
-            ->selectRaw('l.id, '.($this->columnExists('loans', 'loan_number') ? 'l.loan_number' : 'CAST(l.id as CHAR)').' as loan_number, '.$this->loanCustomerNameExpression('l').' as customer, '.$this->loanCustomerPhoneExpression('l').' as phone, '.$this->loanCustomerProfessionExpression('l').' as profession, '.$this->loanCustomerOccupationExpression('l').' as occupation, '.$this->loanCustomerWorkplaceExpression('l').' as workplace, '.($this->canJoinLoanCustomers() && $this->columnExists('loan_customers', 'customer_photo_file_id') ? 'c.customer_photo_file_id' : 'NULL').' as customer_photo_file_id, '.$overdueDateExpr.' as date_to_pay, '.$overdueDaysExpr.' as overdue_days, '.($this->columnExists('loans', 'paid_amount') ? 'COALESCE(l.paid_amount, 0)' : '0').' as total_paid, '.$dueNowExpr.' as total_not_yet_paid, '.$balanceExpr.' as pay_off_now, '.$dueNowExpr.' as overdue_amount, '.$this->loanCollectorExpression('l').' as collector, NULL as last_visit')
+            ->selectRaw('l.id, '.($this->columnExists('loans', 'loan_number') ? 'l.loan_number' : 'CAST(l.id as CHAR)').' as loan_number, '.$this->loanCustomerNameExpression('l').' as customer, '.$this->loanCustomerPhoneExpression('l').' as phone, '.$this->loanCustomerProfessionExpression('l').' as profession, '.$this->loanCustomerOccupationExpression('l').' as occupation, '.$this->loanCustomerWorkplaceExpression('l').' as workplace, '.($this->canJoinLoanCustomers() && $this->columnExists('loan_customers', 'customer_photo_file_id') ? 'c.customer_photo_file_id' : 'NULL').' as customer_photo_file_id, '.$dateToPayExpr.' as date_to_pay, '.$overdueDaysExpr.' as overdue_days, '.($this->columnExists('loans', 'paid_amount') ? 'COALESCE(l.paid_amount, 0)' : '0').' as total_paid, '.$dueNowExpr.' as total_not_yet_paid, '.$balanceExpr.' as pay_off_now, '.$dueNowExpr.' as overdue_amount, '.$this->loanCollectorExpression('l').' as collector, NULL as last_visit')
             ->orderByDesc('overdue_days')->limit(50)->get()->map(function ($row) {
                 $data = (array) $row;
                 $data['customer_photo_url'] = $this->customerPhotoUrl((int) ($row->customer_photo_file_id ?? 0));
