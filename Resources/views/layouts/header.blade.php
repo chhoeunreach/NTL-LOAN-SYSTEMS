@@ -50,10 +50,14 @@
         @endif
 
         @if(Route::has('loan-management.loans.create-standalone-modal') && \Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.loans.create|loan_management.create'))
-            <button type="button" class="btn btn-success btn-sm lm-header-action lm-standalone-loan-trigger d-none d-lg-inline-flex"
+            <button type="button" class="btn btn-success btn-sm lm-header-action lm-standalone-loan-trigger"
                     data-url="{{ route('loan-management.loans.create-standalone-modal') }}"
-                    data-target="#standaloneLoanModal">
-                <i class="fa fa-plus-circle"></i> <span>New Installment</span>
+                    data-target="#standaloneLoanModal"
+                    title="{{ $loanLanguage === 'km' ? 'បង្កើតកម្ចីថ្មី' : 'Create Installment' }}"
+                    style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); border-radius: 6px;">
+                <i class="fa fa-plus-circle"></i>
+                <span class="hidden-xs">{{ $loanLanguage === 'km' ? 'បង្កើតកម្ចី' : 'Create Installment' }}</span>
+                <span class="visible-xs-inline">{{ $loanLanguage === 'km' ? 'បង្កើត' : 'Create' }}</span>
             </button>
         @endif
 

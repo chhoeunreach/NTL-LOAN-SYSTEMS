@@ -669,36 +669,46 @@
             if (!value) {
                 return '-';
             }
-            var parts = String(value).split(/[T\s]/)[0].split('-');
+            var clean = String(value).trim().split(/[T\s]/)[0];
+            var parts = clean.split('-');
             if (parts.length === 3) {
                 return parts[2] + '/' + parts[1] + '/' + parts[0];
             }
-            return value;
+            return clean;
         }
 
         function payDateNotice(value) {
             if (!value) {
                 return '';
             }
-            var parts = String(value).split(/[T\s]/)[0].split('-');
+            var clean = String(value).trim().split(/[T\s]/)[0];
+            var parts = clean.split('-');
             if (parts.length !== 3) {
                 return '';
             }
-            var due = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-            var today = new Date();
-            today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-            var diff = Math.floor((today.getTime() - due.getTime()) / 86400000);
+            var y = parseInt(parts[0], 10);
+            var m = parseInt(parts[1], 10) - 1;
+            var d = parseInt(parts[2], 10);
+            if (isNaN(y) || isNaN(m) || isNaN(d)) {
+                return '';
+            }
+
+            var due = new Date(y, m, d, 0, 0, 0, 0);
+            var now = new Date();
+            var today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+            var diff = Math.round((today.getTime() - due.getTime()) / 86400000);
 
             if (diff > 0) {
-                return isKhmer ? 'យឺត ' + diff + ' ថ្ងៃ' : 'Overdue ' + diff + 'd';
+                return isKhmer ? ('យឺត ' + diff + ' ថ្ងៃ') : ('Overdue ' + diff + 'd');
             }
             if (diff === 0) {
                 return isKhmer ? 'ត្រូវបង់ថ្ងៃនេះ' : 'Due today';
             }
 
             var remaining = Math.abs(diff);
-            return isKhmer ? 'នៅសល់ ' + remaining + ' ថ្ងៃ' : 'Remaining ' + remaining + 'd';
+            return isKhmer ? ('នៅសល់ ' + remaining + ' ថ្ងៃ') : ('Remaining ' + remaining + 'd');
         }
+
 
         function formatLmExpiry(value) {
             if (!value) {

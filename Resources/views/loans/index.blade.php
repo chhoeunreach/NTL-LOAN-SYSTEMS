@@ -944,31 +944,8 @@
     </div>
 
     <div class="lm-loan-list-shell">
-        <div class="lm-loan-list-hero">
-            <div>
-                <h1><i class="fa fa-university"></i> {{ $text('All Installments', 'កម្ចីទាំងអស់') }}</h1>
-                <p>{{ $text('Monitor installment accounts, collection progress, and customer balances in one workspace.', 'តាមដានគណនីរំលស់ ការប្រមូលប្រាក់ និងសមតុល្យអតិថិជននៅកន្លែងតែមួយ។') }}</p>
-            </div>
-            <div class="lm-loan-list-hero-actions">
-                <a href="{{ route('loan-management.loans.create') }}" class="btn btn-primary">
-                    <i class="fa fa-plus-circle"></i> {{ $text('New Installment', 'កម្ចីថ្មី') }}
-                </a>
-                <button type="button" class="btn btn-default" onclick="window.print()">
-                    <i class="fa fa-print"></i> {{ $text('Print', 'បោះពុម្ព') }}
-                </button>
-            </div>
-        </div>
-
         {{-- STATUS QUICK-FILTER CARDS --}}
         <div class="lm-status-cards-grid">
-            <div class="lm-status-card status-card-all active" data-status="" title="{{ $text('Show all loans', 'បង្ហាញកម្ចីទាំងអស់') }}">
-                <div class="lm-status-card-icon"><i class="fa fa-th-large"></i></div>
-                <div class="lm-status-card-content">
-                    <span class="lm-status-card-label">{{ $text('All Installments', 'កម្ចីទាំងអស់') }}</span>
-                    <strong class="lm-status-card-count" id="count_all">{{ $statusCounts['all'] ?? 0 }}</strong>
-                </div>
-                <div class="lm-status-card-indicator"></div>
-            </div>
             <div class="lm-status-card status-card-pending" data-status="pending" title="{{ $text('Filter by Pending', 'ច្រោះតាមកំពុងរង់ចាំ') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-clock-o"></i></div>
                 <div class="lm-status-card-content">

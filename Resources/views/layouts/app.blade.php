@@ -116,12 +116,12 @@
     <section class="invoice print_section" id="receipt_section"></section>
     <div class="modal fade view_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel"></div>
     <div class="modal fade no-print" id="standaloneLoanModal" tabindex="-1" role="dialog" aria-labelledby="standaloneLoanModalLabel">
-        <div class="modal-dialog modal-xl" role="document" style="width: 96%; max-width: 1200px; margin: 10px auto;">
-            <div class="modal-content">
+        <div class="modal-dialog modal-xl" role="document" style="width: 96%; max-width: 1380px; margin: 12px auto;">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 25px 60px -15px rgba(0,0,0,0.3); background: #f8fafc;">
                 <div class="modal-body" id="standaloneLoanModalBody" style="padding: 0;">
-                    <div class="text-center" style="padding: 40px 16px;">
-                        <i class="fa fa-spinner fa-spin fa-2x" style="color: #3b82f6;"></i>
-                        <p style="margin-top: 12px; color: #64748b;">Loading form...</p>
+                    <div class="text-center" style="padding: 60px 20px;">
+                        <i class="fa fa-spinner fa-spin fa-3x" style="color: #2563eb;"></i>
+                        <p style="margin-top: 14px; font-size: 15px; font-weight: 600; color: #64748b;">Loading Installment Form...</p>
                     </div>
                 </div>
             </div>
@@ -1011,13 +1011,16 @@
                         return;
                     }
 
-                    $select.select2({
-                        width: '100%',
-                        allowClear: true,
-                        placeholder: '-- Select --',
-                        dropdownParent: $body.closest('.modal-content')
-                    });
+                    if ($.fn.select2) {
+                        $select.select2({
+                            width: '100%',
+                            allowClear: true,
+                            placeholder: '-- Select --',
+                            dropdownParent: $body.closest('.modal-content')
+                        });
+                    }
                 });
+
             }
 
             function modalRefreshAddressSelect($select) {
@@ -1172,6 +1175,12 @@
                 $body.find('#modalSummaryDownPayment').text(modalMoney(downPayment));
                 $body.find('#modalSummaryDue').text(modalMoney(due));
                 $body.find('#modalDownPaymentHidden').val(downPayment.toFixed(2));
+                $body.find('#modalFooterPrincipal').text('$' + due.toFixed(2));
+                var dur = parseInt($body.find('input[name="duration_months"]').val()) || 12;
+                var rate = parseFloat($body.find('input[name="interest_rate"]').val()) || 0;
+                var estMonthly = dur > 0 ? (due + (due * rate / 100 * dur)) / dur : 0;
+                $body.find('#modalFooterMonthly').text('$' + estMonthly.toFixed(2));
+                $body.find('#modalSummaryMonthly').text('$' + estMonthly.toFixed(2));
             }
 
             function modalProductTotal($body) {

@@ -140,12 +140,13 @@ class Util
      */
     public function payment_types($location = null, $show_advance = false, $business_id = null)
     {
+        $isKhmer = session('user.language', config('app.locale')) === 'km';
         $defaults = [
-            'cash' => __('lang_v1.cash'),
-            'card' => __('lang_v1.card'),
-            'cheque' => __('lang_v1.cheque'),
-            'bank_transfer' => __('lang_v1.bank_transfer'),
-            'other' => __('lang_v1.other'),
+            'cash' => $isKhmer ? 'សាច់ប្រាក់សុទ្ធ (Cash)' : 'Cash',
+            'card' => $isKhmer ? 'កាត (Card)' : 'Card',
+            'cheque' => $isKhmer ? 'មូលប្បទានប័ត្រ (Cheque)' : 'Cheque',
+            'bank_transfer' => $isKhmer ? 'ផ្ទេរប្រាក់តាមធនាគារ (Bank Transfer)' : 'Bank Transfer',
+            'other' => $isKhmer ? 'ផ្សេងៗ (Other)' : 'Other',
         ];
 
         try {
@@ -168,7 +169,24 @@ class Util
         }
 
         if ($show_advance) {
-            $payment_types = ['advance' => __('lang_v1.advance')] + $payment_types;
+            $advanceLabel = $isKhmer ? 'ប្រាក់បង់មុន / បុរេប្រទាន (Advance)' : 'Advance';
+            $payment_types = ['advance' => $advanceLabel] + $payment_types;
+        }
+
+        $known = [
+            'advance' => $isKhmer ? 'ប្រាក់បង់មុន / បុរេប្រទាន (Advance)' : 'Advance',
+            'cash' => $isKhmer ? 'សាច់ប្រាក់សុទ្ធ (Cash)' : 'Cash',
+            'card' => $isKhmer ? 'កាត (Card)' : 'Card',
+            'cheque' => $isKhmer ? 'មូលប្បទានប័ត្រ (Cheque)' : 'Cheque',
+            'bank_transfer' => $isKhmer ? 'ផ្ទេរប្រាក់តាមធនាគារ (Bank Transfer)' : 'Bank Transfer',
+            'other' => $isKhmer ? 'ផ្សេងៗ (Other)' : 'Other',
+        ];
+
+        foreach ($payment_types as $k => $v) {
+            if (is_string($v) && (str_starts_with($v, 'lang_v1.') || str_starts_with($v, 'messages.'))) {
+                $sub = str_replace(['lang_v1.', 'messages.'], '', $v);
+                $payment_types[$k] = $known[$sub] ?? ucfirst(str_replace('_', ' ', $sub));
+            }
         }
 
         return $payment_types;

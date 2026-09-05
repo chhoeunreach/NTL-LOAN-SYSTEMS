@@ -1647,8 +1647,8 @@ class DashboardController extends Controller
         $dateFrom = $request->input('recent_date_from', now()->toDateString());
         $dateTo = $request->input('recent_date_to', now()->toDateString());
         $dateRange = trim((string) $request->input('recent_date_range', ''));
-        if ($dateRange !== '' && str_contains($dateRange, '~')) {
-            [$rangeFrom, $rangeTo] = array_map('trim', explode('~', $dateRange, 2));
+        if ($dateRange !== '' && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$rangeFrom, $rangeTo] = $parsedRange;
             $dateFrom = $rangeFrom;
             $dateTo = $rangeTo;
         }
@@ -1685,10 +1685,6 @@ class DashboardController extends Controller
         $recentPayments = $this->dashboardRecentPayments($recentActivityFilters);
 
         return [
-            'cards' => array_merge($this->dashboardLoanCards($filters), $this->dashboardPaymentCardsFromActivity($recentPayments, $recentLoans)),
-            'loanStatusRows' => $this->dashboardLoanStatusRows($filters),
-            'collectionRows' => $this->dashboardCollectionRows($filters),
-            'collectionPeriodLabel' => $this->dashboardCollectionPeriodLabel($filters['period'] ?? 'daily'),
             'paymentMethodRows' => $this->dashboardPaymentMethodRowsFromActivity($recentPayments, $recentLoans),
             'recentLoans' => $recentLoans,
             'recentPayments' => $recentPayments,

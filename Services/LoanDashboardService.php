@@ -133,11 +133,12 @@ class LoanDashboardService
             $status = $row->status ?: '-';
             $isOverdue = (bool) ($row->is_overdue ?? false);
             $today = Carbon::today()->toDateString();
-            $nextDue = ! empty($row->next_due_date) ? substr((string) $row->next_due_date, 0, 10) : null;
+            $nextDue = ($balance > 0 && ! empty($row->next_due_date)) ? substr((string) $row->next_due_date, 0, 10) : null;
 
             if ($this->canReadPaymentSchedules()) {
                 if ($balance <= 0) {
                     $status = 'completed';
+                    $nextDue = null;
                 } elseif ($isOverdue) {
                     $status = 'overdue';
                 } elseif ($nextDue === $today || ($dueNow > 0 && $nextDue && $nextDue <= $today)) {
@@ -147,9 +148,12 @@ class LoanDashboardService
                 } else {
                     $status = 'active';
                 }
-            } elseif ($balance > 0 && $isOverdue) {
+            } elseif ($balance <= 0) {
+                $status = 'completed';
+                $nextDue = null;
+            } elseif ($isOverdue) {
                 $status = 'overdue';
-            } elseif ($balance > 0 && ($nextDue === $today || $dueNow > 0)) {
+            } elseif ($nextDue === $today || $dueNow > 0) {
                 $status = 'due_today';
             }
 
@@ -167,9 +171,10 @@ class LoanDashboardService
                 'balance_amount' => $balance,
                 'status' => $status,
                 'is_overdue' => $isOverdue,
-                'next_due_date' => $row->next_due_date,
+                'next_due_date' => $nextDue,
             ];
         })->all();
+
     }
 
     protected function customerPhotoUrl(int $fileId): ?string
@@ -1208,25 +1213,50 @@ class LoanDashboardService
 
     protected function nextUncoveredDueDateExpression(string $loanAlias): string
     {
-        if (! $this->canReadPaymentSchedules()) {
-            return 'NULL';
+        $fallbackDates = [];
+        if ($this->columnExists('loans', 'next_due_date')) {
+            $fallbackDates[] = $loanAlias.'.next_due_date';
         }
+        if ($this->columnExists('loans', 'first_due_date')) {
+            $fallbackDates[] = $loanAlias.'.first_due_date';
+        }
+        $fallbackExpr = ! empty($fallbackDates) ? 'COALESCE('.implode(', ', $fallbackDates).')' : 'NULL';
+
+        if (! $this->canReadPaymentSchedules()) {
+            return $fallbackExpr;
+        }
+
+        $unpaidConditions = [];
+        if ($this->columnExists('loan_payment_schedules', 'amount_balance')) {
+            $unpaidConditions[] = 's.amount_balance > 0';
+        }
+        if ($this->columnExists('loan_payment_schedules', 'balance_amount')) {
+            $unpaidConditions[] = 's.balance_amount > 0';
+        }
+
+        $balanceCondition = ! empty($unpaidConditions)
+            ? '('.implode(' OR ', $unpaidConditions).')'
+            : ($this->scheduledDueThroughExpression($loanAlias, 's.due_date', 'sx').' > '.$this->loanPaidExpression($loanAlias));
 
         $conditions = [
             's.loan_id = '.$loanAlias.'.id',
-            $this->scheduledDueThroughExpression($loanAlias, 's.due_date', 'sx').' > '.$this->loanPaidExpression($loanAlias),
+            $balanceCondition,
         ];
 
         if ($this->columnExists('loan_payment_schedules', 'status')) {
-            $conditions[] = "(s.status IS NULL OR s.status NOT IN ('cancelled','void','deleted'))";
+            $conditions[] = "(s.status IS NULL OR s.status NOT IN ('paid','completed','cancelled','void','deleted'))";
         }
 
         if ($this->columnExists('loan_payment_schedules', 'deleted_at')) {
             $conditions[] = 's.deleted_at IS NULL';
         }
 
-        return '(SELECT MIN(s.due_date) FROM loan_payment_schedules s WHERE '.implode(' AND ', $conditions).')';
+        $scheduleSubquery = '(SELECT MIN(s.due_date) FROM loan_payment_schedules s WHERE '.implode(' AND ', $conditions).')';
+
+        return 'CASE WHEN '.$this->loanBalanceExpression($loanAlias).' > 0 THEN COALESCE('.$scheduleSubquery.', '.$fallbackExpr.') ELSE NULL END';
     }
+
+
 
     protected function scheduledDueThroughExpression(string $loanAlias, string $dateExpression, string $scheduleAlias = 's'): string
     {

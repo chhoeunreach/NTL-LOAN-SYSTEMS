@@ -4325,6 +4325,7 @@ class LoanInstallmentListController extends Controller
                 $productItems = $activeItemIds->isEmpty() ? collect() : $productItemsQuery->whereIn('loan_item_id', $activeItemIds)->get();
             }
         }
+        $items = $this->mergeLoanProductItemSnapshots($items, $productItems);
 
         $schedules = collect();
         if ($this->loanTableExists('loan_payment_schedules')) {
@@ -4349,12 +4350,64 @@ class LoanInstallmentListController extends Controller
 
         return [
             'items' => $items,
-            'productItems' => $productItems,
+            'productItems' => collect(),
             'schedules' => $schedules,
             'payments' => $payments,
             'statusLogs' => $statusLogs,
             'scheduleTotals' => $this->buildScheduleTotals($schedules),
         ];
+    }
+
+    protected function mergeLoanProductItemSnapshots($items, $productItems)
+    {
+        $items = collect($items);
+        $productItems = collect($productItems);
+
+        if ($items->isEmpty() || $productItems->isEmpty()) {
+            return $items;
+        }
+
+        return $items->map(function ($item) use ($productItems) {
+            $productItem = $productItems->first(function ($row) use ($item) {
+                if (! empty($row->loan_item_id) && (int) $row->loan_item_id === (int) ($item->id ?? 0)) {
+                    return true;
+                }
+
+                if (! empty($item->loan_product_item_id) && (int) ($row->id ?? 0) === (int) $item->loan_product_item_id) {
+                    return true;
+                }
+
+                return ! empty($item->loan_product_id)
+                    && ! empty($row->loan_product_id)
+                    && (int) $row->loan_product_id === (int) $item->loan_product_id;
+            });
+
+            if (! $productItem) {
+                return $item;
+            }
+
+            $item->pos_product_id = $productItem->main_product_id ?? $productItem->product_id ?? $productItem->loan_product_id ?? null;
+            $item->pos_variation_id = $productItem->main_variation_id ?? $productItem->variation_id ?? null;
+            $item->pos_location_name_snapshot = $productItem->location_name_snapshot ?? null;
+            $item->pos_stock_status = $productItem->status ?? null;
+            $item->pos_serial_number = $productItem->serial_no ?? $productItem->serial_number ?? null;
+            $item->pos_imei = $productItem->imei_no ?? $productItem->imei ?? null;
+
+            if (empty($item->serial_number_snapshot) && ! empty($item->pos_serial_number)) {
+                $item->serial_number_snapshot = $item->pos_serial_number;
+            }
+            if (empty($item->imei_snapshot) && ! empty($item->pos_imei)) {
+                $item->imei_snapshot = $item->pos_imei;
+            }
+            if ((float) ($item->unit_price ?? 0) <= 0 && isset($productItem->unit_price)) {
+                $item->unit_price = $productItem->unit_price;
+            }
+            if ((float) ($item->line_total ?? 0) <= 0 && isset($productItem->total_price)) {
+                $item->line_total = $productItem->total_price;
+            }
+
+            return $item;
+        });
     }
 
     protected function loadLoanEditSectionData(int $loan): array

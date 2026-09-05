@@ -171,6 +171,7 @@ class LoanPaymentController extends Controller
             'paid_date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
             'method' => 'nullable|string|max:100',
+            'payment_type' => 'nullable|string|max:50',
             'schedule_id' => 'nullable|integer|min:1',
             'status' => 'nullable|string|max:50',
             'reference_number' => 'nullable|string|max:191',
@@ -187,10 +188,12 @@ class LoanPaymentController extends Controller
         $oldScheduleId = ! empty($row->schedule_id) ? (int) $row->schedule_id : null;
         $paidDate = $payload['paid_date'];
         $paidAt = $paidDate.' '.now()->format('H:i:s');
+        $paymentTypeVal = trim((string) ($payload['payment_type'] ?? ($row->payment_type ?? 'monthly'))) ?: 'monthly';
 
-        DB::connection($this->connection)->transaction(function () use ($payment, $row, $payload, $method, $methodName, $newAmount, $oldAmount, $newScheduleId, $oldScheduleId, $paidDate, $paidAt) {
+        DB::connection($this->connection)->transaction(function () use ($payment, $row, $payload, $method, $methodName, $newAmount, $oldAmount, $newScheduleId, $oldScheduleId, $paidDate, $paidAt, $paymentTypeVal) {
             DB::connection($this->connection)->table('loan_payments')->where('id', $payment)->update($this->safeColumns('loan_payments', [
                 'schedule_id' => $newScheduleId,
+                'payment_type' => $paymentTypeVal,
                 'payment_method_snapshot' => $methodName,
                 'channel' => $methodName,
                 'amount' => $newAmount,
@@ -518,10 +521,43 @@ class LoanPaymentController extends Controller
     protected function paymentMethodOptions($loan = null): array
     {
         try {
-            return app(TransactionUtil::class)->payment_types($loan->main_location_id ?? null, true, (int) (session('user.business_id') ?? 0));
+            $types = app(TransactionUtil::class)->payment_types($loan->main_location_id ?? null, true, (int) (session('user.business_id') ?? 0));
         } catch (\Throwable $e) {
-            return ['cash' => 'Cash', 'aba' => 'ធនាគារអេប៊ីអេ (ABA)', 'wing' => 'វីងវេលុយ (Wing)'];
+            $types = ['cash' => 'Cash', 'aba' => 'ធនាគារអេប៊ីអេ (ABA)', 'wing' => 'វីងវេលុយ (Wing)'];
         }
+
+        $isKhmer = session('user.language', config('app.locale')) === 'km';
+        $known = [
+            'advance' => $isKhmer ? 'ប្រាក់បង់មុន / បុរេប្រទាន (Advance)' : 'Advance Payment',
+            'cash' => $isKhmer ? 'សាច់ប្រាក់សុទ្ធ (Cash)' : 'Cash',
+            'card' => $isKhmer ? 'កាតឥណទាន / ឥណពន្ធ (Card)' : 'Card',
+            'cheque' => $isKhmer ? 'មូលប្បទានប័ត្រ (Cheque)' : 'Cheque',
+            'bank_transfer' => $isKhmer ? 'ផ្ទេរប្រាក់តាមធនាគារ (Bank Transfer)' : 'Bank Transfer',
+            'aba' => 'ធនាគារអេប៊ីអេ (ABA Bank)',
+            'wing' => 'វីងវេលុយ (Wing Money)',
+            'acleda' => 'ធនាគារអេស៊ីលីដា (ACLEDA)',
+            'custom_pay_1' => $isKhmer ? 'វិធីទូទាត់ពិសេស ១' : 'Custom Payment 1',
+            'custom_pay_2' => $isKhmer ? 'វិធីទូទាត់ពិសេស ២' : 'Custom Payment 2',
+            'custom_pay_3' => $isKhmer ? 'វិធីទូទាត់ពិសេស ៣' : 'Custom Payment 3',
+            'other' => $isKhmer ? 'ផ្សេងៗ (Other)' : 'Other',
+        ];
+
+        $cleaned = [];
+        foreach ($types as $key => $label) {
+            $keyStr = (string) $key;
+            $labelStr = trim((string) $label);
+
+            if (isset($known[$keyStr])) {
+                $cleaned[$keyStr] = $known[$keyStr];
+            } elseif (str_starts_with($labelStr, 'lang_v1.') || str_starts_with($labelStr, 'messages.')) {
+                $subKey = str_replace(['lang_v1.', 'messages.'], '', $labelStr);
+                $cleaned[$keyStr] = $known[$subKey] ?? ucfirst(str_replace('_', ' ', $subKey));
+            } else {
+                $cleaned[$keyStr] = $labelStr;
+            }
+        }
+
+        return $cleaned;
     }
 
     protected function ensurePaymentTypeColumn(): void

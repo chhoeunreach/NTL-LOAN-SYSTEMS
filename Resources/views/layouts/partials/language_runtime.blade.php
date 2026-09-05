@@ -67,6 +67,8 @@
         'From POS': 'ពី POS',
         'Overdue': 'ហួសកំណត់',
         'POS Sell': 'លក់ POS',
+        'POS Ref': 'លេខយោង POS',
+        'Stock Status': 'ស្ថានភាពស្តុក',
         'Chat': 'ជជែក',
         'Back to Main': 'ត្រឡប់ទៅមេ',
         'Logout': 'ចាកចេញ',
@@ -275,19 +277,148 @@
         'ID Card': 'អត្តសញ្ញាណប័ណ្ណ',
         'Product fields filled automatically.': 'ព័ត៌មានទំនិញបានបំពេញដោយស្វ័យប្រវត្តិ។',
         'Tip: You can paste images from clipboard (Ctrl+V / Cmd+V) anywhere on this page': 'គន្លឹះ៖ អ្នកអាចបិទភ្ជាប់រូបភាពពី Clipboard (Ctrl+V / Cmd+V) នៅលើទំព័រនេះ',
-        'Paste images with Ctrl+V · Photos compressed, files kept as-is': 'បិទភ្ជាប់រូបភាពដោយ Ctrl+V · រូបថតត្រូវបានបង្រួម ឯកសារផ្សេងទុកដូចដើម'
+        'Paste images with Ctrl+V · Photos compressed, files kept as-is': 'បិទភ្ជាប់រូបភាពដោយ Ctrl+V · រូបថតត្រូវបានបង្រួម ឯកសារផ្សេងទុកដូចដើម',
+        'Edit Installment #': 'កែប្រែរំលស់លេខ',
+        'Invoice Details': 'ព័ត៌មានវិក្កយបត្រ',
+        'Core invoice, quotation/source, location, and ownership details for this loan.': 'ព័ត៌មានវិក្កយបត្រ ប្រភព ទីតាំង និងម្ចាស់ទទួលខុសត្រូវសម្រាប់ការរំលស់នេះ។',
+        'Schedules': 'កាលវិភាគបង់ប្រាក់',
+        'Currency': 'រូបិយប័ណ្ណ',
+        'Installment No': 'លេខរំលស់',
+        'Agreement #': 'លេខកិច្ចព្រមព្រៀង',
+        'Agreement Date': 'កាលបរិច្ឆេទកិច្ចព្រមព្រៀង',
+        'Business Location': 'ទីតាំងអាជីវកម្ម',
+        'Assigned Collector': 'អ្នកប្រមូលប្រាក់ដែលបានកំណត់',
+        'Agreement Status': 'ស្ថានភាពកិច្ចព្រមព្រៀង',
+        'Agreement Note': 'កំណត់ចំណាំកិច្ចព្រមព្រៀង',
+        'Agreement remarks...': 'កំណត់ចំណាំកិច្ចព្រមព្រៀង...',
+        'View agreement': 'មើលកិច្ចព្រមព្រៀង',
+        'Print agreement': 'បោះពុម្ពកិច្ចព្រមព្រៀង',
+        'Back to installments list': 'ត្រឡប់ទៅបញ្ជីរំលស់',
+        'Unable to save changes.': 'មិនអាចរក្សាទុកការផ្លាស់ប្តូរបាន។',
+        'Please check the highlighted fields below.': 'សូមពិនិត្យប្រអប់ដែលបានសម្គាល់ខាងក្រោម។',
+        'Profile Photo': 'រូបថតផ្ទាល់ខ្លួន',
+        'National ID Card': 'អត្តសញ្ញាណប័ណ្ណ',
+        'Primary Phone': 'លេខទូរស័ព្ទចម្បង',
+        'National ID #': 'លេខអត្តសញ្ញាណប័ណ្ណ',
+        'Occupation': 'មុខរបរ',
+        'Job / Business': 'ការងារ / អាជីវកម្ម',
+        'Guarantor Name': 'ឈ្មោះអ្នកធានា',
+        'Guarantor Phone': 'លេខទូរស័ព្ទអ្នកធានា',
+        'Guarantor full name': 'ឈ្មោះពេញអ្នកធានា',
+        'Guarantor phone': 'លេខទូរស័ព្ទអ្នកធានា',
+        'Province / City': 'ខេត្ត / ក្រុង',
+        'District / Khan': 'ស្រុក / ខណ្ឌ',
+        'Commune / Sangkat': 'ឃុំ / សង្កាត់',
+        'Detailed Street Address / Landmark': 'អាសយដ្ឋានលម្អិត / ចំណុចសម្គាល់',
+        'House number, street, landmark...': 'លេខផ្ទះ ផ្លូវ ចំណុចសម្គាល់...',
+        'Click or paste files here': 'ចុច ឬបិទភ្ជាប់ឯកសារនៅទីនេះ',
+        'Add Files': 'បន្ថែមឯកសារ',
+        'Telegram Summary Note': 'កំណត់ចំណាំសង្ខេប Telegram',
+        'Document remark or extra details for telegram notification...': 'កំណត់ចំណាំឯកសារ ឬព័ត៌មានបន្ថែមសម្រាប់ការជូនដំណឹង Telegram...',
+        'External Document Links': 'តំណឯកសារខាងក្រៅ',
+        'Photo URL or path': 'URL រូបថត ឬទីតាំងឯកសារ',
+        'Total Customer Deposit Paid': 'ប្រាក់កក់អតិថិជនបានបង់សរុប',
+        'Method': 'វិធីបង់',
+        'Update Deposit': 'ធ្វើបច្ចុប្បន្នភាពប្រាក់កក់',
+        'Remove': 'លុបចេញ',
+        'Net Principal Financed': 'ប្រាក់ដើមសុទ្ធដែលបានរំលស់',
+        'Recorded Deposit / Down Payment': 'ប្រាក់កក់ដែលបានកត់ត្រា',
+        'Duration (Months)': 'រយៈពេល (ខែ)',
+        'Payment Frequency': 'ភាពញឹកញាប់នៃការបង់',
+        'Maturity Date': 'ថ្ងៃបញ្ចប់កិច្ចព្រមព្រៀង',
+        'Deposit': 'ប្រាក់កក់',
+        'Total Due': 'សរុបត្រូវបង់',
+        'Monthly Est': 'ប៉ាន់ស្មានប្រចាំខែ',
+        'Click Preview Schedule to recalculate schedule table.': 'ចុចមើលកាលវិភាគ ដើម្បីគណនាតារាងឡើងវិញ។',
+        'Save Changes': 'រក្សាទុកការផ្លាស់ប្តូរ',
+        'Drag the box or corners to keep only the product label.': 'អូសប្រអប់ ឬជ្រុង ដើម្បីរក្សាតែស្លាកទំនិញ។',
+        'Drag the box or corners to keep the important area.': 'អូសប្រអប់ ឬជ្រុង ដើម្បីរក្សាតំបន់សំខាន់។',
+        'Paste document link': 'បិទភ្ជាប់តំណឯកសារ',
+        'New Product': 'ទំនិញថ្មី',
+        'No schedule rows generated.': 'មិនមានជួរកាលវិភាគត្រូវបានបង្កើត។',
+        'DataTable library is not loaded.': 'បណ្ណាល័យ DataTable មិនទាន់បានផ្ទុក។',
+        'More actions': 'សកម្មភាពបន្ថែម',
+        'Failed to load payment form.': 'ផ្ទុកទម្រង់បង់ប្រាក់បរាជ័យ។',
+        'Dashboard Reports': 'របាយការណ៍ផ្ទាំងគ្រប់គ្រង',
+        'Recent Collected Payments': 'ការប្រមូលប្រាក់ថ្មីៗ',
+        'Recent Installments': 'ការរំលស់ថ្មីៗ',
+        'Recent Loans': 'ការរំលស់ថ្មីៗ',
+        'Recent Collected Payments Reports': 'របាយការណ៍ការប្រមូលប្រាក់ថ្មីៗ',
+        'Loans Reports': 'របាយការណ៍រំលស់',
+        'Type': 'ប្រភេទ',
+        'Count': 'ចំនួន',
+        'Cash': 'សាច់ប្រាក់',
+        'Other': 'ផ្សេងៗ',
+        'Amount': 'ចំនួនប្រាក់',
+        'Note': 'កំណត់ចំណាំ',
+        'Customer name': 'ឈ្មោះអតិថិជន',
+        'Installment #': 'លេខរំលស់',
+        'Next Pay Date': 'ថ្ងៃបង់បន្ទាប់',
+        'Quick Pay': 'បង់រហ័ស',
+        'Due Date': 'ថ្ងៃត្រូវបង់',
+        'Pay Date': 'ថ្ងៃបង់',
+        'Payoff': 'បង់បិទ',
+        'Amount Due': 'ចំនួនត្រូវបង់',
+        'Overdue Customers': 'អតិថិជនហួសកំណត់',
+        'Overdue Accounts': 'គណនីហួសកំណត់',
+        'Collected Payments': 'ការប្រមូលប្រាក់',
+        'Deposit Payments': 'ការបង់ប្រាក់កក់',
+        'Outstanding Balance': 'សមតុល្យនៅសល់',
+        'All Installment': 'រំលស់ទាំងអស់',
+        'Pending Requests': 'សំណើកំពុងរង់ចាំ',
+        'Today Collection': 'ការប្រមូលថ្ងៃនេះ',
+        'Active Installments': 'រំលស់សកម្ម',
+        'No data available': 'មិនមានទិន្នន័យ',
+        'No matching records found': 'រកមិនឃើញទិន្នន័យដែលត្រូវគ្នា',
+        'Showing _START_ to _END_ of _TOTAL_ entries': 'បង្ហាញ _START_ ដល់ _END_ នៃ _TOTAL_ ទិន្នន័យ',
+        'Showing 0 to 0 of 0 entries': 'បង្ហាញ 0 ដល់ 0 នៃ 0 ទិន្នន័យ',
+        'filtered from _MAX_ total entries': 'បានចម្រោះពីទិន្នន័យសរុប _MAX_',
+        'Show _MENU_ entries': 'បង្ហាញ _MENU_ ទិន្នន័យ',
+        'Processing...': 'កំពុងដំណើរការ...',
+        'First': 'ដំបូង',
+        'Last': 'ចុងក្រោយ',
+        'Next': 'បន្ទាប់',
+        'Previous': 'មុន',
+        'Copied': 'បានចម្លង',
+        'Loading...': 'កំពុងផ្ទុក...',
+        'Saving...': 'កំពុងរក្សាទុក...',
+        'Updating...': 'កំពុងធ្វើបច្ចុប្បន្នភាព...',
+        'Failed to save loan.': 'រក្សាទុករំលស់បរាជ័យ។',
+        'Installment updated successfully.': 'បានធ្វើបច្ចុប្បន្នភាពរំលស់ដោយជោគជ័យ។',
+        'Failed to preview schedule': 'មើលកាលវិភាគបរាជ័យ',
+        'Failed to remove item.': 'លុបទំនិញបរាជ័យ។',
+        'Item removed.': 'បានលុបទំនិញ។',
+        'Item updated.': 'បានធ្វើបច្ចុប្បន្នភាពទំនិញ។',
+        'Failed to update item.': 'ធ្វើបច្ចុប្បន្នភាពទំនិញបរាជ័យ។',
+        'Delete this item? This will update loan totals.': 'លុបទំនិញនេះឬ? វានឹងធ្វើបច្ចុប្បន្នភាពសរុបរំលស់។',
+        'Deposit updated.': 'បានធ្វើបច្ចុប្បន្នភាពប្រាក់កក់។',
+        'Failed to update deposit.': 'ធ្វើបច្ចុប្បន្នភាពប្រាក់កក់បរាជ័យ។',
+        'Deposit removed.': 'បានលុបប្រាក់កក់។',
+        'Failed to remove deposit.': 'លុបប្រាក់កក់បរាជ័យ។'
     };
 
     var skipTags = { SCRIPT: true, STYLE: true, TEXTAREA: true, CODE: true, PRE: true };
-    var attrs = ['placeholder', 'title', 'aria-label', 'data-title'];
+    var attrs = ['placeholder', 'title', 'aria-label', 'data-title', 'data-original-title', 'alt'];
 
     function normalized(value) {
         return String(value || '').replace(/\s+/g, ' ').trim();
     }
 
+    function escapeRegExp(value) {
+        return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
     function translateText(value) {
         var key = normalized(value);
         if (dictionary[key]) return dictionary[key];
+
+        var sentence = key;
+        Object.keys(dictionary).forEach(function(english) {
+            if (sentence === key && key.indexOf(english + ': ') === 0) {
+                sentence = dictionary[english] + ': ' + key.slice((english + ': ').length);
+            }
+        });
+        if (sentence !== key) return sentence;
 
         var requiredMatch = key.match(/^(.+?)(:\*)$/);
         if (requiredMatch && dictionary[requiredMatch[1]]) {
@@ -298,6 +429,19 @@
         if (colonMatch && dictionary[colonMatch[1]]) {
             return dictionary[colonMatch[1]] + colonMatch[2];
         }
+
+        var inline = key;
+        Object.keys(dictionary)
+            .filter(function(english) {
+                return english.length >= 5 && key.indexOf(english) !== -1;
+            })
+            .sort(function(a, b) {
+                return b.length - a.length;
+            })
+            .forEach(function(english) {
+                inline = inline.replace(new RegExp(escapeRegExp(english), 'g'), dictionary[english]);
+            });
+        if (inline !== key) return inline;
 
         return null;
     }
@@ -329,11 +473,15 @@
     function translate(root) {
         if (!root) return;
         if (root.nodeType === Node.ELEMENT_NODE) {
-            if (skipTags[root.tagName]) return;
             translateElementAttributes(root);
+            if (skipTags[root.tagName]) return;
         } else if (root.nodeType === Node.TEXT_NODE) {
             translateTextNode(root);
             return;
+        }
+
+        if (root.querySelectorAll) {
+            root.querySelectorAll('input, textarea, select, option, img, button, a, [title], [aria-label], [data-title], [data-original-title], [placeholder], [alt]').forEach(translateElementAttributes);
         }
 
         var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
