@@ -24,6 +24,39 @@
 @endphp
 
 <div class="lm-dashboard">
+    @if (!empty($systemHealth) && !empty($systemHealth['has_issues']))
+        <div class="alert alert-{{ $systemHealth['has_critical_errors'] ? 'danger' : 'warning' }}" style="border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08); border-left: 6px solid {{ $systemHealth['has_critical_errors'] ? '#dc2626' : '#f59e0b' }};">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <span style="font-size: 24px;">{{ $systemHealth['has_critical_errors'] ? '⚠️' : '🔔' }}</span>
+                    <div>
+                        <h4 style="margin: 0 0 6px; font-weight: 800; font-size: 16px; color: {{ $systemHealth['has_critical_errors'] ? '#991b1b' : '#92400e' }};">
+                            {{ $lmText('System & Database Requirement Notice', 'ដំណឹងត្រួតពិនិត្យប្រព័ន្ធ និង មូលដ្ឋានទិន្នន័យ') }}
+                            <span class="badge" style="background: {{ $systemHealth['has_critical_errors'] ? '#dc2626' : '#d97706' }}; margin-left: 8px;">{{ $systemHealth['error_count'] }} {{ $lmText('Errors', 'កំហុស') }}</span>
+                        </h4>
+                        <p style="margin: 0 0 10px; font-size: 13.5px; color: #475569;">
+                            {{ $lmText('Some server requirements, extensions, database tables, or seed data require attention.', 'ប្រព័ន្ធបានរកឃើញតម្រូវការ ឬតារាងទិន្នន័យមួយចំនួនដែលមិនទាន់បានរៀបចំរួចរាល់។') }}
+                        </p>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            @foreach(array_slice($systemHealth['alerts'], 0, 3) as $alert)
+                                <div style="font-size: 13px; line-height: 1.4;">
+                                    <strong>• {{ $lmIsKhmer ? $alert['title_km'] : $alert['title_en'] }}:</strong> {{ $lmIsKhmer ? $alert['message_km'] : $alert['message_en'] }}
+                                    @if(!empty($alert['remedy']))
+                                        <code style="background: #0f172a; color: #38bdf8; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 6px;">{{ $alert['remedy'] }}</code>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+                <div style="align-self: center;">
+                    <a href="{{ route('loan-management.system.status') }}" class="btn btn-sm btn-{{ $systemHealth['has_critical_errors'] ? 'danger' : 'warning' }}" style="font-weight: 700; border-radius: 8px; padding: 8px 16px;">
+                        <i class="fa fa-wrench"></i> {{ $lmText('View System Diagnostics', 'មើលការពិនិត្យប្រព័ន្ធលម្អិត') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
     <div class="lm-dashboard-pane is-active" data-dashboard-pane="overview">
     <section class="lm-dashboard-cards">
         @foreach($cards as $card)

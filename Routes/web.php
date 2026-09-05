@@ -20,6 +20,7 @@ use Modules\LoanManagement\Http\Controllers\LoanTelegramChatController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramWebhookController;
 use Modules\LoanManagement\Http\Controllers\PublicAppController;
 use Modules\LoanManagement\Http\Controllers\SettingsController;
+use Modules\LoanManagement\Http\Controllers\SystemHealthController;
 
 Route::middleware(['web'])
     ->post('/webhook/loan-telegram', [LoanTelegramWebhookController::class, 'handle'])
@@ -236,6 +237,10 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/settings/telegram/secret', [SettingsController::class, 'generateTelegramWebhookSecret'])->name('loan-management.settings.telegram.secret');
         Route::post('/settings/telegram/test', [SettingsController::class, 'testTelegramConnection'])->name('loan-management.settings.telegram.test');
         Route::post('/settings/telegram/webhook', [SettingsController::class, 'registerTelegramWebhook'])->name('loan-management.settings.telegram.webhook');
+
+        Route::get('/system-status', [SystemHealthController::class, 'status'])->name('loan-management.system.status');
+        Route::get('/system-status/data', [SystemHealthController::class, 'data'])->name('loan-management.system.status.data');
+        Route::get('/system-check', [SystemHealthController::class, 'status'])->name('loan-management.system.check');
 
         Route::get('/activity-logs', [LoanActivityLogController::class, 'index'])->name('loan-management.activity-logs.index');
         Route::get('/tools/import-export', [LoanImportExportController::class, 'index'])->name('loan-management.import.index');

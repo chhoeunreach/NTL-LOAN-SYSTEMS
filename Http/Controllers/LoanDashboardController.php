@@ -83,6 +83,13 @@ class LoanDashboardController extends Controller
         $loanStatusChart = $dashboard['loanStatusChart'] ?? ['labels' => [], 'series' => []];
         $recentChats = $this->getRecentChats();
 
+        $systemHealth = null;
+        try {
+            $systemHealth = \Modules\LoanManagement\Services\SystemHealthCheckService::check();
+        } catch (\Throwable $e) {
+            // Safe fallback if health check throws
+        }
+
         return view('loanmanagement::dashboard.index', compact(
             'filters',
             'locations',
@@ -96,7 +103,8 @@ class LoanDashboardController extends Controller
             'visitSchedule',
             'collectorPerformance',
             'loanStatusChart',
-            'recentChats'
+            'recentChats',
+            'systemHealth'
         ));
     }
 
