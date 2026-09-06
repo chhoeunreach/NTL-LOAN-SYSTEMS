@@ -181,6 +181,78 @@
         .lm-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         .lm-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 
+        /* Flow Stepper Strip & Quick Suggestions in Modal */
+        .lm-modal-stepper-strip {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .lm-modal-step-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 5px 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .lm-modal-step-item:hover, .lm-modal-step-item.active {
+            background: #eff6ff;
+            border-color: #3b82f6;
+        }
+        .lm-modal-step-num {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .lm-modal-step-title { font-size: 11px; font-weight: 700; color: #1e293b; line-height: 1.1; }
+        .lm-modal-step-desc { font-size: 9px; color: #64748b; line-height: 1; }
+
+        .lm-modal-preset-strip {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 5px 10px;
+            margin-bottom: 8px;
+        }
+        .lm-modal-preset-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-right: 2px; }
+        .lm-modal-preset-chip {
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            font-size: 10px;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.12s;
+        }
+        .lm-modal-preset-chip:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .lm-modal-preset-chip i { color: #f59e0b; font-size: 9px; }
+        .lm-modal-preset-chip:hover i { color: #fff; }
+
         /* Customer Select & KYC Strip (Compact) */
         .lm-customer-search-box {
             display: flex;
@@ -676,6 +748,55 @@
         <input type="hidden" name="action_type" value="create_approve">
 
         <div class="lm-pro-body">
+            <!-- 4-Step Quick Visual Stepper -->
+            <div class="lm-modal-stepper-strip">
+                <div class="lm-modal-step-item active" onclick="document.getElementById('mobCustomerInfoCard').scrollIntoView({behavior:'smooth'})">
+                    <span class="lm-modal-step-num">1</span>
+                    <div>
+                        <div class="lm-modal-step-title">{{ $lmText('Customer KYC', 'អតិថិជន & KYC') }}</div>
+                        <div class="lm-modal-step-desc">{{ $lmText('ID OCR & Profile', 'អត្តសញ្ញាណប័ណ្ណ') }}</div>
+                    </div>
+                </div>
+                <div class="lm-modal-step-item" onclick="document.getElementById('mobProductsCard').scrollIntoView({behavior:'smooth'})">
+                    <span class="lm-modal-step-num">2</span>
+                    <div>
+                        <div class="lm-modal-step-title">{{ $lmText('Products & Items', 'ទំនិញ & IMEI') }}</div>
+                        <div class="lm-modal-step-desc">{{ $lmText('Pricing & Specs', 'តម្លៃ & មុខទំនិញ') }}</div>
+                    </div>
+                </div>
+                <div class="lm-modal-step-item" onclick="document.getElementById('mobLoanTermsCard').scrollIntoView({behavior:'smooth'})">
+                    <span class="lm-modal-step-num">3</span>
+                    <div>
+                        <div class="lm-modal-step-title">{{ $lmText('Terms & Rates', 'លក្ខខណ្ឌ & ការប្រាក់') }}</div>
+                        <div class="lm-modal-step-desc">{{ $lmText('Rate, Mode & Months', 'អត្រា & រយៈពេល') }}</div>
+                    </div>
+                </div>
+                <div class="lm-modal-step-item" onclick="document.getElementById('mobRepaymentCard').scrollIntoView({behavior:'smooth'})">
+                    <span class="lm-modal-step-num">4</span>
+                    <div>
+                        <div class="lm-modal-step-title">{{ $lmText('Down Payment & Plan', 'ប្រាក់កក់ & កាលវិភាគ') }}</div>
+                        <div class="lm-modal-step-desc">{{ $lmText('Upfront & Amortization', 'ទូទាត់មុន & តារាង') }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Suggestions Strip -->
+            <div class="lm-modal-preset-strip">
+                <span class="lm-modal-preset-label"><i class="fa fa-bolt text-warning"></i> {{ $lmText('Quick Plans:', 'គម្រោងរហ័ស៖') }}</span>
+                <button type="button" class="lm-modal-preset-chip js-mob-quick-plan" data-rate="4" data-mode="flat" data-months="12" data-down-pct="0">
+                    <i class="fa fa-star"></i> 12 Mo @ 4% Flat (0% Down)
+                </button>
+                <button type="button" class="lm-modal-preset-chip js-mob-quick-plan" data-rate="3" data-mode="flat" data-months="6" data-down-pct="20">
+                    <i class="fa fa-tag"></i> 6 Mo @ 3% (20% Down)
+                </button>
+                <button type="button" class="lm-modal-preset-chip js-mob-quick-plan" data-rate="3.5" data-mode="reducing_balance" data-months="24" data-down-pct="10">
+                    <i class="fa fa-line-chart"></i> 24 Mo @ 3.5% Reducing
+                </button>
+                <button type="button" class="lm-modal-preset-chip js-mob-quick-plan" data-rate="0" data-mode="flat" data-months="3" data-down-pct="30">
+                    <i class="fa fa-gift"></i> 3 Mo @ 0% Promo (30% Down)
+                </button>
+            </div>
+
             <!-- Top Agreement Configuration Strip -->
             <div class="lm-top-strip">
                 <div class="lm-field">
@@ -1801,6 +1922,30 @@ document.addEventListener('paste', function(e) {
         }
     }
     if (handled) e.preventDefault();
+});
+
+jQuery(document).on('click', '.js-mob-quick-plan', function() {
+    var rate = jQuery(this).data('rate');
+    var mode = jQuery(this).data('mode');
+    var months = jQuery(this).data('months');
+    var downPct = jQuery(this).data('down-pct');
+
+    var rateInput = document.querySelector('input[name="interest_rate"]');
+    var modeSelect = document.querySelector('select[name="interest_type"]');
+    var monthsInput = document.querySelector('input[name="duration_months"]');
+
+    if (rateInput) { rateInput.value = rate; }
+    if (modeSelect) { modeSelect.value = mode; }
+    if (monthsInput) { monthsInput.value = months; }
+
+    var totalProd = parseFloat((document.getElementById('modalComputedPrincipal')?.textContent || '0').replace(/[^0-9.]/g, '')) || 0;
+    if (totalProd > 0) {
+        var downAmt = Math.round(totalProd * (downPct / 100) * 100) / 100;
+        var downInput = document.querySelector('input[name="payment[amount]"]');
+        if (downInput) downInput.value = downAmt;
+    }
+
+    if (typeof mobRecalc === 'function') mobRecalc();
 });
 
 // ==================== PREVIEW & SUBMISSION ====================
