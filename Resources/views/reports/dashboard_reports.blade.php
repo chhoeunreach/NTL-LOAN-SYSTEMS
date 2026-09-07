@@ -448,12 +448,41 @@
     }
     .lm-report-table > tbody > tr.lm-duplicate-row > td,
     .lm-report-table > tbody > tr.lm-duplicate-row:nth-child(even) > td {
-        background: #fff7ed;
-        border-top-color: #fdba74 !important;
-        border-bottom-color: #fdba74 !important;
+        background: #fffbeb !important;
+        border-top-color: #fde68a !important;
+        border-bottom-color: #fde68a !important;
     }
     .lm-report-table > tbody > tr.lm-duplicate-row > td:first-child {
-        border-left: 4px solid #f97316 !important;
+        border-left: 4px solid #f59e0b !important;
+    }
+    .lm-duplicate-customer-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    .lm-duplicate-customer-name {
+        font-weight: 700;
+        color: #92400e;
+    }
+    .lm-duplicate-customer-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: #fef3c7;
+        color: #b45309;
+        border: 1px solid #fde68a;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(245, 158, 11, 0.15);
+    }
+    .lm-duplicate-customer-badge i {
+        color: #d97706;
+        font-size: 9px;
     }
     .lm-report-table > tfoot > tr > th {
         background: #f8fafc;
@@ -768,6 +797,9 @@
                                     @foreach($payload['recentPayments'] as $paymentIndex => $payment)
                                         @php($paymentDuplicateReason = $duplicateReason($payment, $recentPaymentLoanCounts, $recentPaymentCustomerCounts))
                                         @php($paymentDocUrl = $payment->payment_doc_url ?? null)
+                                        @php($custKey = $normalizeDuplicateKey($payment->customer_name ?? ''))
+                                        @php($isCustDuplicate = $custKey !== '' && ($recentPaymentCustomerCounts[$custKey] ?? 0) > 1)
+                                        @php($custDupCount = $recentPaymentCustomerCounts[$custKey] ?? 0)
                                         <tr class="{{ $paymentDuplicateReason ? 'lm-duplicate-row' : '' }}" title="{{ $paymentDuplicateReason }}">
                                             <td class="lm-col-no">{{ $paymentIndex + 1 }}</td>
                                             <td class="lm-col-date">{{ ! empty($payment->paid_date) ? \Carbon\Carbon::parse($payment->paid_date)->format('d-m-y') : '-' }}</td>
@@ -779,7 +811,18 @@
                                                        data-title="{{ $t('Payment Detail', 'ព័ត៌មានលម្អិតការបង់ប្រាក់') }}">{{ $payment->loan_number ?? '-' }}</a>
                                                 </span>
                                             </td>
-                                            <td>{{ $payment->customer_name ?: '-' }}</td>
+                                            <td>
+                                                @if($isCustDuplicate)
+                                                    <div class="lm-duplicate-customer-wrap">
+                                                        <span class="lm-duplicate-customer-name">{{ $payment->customer_name ?: '-' }}</span>
+                                                        <span class="lm-duplicate-customer-badge" title="{{ $t('Duplicate customer in collected payments: :count records', 'អតិថិជនស្ទួនក្នុងការបង់ប្រាក់៖ :count កំណត់ត្រា', ['count' => $custDupCount]) }}">
+                                                            <i class="fa fa-clone"></i> {{ $t('Duplicate', 'ស្ទួន') }} ({{ $custDupCount }}x)
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    {{ $payment->customer_name ?: '-' }}
+                                                @endif
+                                            </td>
                                             <td class="lm-col-method" title="{{ $payment->payment_method ?: '-' }}">
                                                 <a href="{{ $paymentDocUrl ?: route('loan-management.payments.show', $payment->id) }}"
                                                    class="lm-detail-link js-loan-recent-detail-modal"
@@ -812,6 +855,9 @@
                                 <tbody>
                                     @foreach($payload['recentLoans'] as $loanIndex => $loan)
                                         @php($loanDuplicateReason = $duplicateReason($loan, $recentLoanLoanCounts, $recentLoanCustomerCounts))
+                                        @php($loanCustKey = $normalizeDuplicateKey($loan->customer_name ?? ''))
+                                        @php($isLoanCustDuplicate = $loanCustKey !== '' && ($recentLoanCustomerCounts[$loanCustKey] ?? 0) > 1)
+                                        @php($loanCustDupCount = $recentLoanCustomerCounts[$loanCustKey] ?? 0)
                                         <tr class="{{ $loanDuplicateReason ? 'lm-duplicate-row' : '' }}" title="{{ $loanDuplicateReason }}">
                                             <td class="lm-col-no">{{ $loanIndex + 1 }}</td>
                                             <td class="lm-col-date">{{ ! empty($loan->loan_date) ? \Carbon\Carbon::parse($loan->loan_date)->format('d-m-y') : '-' }}</td>
@@ -822,7 +868,18 @@
                                                           data-title="{{ $t('Installment Detail', 'ព័ត៌មានលម្អិតកម្ចី') }}">{{ $loan->loan_number ?? ('#'.$loan->id) }}</span>
                                                 </span>
                                             </td>
-                                            <td>{{ $loan->customer_name ?: '-' }}</td>
+                                            <td>
+                                                @if($isLoanCustDuplicate)
+                                                    <div class="lm-duplicate-customer-wrap">
+                                                        <span class="lm-duplicate-customer-name">{{ $loan->customer_name ?: '-' }}</span>
+                                                        <span class="lm-duplicate-customer-badge" title="{{ $t('Duplicate customer in installments: :count records', 'អតិថិជនស្ទួនក្នុងកម្ចី៖ :count កំណត់ត្រា', ['count' => $loanCustDupCount]) }}">
+                                                            <i class="fa fa-clone"></i> {{ $t('Duplicate', 'ស្ទួន') }} ({{ $loanCustDupCount }}x)
+                                                        </span>
+                                                    </div>
+                                                @else
+                                                    {{ $loan->customer_name ?: '-' }}
+                                                @endif
+                                            </td>
                                             <td>{{ $loan->product_name ?: '-' }}</td>
                                             <td class="lm-col-method" title="{{ $loan->payment_method ?: '-' }}">{{ $shortMethod($loan->payment_method ?? '-') }}</td>
                                             <td class="text-right">{{ $money($loan->payment_amount ?? 0) }}</td>

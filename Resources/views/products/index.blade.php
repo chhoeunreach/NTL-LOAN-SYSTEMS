@@ -7,7 +7,219 @@
 @endphp
 
 @section('loan_css')
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
 <style>
+    /* =========================================================
+       ULTIMATE POS STANDARD STYLE FOR PRODUCTS VIEW
+       ========================================================= */
+    .lm-prod-content {
+        font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Filters Component Styling */
+    .lm-pos-filter-box {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .lm-pos-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px 18px;
+        align-items: end;
+        padding: 6px 0;
+    }
+    @media (max-width: 1024px) {
+        .lm-pos-filter-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .lm-pos-filter-grid { grid-template-columns: 1fr; }
+    }
+    .lm-pos-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .lm-pos-filter-field label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.2;
+    }
+    .lm-pos-filter-field .form-control {
+        height: 38px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: #1e293b;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        outline: none;
+        width: 100%;
+        box-shadow: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .lm-pos-filter-field .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    .lm-pos-filter-field select.form-control {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .lm-pos-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+    }
+    .lm-btn-pos-filter {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #0284c7;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .lm-btn-pos-filter:hover { background: #0369a1; }
+    .lm-btn-pos-reset {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    .lm-btn-pos-reset:hover { background: #e2e8f0; color: #1e293b; text-decoration: none; }
+
+    /* Ultimate POS DataTables Toolbar Layout */
+    .lm-dt-top {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-length label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        font-weight: 500 !important;
+        font-size: 13px !important;
+        color: #475569 !important;
+    }
+    .lm-dt-length select {
+        height: 34px !important;
+        padding: 2px 28px 2px 10px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 13px !important;
+        color: #1e293b !important;
+        background-color: #fff !important;
+        outline: none !important;
+    }
+    .lm-dt-buttons {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        flex-wrap: wrap !important;
+    }
+    .lm-dt-buttons .btn {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.15s ease !important;
+    }
+    .lm-dt-buttons .btn:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+    .lm-dt-search {
+        margin: 0 !important;
+    }
+    .lm-dt-search label {
+        margin: 0 !important;
+        display: block !important;
+    }
+    .lm-dt-search input {
+        height: 34px !important;
+        min-width: 220px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        outline: none !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        transition: border-color 0.15s ease !important;
+    }
+    .lm-dt-search input:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+    }
+
+    .lm-dt-bottom {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-info {
+        font-size: 13px !important;
+        color: #64748b !important;
+        padding: 0 !important;
+    }
+    .lm-dt-pagination .pagination {
+        margin: 0 !important;
+    }
+    .lm-dt-pagination .pagination > li > a {
+        border-radius: 4px !important;
+        margin: 0 2px !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    .lm-dt-pagination .pagination > .active > a {
+        background-color: #0284c7 !important;
+        border-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+
     .product-kpi-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -167,329 +379,331 @@
 @endsection
 
 @section('content_body')
-<div class="content-header" style="margin-bottom: 15px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
-        <div>
-            <h1 style="margin:0; font-size: 22px; font-weight: 800; color: #0f172a;">
-                <i class="fa fa-cubes text-primary" style="margin-right: 8px;"></i>
-                {{ $lmText('Products for Installment', 'ទំនិញបង់រំលស់') }}
-            </h1>
-            <p style="margin: 4px 0 0; color: #64748b; font-size: 13px;">
-                {{ $lmText('Manage installment catalog products, cash pricing, available stock units, and loan terms.', 'គ្រប់គ្រងទំនិញបង់រំលស់ តម្លៃលក់ ស្តុក និងលក្ខខណ្ឌស្នើសុំកម្ចី។') }}
-            </p>
-        </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="{{ route('loan-management.products.export-csv', request()->query()) }}" class="btn btn-default btn-flat" style="border-radius: 6px; font-weight: 700;">
-                <i class="fa fa-download" style="margin-right: 5px;"></i> {{ $lmText('Export CSV', 'ទាញយក CSV') }}
-            </a>
-            <a href="{{ route('loan-management.products.create') }}" class="btn btn-primary btn-flat" style="border-radius: 6px; font-weight: 700;">
-                <i class="fa fa-plus-circle" style="margin-right: 5px;"></i> {{ $lmText('Add Installment Product', 'បន្ថែមទំនិញបង់រំលស់') }}
-            </a>
-        </div>
-    </div>
-</div>
+<div class="lm-prod-content">
+    {{-- Content Header (Page header) --}}
+    <section class="content-header" style="padding: 0 0 16px 0;">
+        <h1 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">
+            {{ $lmText('Products for Installment', 'ទំនិញបង់រំលស់') }}
+            <small style="font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px;">
+                {{ $lmText('Manage installment catalog products, cash pricing, available stock units, and loan terms', 'គ្រប់គ្រងទំនិញបង់រំលស់ តម្លៃលក់ ស្តុក និងលក្ខខណ្ឌស្នើសុំកម្ចី') }}
+            </small>
+        </h1>
+    </section>
 
-@if(session('status'))
-    <div class="alert alert-success alert-dismissible" style="border-radius: 8px;">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="fa fa-check-circle"></i> {{ session('status') }}
-    </div>
-@endif
+    @if(session('status'))
+        <div class="alert alert-success alert-dismissible" style="border-radius: 8px; margin-bottom: 16px;">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <i class="fa fa-check-circle"></i> {{ session('status') }}
+        </div>
+    @endif
 
-@if($errors->any())
-    <div class="alert alert-danger alert-dismissible" style="border-radius: 8px;">
-        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-        <i class="fa fa-exclamation-triangle"></i> {{ $errors->first() }}
-    </div>
-@endif
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible" style="border-radius: 8px; margin-bottom: 16px;">
+            <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+            <i class="fa fa-exclamation-triangle"></i> {{ $errors->first() }}
+        </div>
+    @endif
 
-{{-- KPI Metric Cards --}}
-<div class="product-kpi-grid">
-    <div class="product-kpi-card">
-        <div class="kpi-icon-wrap kpi-icon-blue"><i class="fa fa-cubes"></i></div>
-        <div class="kpi-meta">
-            <div class="kpi-title">{{ $lmText('Total Catalog', 'ទំនិញសរុប') }}</div>
-            <div class="kpi-val">{{ number_format($totalProducts) }}</div>
-            <div class="kpi-sub">{{ number_format($totalStockQty) }} units available</div>
+    {{-- KPI Metric Cards --}}
+    <div class="product-kpi-grid">
+        <div class="product-kpi-card">
+            <div class="kpi-icon-wrap kpi-icon-blue"><i class="fa fa-cubes"></i></div>
+            <div class="kpi-meta">
+                <div class="kpi-title">{{ $lmText('Total Catalog', 'ទំនិញសរុប') }}</div>
+                <div class="kpi-val">{{ number_format($totalProducts) }}</div>
+                <div class="kpi-sub">{{ number_format($totalStockQty) }} units available</div>
+            </div>
+        </div>
+        <div class="product-kpi-card">
+            <div class="kpi-icon-wrap kpi-icon-green"><i class="fa fa-check-circle"></i></div>
+            <div class="kpi-meta">
+                <div class="kpi-title">{{ $lmText('In Stock', 'មានក្នុងស្តុក') }}</div>
+                <div class="kpi-val text-success">{{ number_format($inStockCount) }}</div>
+                <div class="kpi-sub">> 5 units available</div>
+            </div>
+        </div>
+        <div class="product-kpi-card">
+            <div class="kpi-icon-wrap kpi-icon-amber"><i class="fa fa-exclamation-triangle"></i></div>
+            <div class="kpi-meta">
+                <div class="kpi-title">{{ $lmText('Low Stock', 'ស្តុកជិតអស់') }}</div>
+                <div class="kpi-val text-warning">{{ number_format($lowStockCount) }}</div>
+                <div class="kpi-sub">1 - 5 units left</div>
+            </div>
+        </div>
+        <div class="product-kpi-card">
+            <div class="kpi-icon-wrap kpi-icon-red"><i class="fa fa-times-circle"></i></div>
+            <div class="kpi-meta">
+                <div class="kpi-title">{{ $lmText('Out of Stock', 'អស់ពីស្តុក') }}</div>
+                <div class="kpi-val text-danger">{{ number_format($outOfStockCount) }}</div>
+                <div class="kpi-sub">0 units available</div>
+            </div>
+        </div>
+        <div class="product-kpi-card">
+            <div class="kpi-icon-wrap kpi-icon-purple"><i class="fa fa-archive"></i></div>
+            <div class="kpi-meta">
+                <div class="kpi-title">{{ $lmText('Retail Stock Value', 'តម្លៃលក់សរុប') }}</div>
+                <div class="kpi-val">${{ number_format($totalRetailValue, 2) }}</div>
+                <div class="kpi-sub">Cost: ${{ number_format($totalCostValue, 2) }}</div>
+            </div>
         </div>
     </div>
-    <div class="product-kpi-card">
-        <div class="kpi-icon-wrap kpi-icon-green"><i class="fa fa-check-circle"></i></div>
-        <div class="kpi-meta">
-            <div class="kpi-title">{{ $lmText('In Stock', 'មានក្នុងស្តុក') }}</div>
-            <div class="kpi-val text-success">{{ number_format($inStockCount) }}</div>
-            <div class="kpi-sub">> 5 units available</div>
-        </div>
-    </div>
-    <div class="product-kpi-card">
-        <div class="kpi-icon-wrap kpi-icon-amber"><i class="fa fa-exclamation-triangle"></i></div>
-        <div class="kpi-meta">
-            <div class="kpi-title">{{ $lmText('Low Stock', 'ស្តុកជិតអស់') }}</div>
-            <div class="kpi-val text-warning">{{ number_format($lowStockCount) }}</div>
-            <div class="kpi-sub">1 - 5 units left</div>
-        </div>
-    </div>
-    <div class="product-kpi-card">
-        <div class="kpi-icon-wrap kpi-icon-red"><i class="fa fa-times-circle"></i></div>
-        <div class="kpi-meta">
-            <div class="kpi-title">{{ $lmText('Out of Stock', 'អស់ពីស្តុក') }}</div>
-            <div class="kpi-val text-danger">{{ number_format($outOfStockCount) }}</div>
-            <div class="kpi-sub">0 units available</div>
-        </div>
-    </div>
-    <div class="product-kpi-card">
-        <div class="kpi-icon-wrap kpi-icon-purple"><i class="fa fa-archive"></i></div>
-        <div class="kpi-meta">
-            <div class="kpi-title">{{ $lmText('Retail Stock Value', 'តម្លៃលក់សរុប') }}</div>
-            <div class="kpi-val">${{ number_format($totalRetailValue, 2) }}</div>
-            <div class="kpi-sub">Cost: ${{ number_format($totalCostValue, 2) }}</div>
-        </div>
-    </div>
-</div>
 
-{{-- Filters Card --}}
-<div class="box box-default" style="border-radius: 8px; border-top: 3px solid #3c8dbc; margin-bottom: 18px;">
-    <div class="box-body" style="padding: 16px;">
-        <form method="GET" action="{{ route('loan-management.products.index') }}" class="row" style="margin: 0;">
-            <div class="col-md-3 col-sm-6" style="padding: 0 6px 10px 0;">
-                <label style="font-size: 11.5px; font-weight: 700; color: #475569;">{{ $lmText('Search Name / SKU / IMEI', 'ស្វែងរក ឈ្មោះ/SKU/IMEI') }}</label>
-                <div class="input-group" style="width: 100%;">
-                    <span class="input-group-addon" style="background: #f8fafc;"><i class="fa fa-search"></i></span>
-                    <input type="text" name="search" value="{{ request('search') }}" class="form-control input-sm" placeholder="{{ $lmText('e.g. iPhone 15, Samsung...', 'ឧទាហរណ៍ iPhone 15...') }}">
+    {{-- Ultimate POS Standard Filters Component --}}
+    @component('components.filters', ['title' => $lmText('Filters', 'តម្រងស្វែងរក')])
+        <form method="GET" action="{{ route('loan-management.products.index') }}" id="loanProductsFilterForm">
+            <div class="lm-pos-filter-grid">
+                {{-- Row 1, Col 1: Business Location --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Business Location:', 'ទីតាំងសាខា:') }}</label>
+                    <select name="location_id" class="form-control" onchange="this.form.submit()">
+                        <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                        @foreach($locations as $loc)
+                            <option value="{{ $loc->id }}" {{ (string) request('location_id') === (string) $loc->id ? 'selected' : '' }}>{{ $loc->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
-            </div>
-            
-            <div class="col-md-2 col-sm-6" style="padding: 0 6px 10px 0;">
-                <label style="font-size: 11.5px; font-weight: 700; color: #475569;">{{ $lmText('Category', 'ប្រភេទ') }}</label>
-                <select name="category" class="form-control input-sm">
-                    <option value="">{{ $lmText('-- All Categories --', '-- គ្រប់ប្រភេទ --') }}</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat }}" {{ request('category') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
-                    @endforeach
-                </select>
-            </div>
 
-            <div class="col-md-2 col-sm-6" style="padding: 0 6px 10px 0;">
-                <label style="font-size: 11.5px; font-weight: 700; color: #475569;">{{ $lmText('Brand', 'ម៉ាកយីហោ') }}</label>
-                <select name="brand" class="form-control input-sm">
-                    <option value="">{{ $lmText('-- All Brands --', '-- គ្រប់ម៉ាក --') }}</option>
-                    @foreach($brands as $br)
-                        <option value="{{ $br }}" {{ request('brand') === $br ? 'selected' : '' }}>{{ $br }}</option>
-                    @endforeach
-                </select>
-            </div>
+                {{-- Row 1, Col 2: Category --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Category:', 'ប្រភេទ:') }}</label>
+                    <select name="category" class="form-control" onchange="this.form.submit()">
+                        <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat }}" {{ request('category') === $cat ? 'selected' : '' }}>{{ $cat }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div class="col-md-2 col-sm-6" style="padding: 0 6px 10px 0;">
-                <label style="font-size: 11.5px; font-weight: 700; color: #475569;">{{ $lmText('Location', 'សាខា') }}</label>
-                <select name="location_id" class="form-control input-sm">
-                    <option value="">{{ $lmText('-- All Locations --', '-- គ្រប់សាខា --') }}</option>
-                    @foreach($locations as $loc)
-                        <option value="{{ $loc->id }}" {{ (string) request('location_id') === (string) $loc->id ? 'selected' : '' }}>{{ $loc->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+                {{-- Row 1, Col 3: Brand --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Brand:', 'ម៉ាកយីហោ:') }}</label>
+                    <select name="brand" class="form-control" onchange="this.form.submit()">
+                        <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                        @foreach($brands as $br)
+                            <option value="{{ $br }}" {{ request('brand') === $br ? 'selected' : '' }}>{{ $br }}</option>
+                        @endforeach
+                    </select>
+                </div>
 
-            <div class="col-md-2 col-sm-6" style="padding: 0 6px 10px 0;">
-                <label style="font-size: 11.5px; font-weight: 700; color: #475569;">{{ $lmText('Stock Status', 'ស្ថានភាពស្តុក') }}</label>
-                <select name="stock_status" class="form-control input-sm">
-                    <option value="">{{ $lmText('-- All Stock --', '-- ទាំងអស់ --') }}</option>
-                    <option value="in_stock" {{ request('stock_status') === 'in_stock' ? 'selected' : '' }}>{{ $lmText('In Stock (> 0)', 'មានក្នុងស្តុក') }}</option>
-                    <option value="low_stock" {{ request('stock_status') === 'low_stock' ? 'selected' : '' }}>{{ $lmText('Low Stock (1-5)', 'ស្តុកជិតអស់') }}</option>
-                    <option value="out_of_stock" {{ request('stock_status') === 'out_of_stock' ? 'selected' : '' }}>{{ $lmText('Out of Stock (0)', 'អស់ពីស្តុក') }}</option>
-                </select>
-            </div>
+                {{-- Row 1, Col 4: Stock Status --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Stock Status:', 'ស្ថានភាពស្តុក:') }}</label>
+                    <select name="stock_status" class="form-control" onchange="this.form.submit()">
+                        <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                        <option value="in_stock" {{ request('stock_status') === 'in_stock' ? 'selected' : '' }}>{{ $lmText('In Stock (> 0)', 'មានក្នុងស្តុក') }}</option>
+                        <option value="low_stock" {{ request('stock_status') === 'low_stock' ? 'selected' : '' }}>{{ $lmText('Low Stock (1-5)', 'ស្តុកជិតអស់') }}</option>
+                        <option value="out_of_stock" {{ request('stock_status') === 'out_of_stock' ? 'selected' : '' }}>{{ $lmText('Out of Stock (0)', 'អស់ពីស្តុក') }}</option>
+                    </select>
+                </div>
 
-            <div class="col-md-1 col-sm-6" style="padding: 0 0 10px 0; display: flex; align-items: flex-end; gap: 4px;">
-                <button type="submit" class="btn btn-primary btn-sm btn-block" style="font-weight: 700; height: 30px;" title="Filter">
-                    <i class="fa fa-filter"></i>
-                </button>
-                @if(request()->hasAny(['search', 'category', 'brand', 'location_id', 'stock_status', 'sort']))
-                    <a href="{{ route('loan-management.products.index') }}" class="btn btn-default btn-sm" title="Reset Filters" style="height: 30px;">
-                        <i class="fa fa-refresh"></i>
-                    </a>
-                @endif
+                {{-- Row 2, Col 1: Search Name / SKU / IMEI --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Search Keyword:', 'ពាក្យស្វែងរក:') }}</label>
+                    <div class="input-group" style="width: 100%;">
+                        <span class="input-group-addon" style="background: #f8fafc; border-color: #cbd5e1;"><i class="fa fa-search"></i></span>
+                        <input type="text" name="search" value="{{ request('search') }}" class="form-control" placeholder="{{ $lmText('Name, SKU, IMEI...', 'ឈ្មោះ, SKU, IMEI...') }}">
+                    </div>
+                </div>
+
+                {{-- Row 2, Col 2: Sort By --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Sort By:', 'តម្រៀបតាម:') }}</label>
+                    <select name="sort" class="form-control" onchange="this.form.submit()">
+                        <option value="newest" {{ request('sort', 'newest') === 'newest' ? 'selected' : '' }}>{{ $lmText('Newest Added', 'ទើបបញ្ចូលថ្មី') }}</option>
+                        <option value="name_asc" {{ request('sort') === 'name_asc' ? 'selected' : '' }}>{{ $lmText('Name (A - Z)', 'ឈ្មោះ (A - Z)') }}</option>
+                        <option value="price_asc" {{ request('sort') === 'price_asc' ? 'selected' : '' }}>{{ $lmText('Price: Low to High', 'តម្លៃ: ទាប ទៅ ខ្ពស់') }}</option>
+                        <option value="price_desc" {{ request('sort') === 'price_desc' ? 'selected' : '' }}>{{ $lmText('Price: High to Low', 'តម្លៃ: ខ្ពស់ ទៅ ទាប') }}</option>
+                        <option value="stock_desc" {{ request('sort') === 'stock_desc' ? 'selected' : '' }}>{{ $lmText('Stock Quantity: High', 'ស្តុក: ច្រើន ទៅ តិច') }}</option>
+                        <option value="stock_asc" {{ request('sort') === 'stock_asc' ? 'selected' : '' }}>{{ $lmText('Stock Quantity: Low', 'ស្តុក: តិច ទៅ ច្រើន') }}</option>
+                    </select>
+                </div>
+
+                {{-- Row 2, Col 3: Filter Action Buttons --}}
+                <div class="lm-pos-filter-field">
+                    <label>&nbsp;</label>
+                    <div class="lm-pos-filter-actions">
+                        <button type="submit" class="lm-btn-pos-filter">
+                            <i class="fa fa-filter"></i> {{ $lmText('Filter', 'ចម្រាញ់') }}
+                        </button>
+                        <a href="{{ route('loan-management.products.index') }}" class="lm-btn-pos-reset">
+                            <i class="fa fa-refresh"></i> {{ $lmText('Reset', 'កំណត់ឡើងវិញ') }}
+                        </a>
+                    </div>
+                </div>
             </div>
         </form>
-    </div>
-</div>
+    @endcomponent
 
-{{-- Bulk Action Bar --}}
-<form id="bulkActionForm" method="POST" action="{{ route('loan-management.products.bulk-action') }}">
-    @csrf
-    <div id="bulkBar" class="bulk-bar">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="font-weight: 800; font-size: 13px;"><i class="fa fa-check-square-o"></i> <span id="selectedCount">0</span> selected</span>
-            <select name="bulk_action" id="bulkActionSelect" class="form-control input-sm" style="width: 170px; display: inline-block; background: #334155; color: #fff; border-color: #475569;">
-                <option value="">-- Choose Action --</option>
-                <option value="delete">Delete Selected</option>
-                <option value="stock_in_stock">Set Available (Qty: 1)</option>
-                <option value="assign_location">Assign Branch Location</option>
-            </select>
-            <select name="bulk_location_id" id="bulkLocationSelect" class="form-control input-sm" style="width: 150px; display: none; background: #334155; color: #fff; border-color: #475569;">
-                <option value="">None / All Branches</option>
-                @foreach($locations as $loc)
-                    <option value="{{ $loc->id }}">{{ $loc->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <div>
-            <button type="button" class="btn btn-success btn-sm" onclick="submitBulkAction()" style="font-weight: 700;">
-                <i class="fa fa-bolt"></i> Apply Bulk Action
-            </button>
-            <button type="button" class="btn btn-default btn-sm" onclick="deselectAll()" style="color: #333; margin-left: 6px;">
-                Cancel
-            </button>
-        </div>
-    </div>
+    {{-- Ultimate POS Standard Widget Component --}}
+    @component('components.widget', ['class' => 'box-primary', 'title' => $lmText('All Products for Installment', 'ទំនិញបង់រំលស់ទាំងអស់')])
+        @slot('tool')
+            <div class="box-tools pull-right" style="display: flex; align-items: center; gap: 8px;">
+                <a href="{{ route('loan-management.products.export-csv', request()->query()) }}" class="btn btn-default btn-sm" style="border-radius: 6px; font-weight: 600;">
+                    <i class="fa fa-download"></i> {{ $lmText('Export CSV', 'ទាញយក CSV') }}
+                </a>
+                <a href="{{ route('loan-management.products.create') }}" class="btn btn-primary btn-sm" style="border-radius: 20px; padding: 5px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(2,132,199,0.2);">
+                    <i class="fa fa-plus"></i> {{ $lmText('Add Product', 'បន្ថែមទំនិញ') }}
+                </a>
+            </div>
+        @endslot
 
-    {{-- Product List Table --}}
-    <div class="box box-primary" style="border-radius: 8px;">
-        <div class="box-body table-responsive no-padding">
-            <table class="table table-hover table-striped" style="margin-bottom: 0;">
-                <thead>
-                    <tr style="background: #f8fafc; color: #475569; font-size: 11.5px; text-transform: uppercase;">
-                        <th style="width: 35px; text-align: center; vertical-align: middle;">
-                            <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)">
-                        </th>
-                        <th style="width: 55px; text-align: center;">{{ $lmText('Photo', 'រូបភាព') }}</th>
-                        <th>{{ $lmText('Product Name & Code', 'ឈ្មោះទំនិញ & កូដ') }}</th>
-                        <th>{{ $lmText('Category & Brand', 'ប្រភេទ & ម៉ាក') }}</th>
-                        <th>{{ $lmText('Selling Price', 'តម្លៃលក់') }}</th>
-                        <th>{{ $lmText('Cost & Margin', 'ថ្លៃដើម & ចំណេញ') }}</th>
-                        <th style="text-align: center;">{{ $lmText('Stock Qty', 'ចំនួនស្តុក') }}</th>
-                        <th>{{ $lmText('Location', 'សាខា') }}</th>
-                        <th style="width: 180px; text-align: right;">{{ $lmText('Actions', 'សកម្មភាព') }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($products as $p)
-                        @php
-                            $qty = (int) ($p->qty_available ?? 0);
-                            $img = $p->image_url;
-                            $brand = $p->brand;
-                            $cat = $p->category;
-                            $cost = (float) ($p->cost_price ?? 0);
-                            $selling = (float) $p->selling_price;
-                            $margin = $selling - $cost;
-                            $marginPercent = $selling > 0 ? ($margin / $selling) * 100 : 0;
-                        @endphp
-                        <tr id="productRow-{{ $p->id }}">
-                            <td style="text-align: center; vertical-align: middle;">
-                                <input type="checkbox" name="selected_ids[]" value="{{ $p->id }}" class="product-checkbox" onchange="updateSelectedCount()">
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">
-                                @if($img)
-                                    <img src="{{ $img }}" alt="{{ $p->name }}" class="product-thumb" onclick="openPhotoModal('{{ $img }}', '{{ addslashes($p->name) }}')">
-                                @else
-                                    <div class="product-thumb-fallback"><i class="fa fa-cube"></i></div>
-                                @endif
-                            </td>
-                            <td style="vertical-align: middle;">
-                                <a href="{{ route('loan-management.products.show', $p->id) }}" style="font-weight: 800; font-size: 13.5px; color: #1e293b; text-decoration: none;">
-                                    {{ $p->name }}
-                                </a>
-                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                                    <strong>SKU:</strong> <code>{{ $p->sku ?: '-' }}</code>
-                                    @if($p->imei)
-                                        · <strong>IMEI:</strong> <span class="text-muted">{{ $p->imei }}</span>
-                                    @endif
-                                </div>
-                            </td>
-                            <td style="vertical-align: middle;">
-                                @if($cat)
-                                    <span class="label label-info" style="font-size: 10.5px; margin-right: 2px;">{{ $cat }}</span>
-                                @endif
-                                @if($brand)
-                                    <span class="label label-default" style="font-size: 10.5px;">{{ $brand }}</span>
-                                @endif
-                                @if(! $cat && ! $brand)
-                                    <span class="text-muted" style="font-size: 12px;">-</span>
-                                @endif
-                            </td>
-                            <td style="vertical-align: middle;">
-                                <span style="font-size: 14.5px; font-weight: 800; color: #0f172a;">${{ number_format($selling, 2) }}</span>
-                                @if($p->min_down_payment_percent > 0)
-                                    <div style="font-size: 11px; color: #d97706; font-weight: 700;">
-                                        Min DP: {{ $p->min_down_payment_percent }}% (${{ number_format($selling * ($p->min_down_payment_percent / 100), 2) }})
-                                    </div>
-                                @endif
-                            </td>
-                            <td style="vertical-align: middle; font-size: 12px;">
-                                <div style="color: #64748b;">${{ number_format($cost, 2) }}</div>
-                                <span class="label {{ $margin >= 0 ? 'label-success' : 'label-danger' }}" style="font-size: 10px;">
-                                    +${{ number_format($margin, 2) }} ({{ number_format($marginPercent, 1) }}%)
-                                </span>
-                            </td>
-                            <td style="text-align: center; vertical-align: middle;">
-                                <div style="margin-bottom: 4px;">
-                                    <span id="stockBadge-{{ $p->id }}" class="stock-badge {{ $qty > 5 ? 'in-stock' : ($qty > 0 ? 'low-stock' : 'out-of-stock') }}">
-                                        <i class="fa {{ $qty > 5 ? 'fa-check' : ($qty > 0 ? 'fa-exclamation-triangle' : 'fa-times-circle') }}"></i>
-                                        <span id="stockBadgeText-{{ $p->id }}">{{ $qty > 5 ? "{$qty} units" : ($qty > 0 ? "{$qty} low" : '0 Out') }}</span>
-                                    </span>
-                                </div>
-                                {{-- Quick Stepper --}}
-                                <div class="quick-qty-stepper" title="Click to adjust quantity">
-                                    <button type="button" class="quick-qty-btn" onclick="adjustStock({{ $p->id }}, -1)">-</button>
-                                    <span class="quick-qty-val" id="qtyVal-{{ $p->id }}" onclick="promptExactStock({{ $p->id }}, {{ $qty }})">{{ $qty }}</span>
-                                    <button type="button" class="quick-qty-btn" onclick="adjustStock({{ $p->id }}, 1)">+</button>
-                                </div>
-                            </td>
-                            <td style="vertical-align: middle; font-size: 12px; color: #475569;">
-                                <i class="fa fa-map-marker text-muted" style="margin-right: 3px;"></i>
-                                {{ $p->location->name ?? $lmText('All Branches', 'គ្រប់សាខា') }}
-                            </td>
-                            <td style="text-align: right; vertical-align: middle;">
-                                <div class="btn-group" style="display: inline-flex; gap: 3px;">
-                                    {{-- Create Installment for this product --}}
-                                    <a href="{{ route('loan-management.loans.create', ['product_id' => $p->id, 'product_name' => $p->name, 'principal_amount' => $p->selling_price]) }}" class="btn btn-xs btn-success" title="{{ $lmText('Create Installment for this Product', 'បង្កើតកម្ចីសម្រាប់ទំនិញនេះ') }}">
-                                        <i class="fa fa-plus-circle"></i>
-                                    </a>
-                                    {{-- Simulator Modal trigger --}}
-                                    <button type="button" class="btn btn-xs btn-info" onclick="openSimulatorModal({{ $p->id }})" title="{{ $lmText('Instant Installment Calculator', 'គណនាបង់រំលស់រហ័ស') }}">
-                                        <i class="fa fa-calculator"></i>
-                                    </button>
-                                    {{-- Show details --}}
-                                    <a href="{{ route('loan-management.products.show', $p->id) }}" class="btn btn-xs btn-default" title="{{ $lmText('View Details', 'មើលព័ត៌មាន') }}">
-                                        <i class="fa fa-eye"></i>
-                                    </a>
-                                    {{-- Edit --}}
-                                    <a href="{{ route('loan-management.products.edit', $p->id) }}" class="btn btn-xs btn-primary" title="{{ $lmText('Edit Product', 'កែប្រែ') }}">
-                                        <i class="fa fa-pencil"></i>
-                                    </a>
-                                    {{-- Delete --}}
-                                    <button type="button" class="btn btn-xs btn-danger" onclick="deleteSingleProduct({{ $p->id }}, '{{ addslashes($p->name) }}')" title="{{ $lmText('Delete Product', 'លុប') }}">
-                                        <i class="fa fa-trash"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" style="text-align: center; padding: 40px 20px;">
-                                <div style="font-size: 44px; color: #cbd5e1; margin-bottom: 12px;"><i class="fa fa-cube"></i></div>
-                                <h4 style="margin: 0 0 6px; font-weight: 800; color: #334155;">{{ $lmText('No installment products found', 'មិនមានទំនិញបង់រំលស់នៅឡើយទេ') }}</h4>
-                                <p style="color: #64748b; font-size: 13px; margin-bottom: 16px;">{{ $lmText('Add your available phones, electronics, motorcycles or goods for installment loans.', 'បន្ថែមទំនិញដូចជា ទូរស័ព្ទ គ្រឿងអេឡិចត្រូនិក ម៉ូតូ សម្រាប់អតិថិជនស្នើសុំបង់រំលស់។') }}</p>
-                                <a href="{{ route('loan-management.products.create') }}" class="btn btn-primary" style="font-weight: 700; border-radius: 6px;">
-                                    <i class="fa fa-plus-circle"></i> {{ $lmText('Add First Installment Product', 'បន្ថែមទំនិញដំបូង') }}
-                                </a>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-        @if($products->hasPages())
-            <div class="box-footer clearfix" style="border-top: 1px solid #f1f5f9;">
-                <div class="pull-left" style="padding-top: 8px; color: #64748b; font-size: 13px;">
-                    Showing {{ $products->firstItem() }} to {{ $products->lastItem() }} of {{ $products->total() }} products
+        {{-- Bulk Action Bar --}}
+        <form id="bulkActionForm" method="POST" action="{{ route('loan-management.products.bulk-action') }}">
+            @csrf
+            <div id="bulkBar" class="bulk-bar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-weight: 800; font-size: 13px;"><i class="fa fa-check-square-o"></i> <span id="selectedCount">0</span> selected</span>
+                    <select name="bulk_action" id="bulkActionSelect" class="form-control input-sm" style="width: 170px; display: inline-block; background: #334155; color: #fff; border-color: #475569;">
+                        <option value="">-- Choose Action --</option>
+                        <option value="delete">Delete Selected</option>
+                        <option value="stock_in_stock">Set Available (Qty: 1)</option>
+                        <option value="assign_location">Assign Branch Location</option>
+                    </select>
+                    <select name="bulk_location_id" id="bulkLocationSelect" class="form-control input-sm" style="width: 150px; display: none; background: #334155; color: #fff; border-color: #475569;">
+                        <option value="">None / All Branches</option>
+                        @foreach($locations as $loc)
+                            <option value="{{ $loc->id }}">{{ $loc->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
-                <div class="pull-right">
-                    {{ $products->links() }}
+                <div>
+                    <button type="button" class="btn btn-success btn-sm" onclick="submitBulkAction()" style="font-weight: 700;">
+                        <i class="fa fa-bolt"></i> Apply Bulk Action
+                    </button>
+                    <button type="button" class="btn btn-default btn-sm" onclick="deselectAll()" style="color: #333; margin-left: 6px;">
+                        Cancel
+                    </button>
                 </div>
             </div>
-        @endif
-    </div>
-</form>
+
+            {{-- Product List Table --}}
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped" id="loanProductsTable" style="width: 100%; margin-bottom: 0;">
+                    <thead>
+                        <tr style="background: #f8fafc; color: #475569; font-size: 12px; font-weight: 700;">
+                            <th style="width: 30px; text-align: center; vertical-align: middle;" class="no-export">
+                                <input type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll(this)">
+                            </th>
+                            <th style="width: 50px; text-align: center;" class="no-export">{{ $lmText('Photo', 'រូបភាព') }}</th>
+                            <th>{{ $lmText('Product Name & Code', 'ឈ្មោះទំនិញ & កូដ') }}</th>
+                            <th>{{ $lmText('Category & Brand', 'ប្រភេទ & ម៉ាក') }}</th>
+                            <th>{{ $lmText('Selling Price', 'តម្លៃលក់') }}</th>
+                            <th>{{ $lmText('Cost & Margin', 'ថ្លៃដើម & ចំណេញ') }}</th>
+                            <th style="text-align: center;">{{ $lmText('Stock Qty', 'ចំនួនស្តុក') }}</th>
+                            <th>{{ $lmText('Location', 'សាខា') }}</th>
+                            <th style="width: 160px; text-align: center;" class="no-export">{{ $lmText('Actions', 'សកម្មភាព') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($products as $p)
+                            @php
+                                $qty = (int) ($p->qty_available ?? 0);
+                                $img = $p->image_url;
+                                $brand = $p->brand;
+                                $cat = $p->category;
+                                $cost = (float) ($p->cost_price ?? 0);
+                                $selling = (float) $p->selling_price;
+                                $margin = $selling - $cost;
+                                $marginPercent = $selling > 0 ? ($margin / $selling) * 100 : 0;
+                            @endphp
+                            <tr id="productRow-{{ $p->id }}">
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <input type="checkbox" name="selected_ids[]" value="{{ $p->id }}" class="product-checkbox" onchange="updateSelectedCount()">
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    @if($img)
+                                        <img src="{{ $img }}" alt="{{ $p->name }}" class="product-thumb" onclick="openPhotoModal('{{ $img }}', '{{ addslashes($p->name) }}')">
+                                    @else
+                                        <div class="product-thumb-fallback"><i class="fa fa-cube"></i></div>
+                                    @endif
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <a href="{{ route('loan-management.products.show', $p->id) }}" style="font-weight: 800; font-size: 13.5px; color: #1e293b; text-decoration: none;">
+                                        {{ $p->name }}
+                                    </a>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                        <strong>SKU:</strong> <code>{{ $p->sku ?: '-' }}</code>
+                                        @if($p->imei)
+                                            · <strong>IMEI:</strong> <span class="text-muted">{{ $p->imei }}</span>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    @if($cat)
+                                        <span class="label label-info" style="font-size: 10.5px; margin-right: 2px;">{{ $cat }}</span>
+                                    @endif
+                                    @if($brand)
+                                        <span class="label label-default" style="font-size: 10.5px;">{{ $brand }}</span>
+                                    @endif
+                                    @if(! $cat && ! $brand)
+                                        <span class="text-muted" style="font-size: 12px;">-</span>
+                                    @endif
+                                </td>
+                                <td style="vertical-align: middle;">
+                                    <span style="font-size: 14px; font-weight: 800; color: #0f172a;">${{ number_format($selling, 2) }}</span>
+                                    @if($p->min_down_payment_percent > 0)
+                                        <div style="font-size: 11px; color: #d97706; font-weight: 700;">
+                                            Min DP: {{ $p->min_down_payment_percent }}% (${{ number_format($selling * ($p->min_down_payment_percent / 100), 2) }})
+                                        </div>
+                                    @endif
+                                </td>
+                                <td style="vertical-align: middle; font-size: 12px;">
+                                    <div style="color: #64748b;">${{ number_format($cost, 2) }}</div>
+                                    <span class="label {{ $margin >= 0 ? 'label-success' : 'label-danger' }}" style="font-size: 10px;">
+                                        +${{ number_format($margin, 2) }} ({{ number_format($marginPercent, 1) }}%)
+                                    </span>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <div style="margin-bottom: 4px;">
+                                        <span id="stockBadge-{{ $p->id }}" class="stock-badge {{ $qty > 5 ? 'in-stock' : ($qty > 0 ? 'low-stock' : 'out-of-stock') }}">
+                                            <i class="fa {{ $qty > 5 ? 'fa-check' : ($qty > 0 ? 'fa-exclamation-triangle' : 'fa-times-circle') }}"></i>
+                                            <span id="stockBadgeText-{{ $p->id }}">{{ $qty > 5 ? "{$qty} units" : ($qty > 0 ? "{$qty} low" : '0 Out') }}</span>
+                                        </span>
+                                    </div>
+                                    {{-- Quick Stepper --}}
+                                    <div class="quick-qty-stepper" title="Click to adjust quantity">
+                                        <button type="button" class="quick-qty-btn" onclick="adjustStock({{ $p->id }}, -1)">-</button>
+                                        <span class="quick-qty-val" id="qtyVal-{{ $p->id }}" onclick="promptExactStock({{ $p->id }}, {{ $qty }})">{{ $qty }}</span>
+                                        <button type="button" class="quick-qty-btn" onclick="adjustStock({{ $p->id }}, 1)">+</button>
+                                    </div>
+                                </td>
+                                <td style="vertical-align: middle; font-size: 12px; color: #475569;">
+                                    <i class="fa fa-map-marker text-muted" style="margin-right: 3px;"></i>
+                                    {{ $p->location->name ?? $lmText('All Branches', 'គ្រប់សាខា') }}
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <div class="btn-group" style="display: inline-flex; gap: 3px;">
+                                        {{-- Create Installment for this product --}}
+                                        <a href="{{ route('loan-management.loans.create', ['product_id' => $p->id, 'product_name' => $p->name, 'principal_amount' => $p->selling_price]) }}" class="btn btn-xs btn-success" title="{{ $lmText('Create Installment for this Product', 'បង្កើតកម្ចីសម្រាប់ទំនិញនេះ') }}">
+                                            <i class="fa fa-plus-circle"></i>
+                                        </a>
+                                        {{-- Simulator Modal trigger --}}
+                                        <button type="button" class="btn btn-xs btn-info" onclick="openSimulatorModal({{ $p->id }})" title="{{ $lmText('Instant Installment Calculator', 'គណនាបង់រំលស់រហ័ស') }}">
+                                            <i class="fa fa-calculator"></i>
+                                        </button>
+                                        {{-- Show details --}}
+                                        <a href="{{ route('loan-management.products.show', $p->id) }}" class="btn btn-xs btn-default" title="{{ $lmText('View Details', 'មើលព័ត៌មាន') }}">
+                                            <i class="fa fa-eye"></i>
+                                        </a>
+                                        {{-- Edit --}}
+                                        <a href="{{ route('loan-management.products.edit', $p->id) }}" class="btn btn-xs btn-primary" title="{{ $lmText('Edit Product', 'កែប្រែ') }}">
+                                            <i class="fa fa-pencil"></i>
+                                        </a>
+                                        {{-- Delete --}}
+                                        <button type="button" class="btn btn-xs btn-danger" onclick="deleteSingleProduct({{ $p->id }}, '{{ addslashes($p->name) }}')" title="{{ $lmText('Delete Product', 'លុប') }}">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    @endcomponent
+</div>
 
 {{-- Hidden Single Delete Form --}}
 <form id="singleDeleteForm" method="POST" action="" style="display:none;">
@@ -586,6 +800,15 @@
 @endsection
 
 @section('loan_js')
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
+
 <script>
     var currentSimProduct = null;
     var currentSelectedMonths = 12;
@@ -594,6 +817,81 @@
     $(document).ready(function() {
         $('#simulatorModal').appendTo('body');
         $('#photoModal').appendTo('body');
+
+        // Initialize DataTables with Ultimate POS toolbar
+        if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#loanProductsTable')) {
+            var tableButtons = [];
+            if ($.fn.dataTable.Buttons) {
+                tableButtons = [
+                    {
+                        extend: 'copy',
+                        text: 'Copy',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'csv',
+                        text: '<i class="fa fa-file-text-o"></i> Export CSV',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<i class="fa fa-file-excel-o"></i> Export Excel',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fa fa-print"></i> Print',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)', stripHtml: true }
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fa fa-columns"></i> Column visibility',
+                        className: 'btn btn-default btn-sm'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fa fa-file-pdf-o"></i> Export PDF <i class="fa fa-caret-down" style="margin-left:2px;"></i>',
+                        className: 'btn btn-default btn-sm',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    }
+                ];
+            }
+
+            $('#loanProductsTable').DataTable({
+                dom: '<"lm-dt-top"<"lm-dt-length"l><"lm-dt-buttons"B><"lm-dt-search"f>>rt<"lm-dt-bottom"<"lm-dt-info"i><"lm-dt-pagination"p>>',
+                buttons: tableButtons,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "{{ $lmText('All', 'ទាំងអស់') }}"]],
+                order: [[2, 'asc']],
+                autoWidth: false,
+                language: {
+                    search: '',
+                    searchPlaceholder: 'Search ...',
+                    lengthMenu: 'Show _MENU_ entries',
+                    emptyTable: '{{ $lmText("No installment products found.", "មិនមានទំនិញបង់រំលស់នៅឡើយទេ។") }}',
+                    info: '{{ $lmText("Showing _START_ to _END_ of _TOTAL_ entries", "បង្ហាញពី _START_ ដល់ _END_ នៃ _TOTAL_ ធាតុ") }}',
+                    infoEmpty: '{{ $lmText("Showing 0 to 0 of 0 entries", "បង្ហាញ 0 នៃ 0 ធាតុ") }}',
+                    infoFiltered: '({{ $lmText("filtered from _MAX_ total entries", "ចម្រាញ់ចេញពី _MAX_ ធាតុសរុប") }})',
+                    paginate: {
+                        first: '{{ $lmText("First", "ដំបូង") }}',
+                        last: '{{ $lmText("Last", "ចុងក្រោយ") }}',
+                        next: '{{ $lmText("Next", "បន្ទាប់") }}',
+                        previous: '{{ $lmText("Previous", "មុន") }}'
+                    }
+                },
+                columnDefs: [
+                    { targets: [0, 1, 8], orderable: false, className: 'no-export' },
+                    { targets: [0, 1, 6, 8], className: 'text-center' },
+                    { targets: [4, 5], className: 'text-right' }
+                ]
+            });
+        }
     });
 
     // Checkbox and Bulk Actions

@@ -346,7 +346,7 @@
         border: 1px solid #e2e8f0;
         border-radius: 16px;
         box-shadow: 0 10px 30px -5px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(0,0,0,0.02);
-        padding: 22px;
+        padding: 14px;
         overflow: hidden;
     }
     .lm-loan-list-table-card .lm-dt-top {
@@ -355,8 +355,8 @@
         align-items: center !important;
         justify-content: space-between !important;
         flex-wrap: nowrap !important;
-        gap: 16px !important;
-        margin-bottom: 20px !important;
+        gap: 10px !important;
+        margin-bottom: 12px !important;
         width: 100% !important;
     }
     .lm-loan-list-table-card .lm-dt-length {
@@ -373,9 +373,9 @@
     .lm-loan-list-table-card .dataTables_length label {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 6px !important;
         margin: 0 !important;
-        font-size: 13px !important;
+        font-size: 12px !important;
         font-weight: 600 !important;
         color: #475569 !important;
         white-space: nowrap !important;
@@ -383,12 +383,12 @@
     .lm-loan-list-table-card .dataTables_length select {
         display: inline-block !important;
         width: auto !important;
-        min-width: 68px !important;
-        height: 36px !important;
-        border-radius: 10px !important;
+        min-width: 60px !important;
+        height: 32px !important;
+        border-radius: 8px !important;
         border: 1px solid #cbd5e1 !important;
-        padding: 4px 10px !important;
-        font-size: 13px !important;
+        padding: 3px 8px !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
         color: #1e293b !important;
         background-color: #ffffff !important;
@@ -411,7 +411,7 @@
     .lm-loan-list-table-card .dt-buttons {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 6px !important;
+        gap: 5px !important;
         flex-wrap: wrap !important;
         justify-content: center !important;
         float: none !important;
@@ -423,9 +423,9 @@
         border-radius: 8px !important;
         background: #ffffff !important;
         color: #475569 !important;
-        font-size: 12px !important;
+        font-size: 11.5px !important;
         font-weight: 700 !important;
-        padding: 6px 13px !important;
+        padding: 5px 9px !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
         transition: all 0.2s ease !important;
         white-space: nowrap !important;
@@ -454,20 +454,20 @@
     .lm-loan-list-table-card .dataTables_filter label {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 6px !important;
         margin: 0 !important;
-        font-size: 13px !important;
+        font-size: 12px !important;
         font-weight: 600 !important;
         color: #475569 !important;
         white-space: nowrap !important;
     }
     .lm-loan-list-table-card .dataTables_filter input {
-        width: 220px !important;
-        height: 36px !important;
+        width: 190px !important;
+        height: 32px !important;
         border: 1px solid #cbd5e1 !important;
-        border-radius: 10px !important;
-        padding: 6px 14px !important;
-        font-size: 13px !important;
+        border-radius: 8px !important;
+        padding: 5px 10px !important;
+        font-size: 12px !important;
         outline: none !important;
         box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
         transition: all 0.2s ease !important;
@@ -484,15 +484,17 @@
         border-spacing: 0;
         width: 100% !important;
         border: none !important;
+        table-layout: fixed;
     }
     .lm-loan-list-table-card #loan_list_table thead th {
         background: #f8fafc !important;
         color: #334155 !important;
-        font-size: 11.5px !important;
+        font-size: 10.5px !important;
         font-weight: 700 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.05em !important;
-        padding: 13px 16px !important;
+        letter-spacing: 0 !important;
+        line-height: 1.2 !important;
+        padding: 9px 8px !important;
         border: none !important;
         border-top: 1px solid #e2e8f0 !important;
         border-bottom: 2px solid #cbd5e1 !important;
@@ -511,15 +513,19 @@
         border-top-right-radius: 10px;
     }
     .lm-loan-list-table-card #loan_list_table tbody td {
-        padding: 12px 16px !important;
+        padding: 8px 8px !important;
         vertical-align: middle !important;
         border-top: 1px solid #f1f5f9 !important;
         border-bottom: none !important;
         border-left: none !important;
         border-right: none !important;
-        font-size: 13px;
+        font-size: 12px;
+        line-height: 1.25;
         color: #334155;
         font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .lm-loan-list-table-card #loan_list_table tbody tr:nth-child(even) td {
         background: #fbfcfe;
@@ -532,16 +538,16 @@
     .loan-status-select {
         appearance: none;
         -webkit-appearance: none;
-        padding: 5px 24px 5px 12px !important;
-        border-radius: 20px !important;
-        font-size: 11.5px !important;
+        padding: 4px 20px 4px 9px !important;
+        border-radius: 14px !important;
+        font-size: 10.5px !important;
         font-weight: 700 !important;
-        line-height: 1.4 !important;
+        line-height: 1.2 !important;
         border: 1px solid transparent !important;
         cursor: pointer;
         background-repeat: no-repeat;
-        background-position: right 8px center;
-        background-size: 9px;
+        background-position: right 7px center;
+        background-size: 8px;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2364748b'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'/%3E");
         transition: all 0.2s ease;
     }
@@ -583,39 +589,78 @@
     }
 
     /* --- ACTION BUTTON DROPDOWN --- */
-    .lm-loan-list-table-card .btn-group .btn-primary.dropdown-toggle {
-        background: linear-gradient(135deg, var(--lm-primary), var(--lm-primary-dark, var(--lm-primary))) !important;
-        border: none !important;
+    .lm-loan-list-table-card #loan_list_table th.no-export,
+    .lm-loan-list-table-card #loan_list_table td.lm-action-col {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        width: 62px !important;
+        min-width: 62px !important;
+        max-width: 62px !important;
+        text-align: center !important;
+        background: #ffffff !important;
+        box-shadow: 1px 0 0 #e2e8f0;
+    }
+    .lm-loan-list-table-card #loan_list_table th.no-export {
+        z-index: 5;
+        background: #f8fafc !important;
+    }
+    .lm-loan-list-table-card .btn-group .btn-primary.js-loan-action-toggle {
+        background: #ffffff !important;
+        border: 1px solid rgba(var(--lm-primary-rgb), 0.35) !important;
         border-radius: 8px !important;
-        padding: 5px 12px !important;
-        font-size: 11.5px !important;
+        width: 38px;
+        height: 32px;
+        justify-content: center;
+        padding: 5px 6px !important;
+        font-size: 12px !important;
         font-weight: 700 !important;
-        color: #ffffff !important;
-        box-shadow: 0 2px 8px rgba(var(--lm-primary-rgb), 0.25) !important;
+        color: var(--lm-primary) !important;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06) !important;
         transition: all 0.2s ease !important;
         display: inline-flex;
         align-items: center;
         gap: 6px;
     }
-    .lm-loan-list-table-card .btn-group .btn-primary.dropdown-toggle:hover {
+    .lm-loan-list-table-card td.lm-action-col .js-loan-action-toggle .hidden-xs,
+    .lm-loan-list-table-card td.lm-action-col .js-loan-action-toggle .caret {
+        display: none !important;
+    }
+    .lm-loan-list-table-card .btn-group .btn-primary.js-loan-action-toggle:hover,
+    .lm-loan-list-table-card .lm-loan-action-menu.open .btn-primary.js-loan-action-toggle {
         box-shadow: 0 4px 12px rgba(var(--lm-primary-rgb), 0.4) !important;
         transform: translateY(-1px);
+        background: var(--lm-primary) !important;
+        color: #ffffff !important;
     }
     .lm-loan-list-table-card .dropdown-menu {
         border-radius: 12px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0,0,0,0.05) !important;
         border: 1px solid #e2e8f0 !important;
         padding: 6px !important;
+        min-width: 178px !important;
+        z-index: 10080 !important;
+    }
+    .lm-loan-action-menu.open {
+        z-index: 10080;
+    }
+    .lm-loan-action-dropdown.is-floating {
+        display: block !important;
+        position: fixed !important;
+        right: auto !important;
+        max-width: min(240px, calc(100vw - 24px));
+        max-height: min(420px, calc(100vh - 24px));
+        overflow-y: auto;
     }
     .lm-loan-list-table-card .dropdown-menu > li > a {
         border-radius: 6px !important;
-        padding: 7px 14px !important;
-        font-size: 12.5px !important;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
         font-weight: 600 !important;
         color: #334155 !important;
         display: flex !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 7px !important;
         transition: all 0.15s ease !important;
     }
     .lm-loan-list-table-card .dropdown-menu > li > a:hover {
@@ -672,52 +717,197 @@
     }
 
     /* --- COLUMN SPECIFIC STYLING --- */
-    #loan_list_table tbody td:nth-child(1) {
+    .lm-loan-customer-cell,
+    .lm-loan-product-wrap {
+        min-width: 0;
+        max-width: 205px;
+    }
+    .lm-loan-customer-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .lm-loan-customer-avatar,
+    .lm-loan-customer-avatar-fallback {
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+    }
+    .lm-loan-customer-avatar {
+        display: block;
+        object-fit: cover;
+        background: #f8fafc;
+    }
+    .lm-loan-customer-avatar-fallback {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(var(--lm-primary-rgb), 0.1);
+        color: var(--lm-primary);
+        font-size: 12px;
+        font-weight: 800;
+    }
+    .lm-loan-customer-info {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .lm-loan-customer-name,
+    .lm-loan-product-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .lm-loan-customer-name:hover {
+        color: var(--lm-primary);
+    }
+    .lm-loan-customer-phone,
+    .lm-loan-product-price,
+    .lm-loan-product-imei {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 700;
+        text-decoration: none !important;
+        white-space: nowrap;
+    }
+    .lm-loan-product-price {
+        color: #0284c7;
+    }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(1),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(1) { width: 62px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(2),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(2) { width: 124px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(3),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(3) { width: 94px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(4),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(4) { width: 160px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(5),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(5) { width: 205px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(6),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(6),
+    .lm-loan-list-table-card #loan_list_table th:nth-child(9),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(9),
+    .lm-loan-list-table-card #loan_list_table th:nth-child(10),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(10),
+    .lm-loan-list-table-card #loan_list_table th:nth-child(11),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(11),
+    .lm-loan-list-table-card #loan_list_table th:nth-child(12),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(12) { width: 88px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(7),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(7) { width: 76px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(8),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(8) { width: 92px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(13),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(13) { width: 86px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(14),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(14) { width: 112px !important; }
+    .lm-loan-list-table-card #loan_list_table th:nth-child(15),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(15),
+    .lm-loan-list-table-card #loan_list_table th:nth-child(16),
+    .lm-loan-list-table-card #loan_list_table td:nth-child(16) { width: 118px !important; }
+    .lm-loan-product-imei,
+    .lm-loan-product-price {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    .lm-next-due-cell {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        max-width: 100%;
+        white-space: nowrap;
+    }
+    .lm-next-due-cell strong {
+        color: #334155;
+        font-size: 11.5px;
+        font-weight: 800;
+        line-height: 1.15;
+    }
+    .lm-next-due-cell small {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+    .lm-next-due-overdue strong,
+    .lm-next-due-overdue small {
+        color: #dc2626;
+    }
+    .lm-next-due-today strong,
+    .lm-next-due-today small {
+        color: #d97706;
+    }
+    .lm-next-due-upcoming small {
+        color: #2563eb;
+    }
+    .lm-next-due-paid strong,
+    .lm-next-due-paid small {
+        color: #059669;
+    }
+    .lm-next-due-empty strong,
+    .lm-next-due-empty small {
+        color: #94a3b8;
+    }
+    #loan_list_table tbody td:nth-child(2) {
         font-weight: 700;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
         color: var(--lm-primary);
         white-space: nowrap;
     }
-    #loan_list_table tbody td:nth-child(3) {
+    #loan_list_table tbody td:nth-child(4) {
         font-weight: 700;
         color: #0f172a;
     }
     #loan_list_table tbody td:nth-child(6) {
         font-weight: 700;
-        color: #0f172a;
-        text-align: right !important;
-    }
-    #loan_list_table tbody td:nth-child(7) {
-        font-weight: 700;
         color: #0284c7;
         text-align: right !important;
     }
-    #loan_list_table tbody td:nth-child(10) {
+    #loan_list_table tbody td:nth-child(9) {
         font-weight: 700;
         color: #475569;
         text-align: right !important;
     }
-    #loan_list_table tbody td:nth-child(11) {
+    #loan_list_table tbody td:nth-child(10) {
         font-weight: 700;
         color: #1e293b;
         text-align: right !important;
     }
-    #loan_list_table tbody td:nth-child(12) {
+    #loan_list_table tbody td:nth-child(11) {
         font-weight: 700;
         color: #059669;
         text-align: right !important;
     }
-    #loan_list_table tbody td:nth-child(13) {
+    #loan_list_table tbody td:nth-child(12) {
         font-weight: 800;
         color: #d97706;
         text-align: right !important;
     }
     #loan_list_table thead th:nth-child(6),
-    #loan_list_table thead th:nth-child(7),
+    #loan_list_table thead th:nth-child(9),
     #loan_list_table thead th:nth-child(10),
     #loan_list_table thead th:nth-child(11),
-    #loan_list_table thead th:nth-child(12),
-    #loan_list_table thead th:nth-child(13) {
+    #loan_list_table thead th:nth-child(12) {
         text-align: right !important;
     }
 
@@ -944,8 +1134,45 @@
     </div>
 
     <div class="lm-loan-list-shell">
+        {{-- HERO HEADER --}}
+        <div class="lm-loan-list-hero">
+            <div>
+                <h1><i class="fa fa-credit-card"></i> {{ $text('All Installments', 'កិច្ចសន្យាបង់រំលស់ទាំងអស់') }}</h1>
+                <p>{{ $text('Manage installment agreements, track repayments, approval statuses, and customer balances.', 'គ្រប់គ្រងកិច្ចព្រមព្រៀងបង់រំលស់ តាមដានការទូទាត់ប្រាក់ ស្ថានភាពអនុម័ត និងសមតុល្យអតិថិជន') }}</p>
+            </div>
+            <div class="lm-loan-list-hero-actions">
+                @if(Route::has('loan-management.loans.calculator'))
+                    <a href="{{ route('loan-management.loans.calculator') }}" class="btn btn-default" target="_blank">
+                        <i class="fa fa-calculator text-primary"></i> {{ $text('Calculator', 'ម៉ាស៊ីនគណនា') }}
+                    </a>
+                @endif
+                <a href="{{ route('loan-management.reports.index') }}" class="btn btn-default">
+                    <i class="fa fa-bar-chart text-info"></i> {{ $text('Reports', 'របាយការណ៍') }}
+                </a>
+                @if(Route::has('loan-management.loans.create-standalone-modal') && \Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.loans.create|loan_management.create'))
+                    <button type="button" class="btn btn-primary lm-standalone-loan-trigger"
+                            data-url="{{ route('loan-management.loans.create-standalone-modal') }}"
+                            data-target="#standaloneLoanModal">
+                        <i class="fa fa-plus-circle"></i> {{ $text('New Installment', 'បង្កើតកិច្ចព្រមព្រៀងថ្មី') }}
+                    </button>
+                @elseif(Route::has('loan-management.loans.create-standalone'))
+                    <a href="{{ route('loan-management.loans.create-standalone') }}" class="btn btn-primary">
+                        <i class="fa fa-plus-circle"></i> {{ $text('New Installment', 'បង្កើតកិច្ចព្រមព្រៀងថ្មី') }}
+                    </a>
+                @endif
+            </div>
+        </div>
+
         {{-- STATUS QUICK-FILTER CARDS --}}
         <div class="lm-status-cards-grid">
+            <div class="lm-status-card status-card-all active" data-status="" title="{{ $text('Show All Installments', 'បង្ហាញកម្ចីទាំងអស់') }}">
+                <div class="lm-status-card-icon"><i class="fa fa-list-alt"></i></div>
+                <div class="lm-status-card-content">
+                    <span class="lm-status-card-label">{{ $text('All Agreements', 'កិច្ចសន្យាទាំងអស់') }}</span>
+                    <strong class="lm-status-card-count" id="count_all">{{ $statusCounts['all'] ?? 0 }}</strong>
+                </div>
+                <div class="lm-status-card-indicator"></div>
+            </div>
             <div class="lm-status-card status-card-pending" data-status="pending" title="{{ $text('Filter by Pending', 'ច្រោះតាមកំពុងរង់ចាំ') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-clock-o"></i></div>
                 <div class="lm-status-card-content">
@@ -1063,12 +1290,11 @@
             <table class="table table-bordered table-striped" id="loan_list_table" width="100%">
                 <thead>
                     <tr>
+                        <th class="no-export">{{ $text('Action', 'សកម្មភាព') }}</th>
                         <th>{{ $text('Installment #', 'លេខកម្ចី') }}</th>
                         <th>{{ $text('Date', 'កាលបរិច្ឆេទ') }}</th>
                         <th>{{ $text('Customer', 'អតិថិជន') }}</th>
-                        <th>{{ $text('Phone', 'ទូរស័ព្ទ') }}</th>
                         <th>{{ $text('Product', 'ទំនិញ/ផលិតផល') }}</th>
-                        <th>{{ $text('Price', 'តម្លៃ') }}</th>
                         <th>{{ $text('Customer Deposit', 'ប្រាក់កក់អតិថិជន') }}</th>
                         <th>{{ $text('Terms', 'រយៈពេល') }}</th>
                         <th>{{ $text('Next Due', 'ថ្ងៃត្រូវបង់បន្ទាប់') }}</th>
@@ -1080,13 +1306,49 @@
                         <th>{{ $text('Status', 'ស្ថានភាព') }}</th>
                         <th>{{ $text('Location', 'សាខា') }}</th>
                         <th>{{ $text('Collector', 'អ្នកប្រមូល') }}</th>
-                        <th>{{ $text('Action', 'សកម្មភាព') }}</th>
                     </tr>
                 </thead>
             </table>
         </div>
     </div>
 </section>
+
+<div class="modal fade" id="loanAddBlacklistModal" tabindex="-1" role="dialog" aria-labelledby="loanAddBlacklistModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="border-radius: 8px; overflow: hidden;">
+            <form method="POST" action="" id="loanAddBlacklistForm">
+                @csrf
+                <input type="hidden" name="blacklist_status" value="1">
+                <div class="modal-header" style="background: #fff1f2; border-bottom: 1px solid #fecdd3;">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title" id="loanAddBlacklistModalLabel" style="color: #be123c; font-weight: 800;">
+                        <i class="fa fa-user-times"></i> {{ $text('Add Customer to Blacklist', 'ដាក់អតិថិជនក្នុងបញ្ជីខ្មៅ') }}
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 12px; color: #475569;">
+                        {{ $text('Customer', 'អតិថិជន') }}:
+                        <strong id="loanBlacklistCustomerName" style="color: #0f172a;"></strong>
+                    </p>
+                    <div class="form-group">
+                        <label for="loanBlacklistReason" style="font-weight: 700;">{{ $text('Blacklist Reason', 'មូលហេតុបញ្ជីខ្មៅ') }} <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="blacklist_reason" id="loanBlacklistReason" rows="3" required placeholder="{{ $text('Describe default behavior, refusal to pay, fraudulent document, etc.', 'ពិពណ៌នាអំពីអាកប្បកិរិយាយឺតយ៉ាវ បដិសេធមិនបង់ប្រាក់ ក្លែងបន្លំឯកសារ...') }}" style="border-radius: 8px;"></textarea>
+                    </div>
+                    <div class="alert alert-warning" style="margin-bottom: 0; border-radius: 8px;">
+                        <i class="fa fa-warning"></i>
+                        {{ $text('This customer will be restricted from applying for new installment loans.', 'អតិថិជននេះនឹងត្រូវបានរារាំងពីការស្នើសុំកម្ចីរំលស់ថ្មី។') }}
+                    </div>
+                </div>
+                <div class="modal-footer" style="background: #f8fafc;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">{{ $text('Cancel', 'បោះបង់') }}</button>
+                    <button type="submit" class="btn btn-danger" style="font-weight: 700;">
+                        <i class="fa fa-ban"></i> {{ $text('Confirm Blacklist', 'បញ្ជាក់បញ្ជីខ្មៅ') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('loan_js')
@@ -1105,7 +1367,7 @@ $(document).ready(function(){
     if ($.fn.select2) {
         $('.select2').select2();
     }
-    var loanBaseUrl = "{{ url('loan-management/loans') }}";
+    var loanBaseUrl = "/loan-management/loans";
     var loanDateFormat = typeof moment_date_format !== 'undefined' ? moment_date_format : 'YYYY-MM-DD';
     var loanListText = {
         processing: @json($text('Loading loans...', 'កំពុងផ្ទុកកម្ចី...')),
@@ -1134,7 +1396,9 @@ $(document).ready(function(){
         view: @json($text('View', 'មើល')),
         pay: @json($text('Pay', 'បង់ប្រាក់')),
         telegram: @json($text('Telegram', 'តេឡេក្រាម')),
-        connectTelegram: @json($text('Connect Telegram', 'ភ្ជាប់ Telegram'))
+        connectTelegram: @json($text('Connect Telegram', 'ភ្ជាប់ Telegram')),
+        addBlacklist: @json($text('Blacklist', 'បញ្ជីខ្មៅ')),
+        blacklistReasonRequired: @json($text('Please enter a blacklist reason.', 'សូមបញ្ចូលមូលហេតុបញ្ជីខ្មៅ។'))
     };
 
     function plainText(value) {
@@ -1213,7 +1477,8 @@ function escapeHtml(value) {
         var balance = plainText(row.balance_amount);
         var viewUrl = loanBaseUrl + '/' + id + '/view';
         var quickPayUrl = loanBaseUrl + '/' + id + '/payment/quick-pay';
-        var telegramUrl = customerId ? "{{ url('loan-management/customers') }}/" + customerId + "/telegram/link" : '';
+        var telegramUrl = customerId ? "/loan-management/customers/" + customerId + "/telegram/link" : '';
+        var blacklistUrl = customerId ? "/loan-management/customers/" + customerId + "/blacklist" : '';
 
         return ''
             + '<article class="lm-mobile-loan-card">'
@@ -1238,6 +1503,7 @@ function escapeHtml(value) {
             + '    <a href="' + viewUrl + '" class="btn btn-default btn-sm"><i class="fa fa-eye"></i> ' + escapeHtml(loanListText.view) + '</a>'
             + '    <a href="#" class="btn btn-success btn-sm btn-modal" data-href="' + quickPayUrl + '" data-container=".view_modal"><i class="fa fa-money"></i> ' + escapeHtml(loanListText.pay) + '</a>'
             + (telegramUrl ? (telegramLinked ? '    <button type="button" class="btn btn-default btn-sm" disabled><i class="fa fa-check-circle"></i> ' + escapeHtml(loanListText.telegram) + '</button>' : '    <a href="#" class="btn btn-info btn-sm js-loan-telegram-link" data-url="' + telegramUrl + '" data-customer="' + escapeHtml(customer) + '"><i class="fa fa-paper-plane"></i> ' + escapeHtml(loanListText.telegram) + '</a>') : '')
+            + (blacklistUrl ? '    <a href="#" class="btn btn-danger btn-sm js-loan-blacklist-customer" data-url="' + blacklistUrl + '" data-customer="' + escapeHtml(customer) + '"><i class="fa fa-user-times"></i> ' + escapeHtml(loanListText.addBlacklist) + '</a>' : '')
             + '  </div>'
             + '</article>';
     }
@@ -1274,34 +1540,34 @@ function escapeHtml(value) {
                 text: '<i class="fa fa-copy" aria-hidden="true"></i> Copy',
                 className: 'btn btn-default btn-sm',
                 title: exportTitle,
-                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+                exportOptions: {columns: ':visible:not(.no-export)', stripHtml: true}
             },
             {
                 extend: 'csv',
                 text: '<i class="fa fa-file-text-o" aria-hidden="true"></i> Export CSV',
                 className: 'btn btn-default btn-sm',
                 title: exportTitle,
-                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+                exportOptions: {columns: ':visible:not(.no-export)', stripHtml: true}
             },
             {
                 extend: 'excel',
                 text: '<i class="fa fa-file-excel-o" aria-hidden="true"></i> Export Excel',
                 className: 'btn btn-default btn-sm',
                 title: exportTitle,
-                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+                exportOptions: {columns: ':visible:not(.no-export)', stripHtml: true}
             },
             {
                 extend: 'print',
                 text: '<i class="fa fa-print" aria-hidden="true"></i> Print',
                 className: 'btn btn-default btn-sm',
                 title: exportTitle,
-                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+                exportOptions: {columns: ':visible:not(.no-export)', stripHtml: true}
             },
             {
                 extend: 'colvis',
                 text: '<i class="fa fa-columns" aria-hidden="true"></i> Column visibility',
                 className: 'btn btn-default btn-sm',
-                columns: ':not(:last-child)'
+                columns: ':not(.no-export)'
             },
             {
                 extend: 'pdf',
@@ -1310,7 +1576,7 @@ function escapeHtml(value) {
                 title: exportTitle,
                 orientation: 'landscape',
                 pageSize: 'A4',
-                exportOptions: {columns: ':visible:not(:last-child)', stripHtml: true}
+                exportOptions: {columns: ':visible:not(.no-export)', stripHtml: true}
             }
         ];
     }
@@ -1447,9 +1713,9 @@ function escapeHtml(value) {
                 previous: loanListText.paginatePrevious
             }
         },
-        order: [[1, 'desc']],
+        order: [[2, 'desc']],
         ajax: {
-            url: "{{ route('loan-management.loans.list-data') }}",
+            url: "{{ route('loan-management.loans.list-data', [], false) }}",
             data: function(d){
                 d.date_from = $('#date_from').val();
                 d.date_to = $('#date_to').val();
@@ -1465,12 +1731,11 @@ function escapeHtml(value) {
             }
         },
         columns: [
+            {data:'action', name:'action', orderable:false, searchable:false, className:'no-export text-center lm-action-col'},
             {data:'loan_number', name:'loan_number'},
             {data:'loan_date', name:'loan_date'},
             {data:'customer_name_snapshot', name:'customer_name_snapshot'},
-            {data:'customer_phone_snapshot', name:'customer_phone_snapshot'},
             {data:'product_name_snapshot', name:'product_name_snapshot'},
-            {data:'item_price', name:'item_price'},
             {data:'down_payment', name:'down_payment'},
             {data:'installment_terms', name:'installment_terms', orderable:false, searchable:false},
             {data:'next_due_date', name:'next_due_date', searchable:false},
@@ -1481,8 +1746,7 @@ function escapeHtml(value) {
             {data:'repayment_progress', name:'repayment_progress', orderable:false, searchable:false},
             {data:'status', name:'status'},
             {data:'location_name_snapshot', name:'location_name_snapshot', searchable:false},
-            {data:'collector_name_snapshot', name:'collector_name_snapshot'},
-            {data:'action', name:'action', orderable:false, searchable:false}
+            {data:'collector_name_snapshot', name:'collector_name_snapshot'}
         ],
         fnDrawCallback: function(){
             if (typeof __currency_convert_recursively === 'function') {
@@ -1604,6 +1868,87 @@ function escapeHtml(value) {
             success: function(){ loanTable.ajax.reload(); },
             error: function(){ alert(loanListText.deleteFailed); }
         });
+    });
+
+    var $openLoanActionOwner = null;
+
+    function closeLoanActionMenu() {
+        var $dropdown = $('body > .lm-loan-action-dropdown.is-floating');
+        if ($dropdown.length && $openLoanActionOwner && $openLoanActionOwner.length) {
+            $dropdown.removeClass('is-floating').hide().appendTo($openLoanActionOwner);
+        } else {
+            $dropdown.removeClass('is-floating').hide();
+        }
+        if ($openLoanActionOwner && $openLoanActionOwner.length) {
+            $openLoanActionOwner.removeClass('open').find('.js-loan-action-toggle').attr('aria-expanded', 'false');
+        }
+        $openLoanActionOwner = null;
+    }
+
+    function positionLoanActionMenu($menu) {
+        var $button = $menu.find('.js-loan-action-toggle').first();
+        var $dropdown = $('body > .lm-loan-action-dropdown.is-floating').first();
+        if (!$button.length || !$dropdown.length || !$menu.hasClass('open')) return;
+
+        var rect = $button[0].getBoundingClientRect();
+        var width = Math.max($dropdown.outerWidth() || 210, 190);
+        var height = Math.max($dropdown.outerHeight() || 260, 120);
+        var left = rect.right + 8;
+        var top = rect.top;
+
+        if (left + width > window.innerWidth - 12) left = Math.max(12, rect.left - width - 8);
+        if (top + height > window.innerHeight - 12) top = Math.max(12, window.innerHeight - height - 12);
+
+        $dropdown.css({ top: top + 'px', left: left + 'px' });
+    }
+
+    $(document).on('click', '.js-loan-action-toggle', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+
+        var $menu = $(this).closest('.lm-loan-action-menu');
+        var wasOpen = $menu.hasClass('open');
+        closeLoanActionMenu();
+        if (wasOpen) return;
+
+        $openLoanActionOwner = $menu;
+        $menu.addClass('open');
+        $(this).attr('aria-expanded', 'true');
+        $menu.find('.lm-loan-action-dropdown').first().addClass('is-floating').appendTo('body').show();
+        positionLoanActionMenu($menu);
+    });
+
+    $(document).on('click', function(e){
+        if (!$(e.target).closest('.lm-loan-action-dropdown, .js-loan-action-toggle').length) {
+            closeLoanActionMenu();
+        }
+    });
+
+    $(window).on('resize', closeLoanActionMenu);
+    $(document).on('scroll', '.dataTables_scrollBody', closeLoanActionMenu);
+
+    $(document).on('click', '.js-loan-blacklist-customer', function(e){
+        e.preventDefault();
+        var url = $(this).data('url') || '';
+        var customer = $(this).data('customer') || 'Customer';
+        if (!url) {
+            return;
+        }
+
+        $('#loanAddBlacklistForm').attr('action', url);
+        $('#loanBlacklistCustomerName').text(customer);
+        $('#loanBlacklistReason').val('');
+        $('#loanAddBlacklistModal').modal('show');
+        closeLoanActionMenu();
+    });
+
+    $('#loanAddBlacklistForm').on('submit', function(e){
+        var reason = $.trim($('#loanBlacklistReason').val() || '');
+        if (!reason) {
+            e.preventDefault();
+            alert(loanListText.blacklistReasonRequired);
+            $('#loanBlacklistReason').focus();
+        }
     });
 
 

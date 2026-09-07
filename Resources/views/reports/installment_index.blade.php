@@ -6,152 +6,455 @@
     $bi = fn ($en, $km) => $isKhmer ? $km : $en;
     $money = fn ($value) => '$'.number_format((float) ($value ?? 0), 2);
     $number = fn ($value) => number_format((float) ($value ?? 0), 0);
-@endphp
 
-@section('loan_css')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
-<style>
-    .ir-page { color: #172033; }
-    .ir-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
-    .ir-title { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: 0; }
-    .ir-subtitle { margin: 3px 0 0; color: #64748b; font-size: 13px; }
-    .ir-cards { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
-    .ir-card { background: #fff; border: 1px solid #dfe7f1; border-radius: 8px; padding: 12px; box-shadow: 0 8px 18px rgba(15,23,42,.06); display: flex; gap: 10px; align-items: center; min-height: 76px; }
-    .ir-card-icon { width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; flex: 0 0 38px; background: #eff6ff; color: #2563eb; }
-    .ir-card small { display: block; color: #64748b; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
-    .ir-card strong { font-size: 18px; font-weight: 800; }
-    .ir-panel { background: #fff; border: 1px solid #dfe7f1; border-radius: 8px; box-shadow: 0 8px 18px rgba(15,23,42,.06); margin-bottom: 14px; overflow: hidden; }
-    .ir-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #edf2f7; }
-    .ir-panel-title { margin: 0; font-size: 16px; font-weight: 800; }
-    .ir-filter-body { padding: 14px; }
-    .ir-filter-grid { display: grid; grid-template-columns: repeat(4, minmax(165px, 1fr)); gap: 12px; align-items: end; }
-    .ir-filter-date { grid-column: span 2; }
-    .ir-filter-grid label { font-size: 12px; color: #475569; font-weight: 700; margin-bottom: 5px; }
-    .ir-filter-grid .form-control { height: 36px; border-color: #d7e0eb; border-radius: 6px; }
-    .ir-filter-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-    .ir-table-wrap { overflow-x: auto; padding: 14px; }
-    .ir-table { min-width: 1520px; margin: 0; width: 100% !important; }
-    .ir-table thead th { background: #f8fafc; color: #334155; border-bottom: 1px solid #dfe7f1 !important; font-size: 12px; text-transform: uppercase; white-space: nowrap; }
-    .ir-table tbody td { vertical-align: middle !important; white-space: nowrap; }
-    .ir-status { border-radius: 999px; display: inline-block; padding: 4px 9px; background: #eef2ff; color: #4338ca; font-size: 12px; font-weight: 800; }
-    .ir-dt-panel .dataTables_wrapper .row:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 16px; }
-    .ir-dt-panel .dataTables_wrapper .row:first-child:before,
-    .ir-dt-panel .dataTables_wrapper .row:first-child:after { display: none; }
-    .ir-dt-panel .dataTables_length { text-align: left; white-space: nowrap; }
-    .ir-dt-panel .dataTables_length label { font-weight: 500; color: #172033; }
-    .ir-dt-panel .dataTables_length select { height: 36px; min-width: 84px; border: 1px solid #cfd8e5; box-shadow: none; margin: 0 6px; }
-    .ir-dt-panel .dt-buttons { display: inline-flex; justify-content: center; gap: 8px; flex-wrap: wrap; float: none; }
-    .ir-dt-panel .dt-buttons .btn,
-    .ir-dt-panel .dt-button { border: 1px solid #b8c3d3 !important; border-radius: 8px !important; background: #fff !important; color: #94a3b8 !important; font-weight: 700; padding: 5px 12px !important; box-shadow: none !important; }
-    .ir-dt-panel .dataTables_filter { text-align: right; }
-    .ir-dt-panel .dataTables_filter label { width: 100%; margin: 0; }
-    .ir-dt-panel .dataTables_filter input { height: 36px; width: 240px !important; border: 1px solid #cfd8e5; border-radius: 0; box-shadow: none; margin-left: 0; }
-    .ir-dt-panel .dataTables_info { color: #64748b; padding: 12px 0; }
-    .ir-dt-panel .dataTables_paginate { padding-top: 8px; }
-    @media (max-width: 1200px) { .ir-cards { grid-template-columns: repeat(2, 1fr); } .ir-filter-grid { grid-template-columns: repeat(2, 1fr); } .ir-dt-panel .dataTables_wrapper .row:first-child { display: block; } .ir-dt-panel .dataTables_length, .ir-dt-panel .dataTables_filter, .ir-dt-panel .dt-buttons { text-align: left; margin-bottom: 8px; } }
-    @media (max-width: 768px) { .ir-cards, .ir-filter-grid { grid-template-columns: 1fr; } .ir-header { flex-direction: column; align-items: flex-start; } }
-</style>
-@endsection
-
-@section('content_body')
-@php
     $dateFrom = $filters['date_from'] ?? '';
     $dateTo = $filters['date_to'] ?? '';
     $dateRangeDisplay = $dateFrom && $dateTo
         ? \Carbon\Carbon::parse($dateFrom)->format('m-d-Y').' - '.\Carbon\Carbon::parse($dateTo)->format('m-d-Y')
         : '';
 @endphp
-<section class="content-header ir-page">
-    <div class="ir-header">
-        <div>
-            <h1 class="ir-title">{{ $bi('Installment Reports', 'របាយការណ៍រំលស់') }}</h1>
-            <p class="ir-subtitle">{{ $bi('Search loans, payment status, schedules, and outstanding balances.', 'ស្វែងរកកម្ចី ស្ថានភាពបង់ប្រាក់ កាលវិភាគ និងសមតុល្យ។') }}</p>
-        </div>
-        <button type="button" class="btn btn-default btn-sm" onclick="window.print()"><i class="fa fa-print"></i> {{ $bi('Print', 'បោះពុម្ព') }}</button>
-    </div>
-</section>
 
-<section class="content ir-page">
+@section('loan_css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
+<style>
+    /* =========================================================
+       ULTIMATE POS STANDARD STYLE FOR INSTALLMENT REPORTS
+       ========================================================= */
+    .ir-page {
+        font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* KPI Summary Cards */
+    .ir-cards {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .ir-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .ir-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+    .ir-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+        background: #eff6ff;
+        color: #2563eb;
+    }
+    .ir-card small {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 2px;
+    }
+    .ir-card strong {
+        display: block;
+        font-size: 19px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.15;
+    }
+
+    /* Filters Component Styling */
+    .lm-pos-filter-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1.5fr 1.2fr 1.2fr 1.2fr auto;
+        gap: 12px 14px;
+        align-items: end;
+        padding: 6px 0;
+    }
+    @media (max-width: 1400px) {
+        .lm-pos-filter-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .lm-pos-filter-grid { grid-template-columns: 1fr; }
+        .ir-cards { grid-template-columns: 1fr; }
+    }
+    .lm-pos-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .lm-pos-filter-field label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.2;
+    }
+    .lm-pos-filter-field .form-control {
+        height: 38px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: #1e293b;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        outline: none;
+        width: 100%;
+        box-shadow: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .lm-pos-filter-field .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    .lm-pos-filter-field select.form-control {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .lm-pos-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+    }
+    .lm-btn-pos-filter {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #0284c7;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .lm-btn-pos-filter:hover { background: #0369a1; }
+    .lm-btn-pos-reset {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    .lm-btn-pos-reset:hover { background: #e2e8f0; color: #1e293b; text-decoration: none; }
+
+    /* Ultimate POS DataTables Toolbar Layout */
+    .lm-dt-top {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-length label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        font-weight: 500 !important;
+        font-size: 13px !important;
+        color: #475569 !important;
+    }
+    .lm-dt-length select {
+        height: 34px !important;
+        padding: 2px 28px 2px 10px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 13px !important;
+        color: #1e293b !important;
+        background-color: #fff !important;
+        outline: none !important;
+    }
+    .lm-dt-buttons {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        flex-wrap: wrap !important;
+    }
+    .lm-dt-buttons .btn {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.15s ease !important;
+    }
+    .lm-dt-buttons .btn:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+    .lm-dt-search {
+        margin: 0 !important;
+    }
+    .lm-dt-search label {
+        margin: 0 !important;
+        display: block !important;
+    }
+    .lm-dt-search input {
+        height: 34px !important;
+        min-width: 220px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        outline: none !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        transition: border-color 0.15s ease !important;
+    }
+    .lm-dt-search input:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+    }
+
+    /* Table Styling */
+    .lm-table-dense {
+        margin-bottom: 0 !important;
+        border-collapse: collapse !important;
+    }
+    .lm-table-dense th {
+        font-size: 12.5px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        color: #475569 !important;
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding: 10px 12px !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+    }
+    .lm-table-dense td {
+        font-size: 13px !important;
+        color: #1e293b !important;
+        padding: 10px 12px !important;
+        vertical-align: middle !important;
+        border-top: 1px solid #f1f5f9 !important;
+        white-space: nowrap !important;
+    }
+    .lm-table-dense tbody tr:hover {
+        background-color: #f8fafc !important;
+    }
+
+    /* Bottom Info & Pagination */
+    .lm-dt-bottom {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-info {
+        font-size: 13px !important;
+        color: #64748b !important;
+        padding: 0 !important;
+    }
+    .lm-dt-pagination .pagination {
+        margin: 0 !important;
+    }
+    .lm-dt-pagination .pagination > li > a {
+        border-radius: 4px !important;
+        margin: 0 2px !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    .lm-dt-pagination .pagination > .active > a {
+        background-color: #0284c7 !important;
+        border-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+    .ir-status {
+        border-radius: 999px;
+        display: inline-block;
+        padding: 3px 8px;
+        background: #eef2ff;
+        color: #4338ca;
+        font-size: 11px;
+        font-weight: 700;
+    }
+</style>
+@endsection
+
+@section('content_body')
+<div class="ir-page">
+
+    {{-- Content Header --}}
+    <section class="content-header" style="padding: 0 0 16px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <h1 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">
+            {{ $bi('Installment Reports', 'របាយការណ៍រំលស់') }}
+            <small style="font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px;">
+                {{ $bi('Search loans, payment status, schedules, and outstanding balances', 'ស្វែងរកកម្ចី ស្ថានភាពបង់ប្រាក់ កាលវិភាគ និងសមតុល្យ') }}
+            </small>
+        </h1>
+        <button type="button" class="btn btn-default btn-sm" onclick="window.print()" style="font-weight: 600; border-radius: 6px;">
+            <i class="fa fa-print"></i> {{ $bi('Print', 'បោះពុម្ព') }}
+        </button>
+    </section>
+
+    {{-- KPI Cards --}}
     <div class="ir-cards">
-        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-file-text-o"></i></span><span><small>{{ $bi('Installments', 'កម្ចី') }}</small><strong>{{ $number($summary['count'] ?? 0) }}</strong></span></div>
-        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-money"></i></span><span><small>{{ $bi('Principal', 'ប្រាក់ដើម') }}</small><strong>{{ $money($summary['principal'] ?? 0) }}</strong></span></div>
-        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-check-circle"></i></span><span><small>{{ $bi('Paid', 'បានបង់') }}</small><strong>{{ $money($summary['paid'] ?? 0) }}</strong></span></div>
-        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-balance-scale"></i></span><span><small>{{ $bi('Balance', 'សមតុល្យ') }}</small><strong>{{ $money($summary['balance'] ?? 0) }}</strong></span></div>
-        <div class="ir-card"><span class="ir-card-icon"><i class="fa fa-warning"></i></span><span><small>{{ $bi('Overdue', 'ហួសកំណត់') }}</small><strong>{{ $number($summary['overdue'] ?? 0) }}</strong></span></div>
+        <div class="ir-card">
+            <span class="ir-card-icon"><i class="fa fa-file-text-o"></i></span>
+            <div>
+                <small>{{ $bi('Installments', 'កម្ចី') }}</small>
+                <strong>{{ $number($summary['count'] ?? 0) }}</strong>
+            </div>
+        </div>
+        <div class="ir-card">
+            <span class="ir-card-icon" style="background:#ecfdf5; color:#16a34a;"><i class="fa fa-money"></i></span>
+            <div>
+                <small>{{ $bi('Principal', 'ប្រាក់ដើម') }}</small>
+                <strong>{{ $money($summary['principal'] ?? 0) }}</strong>
+            </div>
+        </div>
+        <div class="ir-card">
+            <span class="ir-card-icon" style="background:#eff6ff; color:#2563eb;"><i class="fa fa-check-circle"></i></span>
+            <div>
+                <small>{{ $bi('Paid', 'បានបង់') }}</small>
+                <strong>{{ $money($summary['paid'] ?? 0) }}</strong>
+            </div>
+        </div>
+        <div class="ir-card">
+            <span class="ir-card-icon" style="background:#fffbeb; color:#d97706;"><i class="fa fa-balance-scale"></i></span>
+            <div>
+                <small>{{ $bi('Balance', 'សមតុល្យ') }}</small>
+                <strong>{{ $money($summary['balance'] ?? 0) }}</strong>
+            </div>
+        </div>
+        <div class="ir-card">
+            <span class="ir-card-icon" style="background:#fef2f2; color:#dc2626;"><i class="fa fa-warning"></i></span>
+            <div>
+                <small>{{ $bi('Overdue', 'ហួសកំណត់') }}</small>
+                <strong>{{ $number($summary['overdue'] ?? 0) }}</strong>
+            </div>
+        </div>
     </div>
 
-    <div class="ir-panel">
-        <div class="ir-panel-head">
-            <h3 class="ir-panel-title"><i class="fa fa-filter"></i> {{ $bi('Filters', 'តម្រង') }}</h3>
-            <button type="button" class="btn btn-default btn-sm" data-ir-toggle data-toggle="collapse" data-target="#installmentReportFilters" aria-expanded="false" aria-controls="installmentReportFilters">
-                <span data-ir-label>{{ $bi('Expand', 'បើក') }}</span> <i class="fa fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="ir-filter-body collapse" id="installmentReportFilters" data-ir-body>
-            <form method="GET">
-                <div class="ir-filter-grid">
-                    <div class="ir-filter-date">
-                        <label>{{ $bi('Date Range', 'ចន្លោះថ្ងៃ') }}</label>
-                        <input type="text" name="date_range" id="installmentReportDateRange" value="{{ $dateRangeDisplay }}" class="form-control" placeholder="{{ $bi('Select date range', 'ជ្រើសរើសចន្លោះថ្ងៃ') }}" autocomplete="off">
-                        <input type="hidden" name="date_from" value="{{ $dateFrom }}">
-                        <input type="hidden" name="date_to" value="{{ $dateTo }}">
-                    </div>
-                    <div>
-                        <label>{{ $bi('Location', 'ទីតាំង') }}</label>
-                        <select name="location_id" class="form-control">
-                            <option value="">{{ $bi('All locations', 'គ្រប់ទីតាំង') }}</option>
-                            @foreach($locations as $key => $name)
-                                <option value="{{ $key }}" @selected(($filters['location_id'] ?? '') === $key)>{{ $name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div><label>{{ $bi('Search', 'ស្វែងរក') }}</label><input type="text" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="{{ $bi('Installment, invoice, customer', 'កម្ចី វិក្កយបត្រ អតិថិជន') }}"></div>
-                    <div>
-                        <label>{{ $bi('Installment status', 'ស្ថានភាពកម្ចី') }}</label>
-                        <select name="status" class="form-control">
-                            <option value="">{{ $bi('All statuses', 'គ្រប់ស្ថានភាព') }}</option>
-                            @foreach($statusOptions as $key => $label)
-                                <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label>{{ $bi('Payment status', 'ស្ថានភាពបង់ប្រាក់') }}</label>
-                        <select name="payment_status" class="form-control">
-                            <option value="">{{ $bi('All payment statuses', 'គ្រប់ស្ថានភាពបង់ប្រាក់') }}</option>
-                            @foreach($paymentStatusOptions as $key => $label)
-                                <option value="{{ $key }}" @selected(($filters['payment_status'] ?? '') === $key)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div><label>{{ $bi('Collector', 'អ្នកប្រមូល') }}</label><input type="text" name="collector" value="{{ $filters['collector'] ?? '' }}" class="form-control"></div>
-                    <div class="ir-filter-actions">
-                        <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i> {{ $bi('Apply', 'អនុវត្ត') }}</button>
-                        <a href="{{ url()->current() }}" class="btn btn-default">{{ $bi('Reset', 'កំណត់ឡើងវិញ') }}</a>
-                    </div>
+    {{-- Ultimate POS Standard Collapsible Filters Component --}}
+    @component('components.filters', ['title' => __('report.filters'), 'closed' => true])
+        <form method="GET" action="{{ route('loan-management.reports.index') }}" id="installmentReportFilterForm">
+            <div class="lm-pos-filter-grid">
+                {{-- Date Range --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $bi('Date Range', 'ចន្លោះថ្ងៃ') }}</label>
+                    <input type="text" name="date_range" id="installmentReportDateRange" value="{{ $dateRangeDisplay }}" class="form-control" placeholder="{{ $bi('Select date range', 'ជ្រើសរើសចន្លោះថ្ងៃ') }}" autocomplete="off">
+                    <input type="hidden" name="date_from" value="{{ $dateFrom }}">
+                    <input type="hidden" name="date_to" value="{{ $dateTo }}">
                 </div>
-            </form>
-        </div>
-    </div>
 
-    <div class="ir-panel ir-dt-panel">
-        <div class="ir-panel-head">
-            <h3 class="ir-panel-title"><i class="fa fa-table"></i> {{ $bi('Installment Data', 'ទិន្នន័យរំលស់') }}</h3>
-            <span class="ir-status">{{ $number(method_exists($rows, 'count') ? $rows->count() : count($rows)) }} {{ $bi('records', 'ទិន្នន័យ') }}</span>
-        </div>
-        <div class="ir-table-wrap">
-            <table class="table table-bordered table-hover ir-table" id="installmentReportsTable">
+                {{-- Location --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $bi('Location', 'ទីតាំង') }}</label>
+                    <select name="location_id" class="form-control">
+                        <option value="">{{ $bi('All locations', 'គ្រប់ទីតាំង') }}</option>
+                        @foreach($locations as $key => $name)
+                            <option value="{{ $key }}" @selected(($filters['location_id'] ?? '') === $key)>{{ $name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Search --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $bi('Search', 'ស្វែងរក') }}</label>
+                    <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" class="form-control" placeholder="{{ $bi('Installment, invoice, customer', 'កម្ចី វិក្កយបត្រ អតិថិជន') }}">
+                </div>
+
+                {{-- Status --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $bi('Installment status', 'ស្ថានភាពកម្ចី') }}</label>
+                    <select name="status" class="form-control">
+                        <option value="">{{ $bi('All statuses', 'គ្រប់ស្ថានភាព') }}</option>
+                        @foreach($statusOptions as $key => $label)
+                            <option value="{{ $key }}" @selected(($filters['status'] ?? '') === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Payment Status --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $bi('Payment status', 'ស្ថានភាពបង់ប្រាក់') }}</label>
+                    <select name="payment_status" class="form-control">
+                        <option value="">{{ $bi('All payment statuses', 'គ្រប់ស្ថានភាពបង់ប្រាក់') }}</option>
+                        @foreach($paymentStatusOptions as $key => $label)
+                            <option value="{{ $key }}" @selected(($filters['payment_status'] ?? '') === $key)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Collector --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $bi('Collector', 'អ្នកប្រមូល') }}</label>
+                    <input type="text" name="collector" value="{{ $filters['collector'] ?? '' }}" class="form-control" placeholder="{{ $bi('Collector name', 'ឈ្មោះអ្នកប្រមូល') }}">
+                </div>
+
+                {{-- Actions --}}
+                <div class="lm-pos-filter-actions">
+                    <button type="submit" class="lm-btn-pos-filter">
+                        <i class="fa fa-filter"></i> {{ $bi('Apply', 'អនុវត្ត') }}
+                    </button>
+                    <a href="{{ route('loan-management.reports.index') }}" class="lm-btn-pos-reset">
+                        <i class="fa fa-refresh"></i> {{ $bi('Reset', 'សម្អាត') }}
+                    </a>
+                </div>
+            </div>
+        </form>
+    @endcomponent
+
+    {{-- Ultimate POS Standard Widget Component --}}
+    @component('components.widget', ['class' => 'box-primary', 'title' => $bi('Installment Data', 'ទិន្នន័យរំលស់')])
+        <div class="table-responsive">
+            <table class="lm-table-dense table table-bordered table-striped table-hover" id="installmentReportsTable" style="width: 100%; margin-bottom: 0;">
                 <thead>
-                    <tr>
+                    <tr style="background: #f8fafc; color: #475569;">
                         <th>{{ $bi('Installment #', 'លេខកម្ចី') }}</th>
                         <th>{{ $bi('Date', 'ថ្ងៃ') }}</th>
                         <th>{{ $bi('Invoice', 'វិក្កយបត្រ') }}</th>
                         <th>{{ $bi('Customer', 'អតិថិជន') }}</th>
                         <th>{{ $bi('Phone', 'ទូរស័ព្ទ') }}</th>
                         <th>{{ $bi('Location', 'ទីតាំង') }}</th>
-                        <th>{{ $bi('Status', 'ស្ថានភាព') }}</th>
-                        <th>{{ $bi('Payment', 'បង់ប្រាក់') }}</th>
+                        <th style="text-align: center;">{{ $bi('Status', 'ស្ថានភាព') }}</th>
+                        <th style="text-align: center;">{{ $bi('Payment', 'បង់ប្រាក់') }}</th>
                         <th class="text-right">{{ $bi('Total', 'សរុប') }}</th>
                         <th class="text-right">{{ $bi('Principal', 'ប្រាក់ដើម') }}</th>
                         <th class="text-right">{{ $bi('Paid', 'បានបង់') }}</th>
@@ -161,39 +464,51 @@
                         <th>{{ $bi('Next due', 'បង់បន្ទាប់') }}</th>
                         <th>{{ $bi('Last payment', 'បង់ចុងក្រោយ') }}</th>
                         <th>{{ $bi('Collector', 'អ្នកប្រមូល') }}</th>
-                        <th>{{ $bi('Risk', 'ហានិភ័យ') }}</th>
+                        <th style="text-align: center;">{{ $bi('Risk', 'ហានិភ័យ') }}</th>
                         <th>{{ $bi('Note', 'កំណត់ចំណាំ') }}</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($rows as $row)
+                    @forelse($rows as $row)
                         <tr>
-                            <td><strong>{{ $row->loan_number }}</strong></td>
+                            <td>
+                                <a href="{{ route('loan-management.loans.view', $row->id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none;">
+                                    {{ $row->loan_number }}
+                                </a>
+                            </td>
                             <td>{{ $row->loan_date ? \Carbon\Carbon::parse($row->loan_date)->format('d M Y') : '-' }}</td>
                             <td>{{ $row->invoice_no ?: '-' }}</td>
-                            <td>{{ $row->customer_name ?: '-' }}</td>
+                            <td><strong>{{ $row->customer_name ?: '-' }}</strong></td>
                             <td>{{ $row->customer_phone ?: '-' }}</td>
                             <td>{{ $row->location_name ?: '-' }}</td>
-                            <td><span class="ir-status">{{ ucwords(str_replace('_', ' ', (string) $row->status)) }}</span></td>
-                            <td>{{ $row->payment_status ? ucwords(str_replace('_', ' ', (string) $row->payment_status)) : '-' }}</td>
+                            <td style="text-align: center;"><span class="ir-status">{{ ucwords(str_replace('_', ' ', (string) $row->status)) }}</span></td>
+                            <td style="text-align: center;">{{ $row->payment_status ? ucwords(str_replace('_', ' ', (string) $row->payment_status)) : '-' }}</td>
                             <td class="text-right">{{ $money($row->total_amount) }}</td>
                             <td class="text-right">{{ $money($row->principal_amount) }}</td>
                             <td class="text-right">{{ $money($row->paid_amount) }}</td>
-                            <td class="text-right">{{ $money($row->balance_amount) }}</td>
+                            <td class="text-right"><strong style="color: #0f172a;">{{ $money($row->balance_amount) }}</strong></td>
                             <td class="text-right">{{ $number($row->term_count) }}</td>
                             <td class="text-right">{{ $number($row->paid_schedule_count) }} / {{ $number($row->schedule_count) }}</td>
                             <td>{{ $row->next_due_date ? \Carbon\Carbon::parse($row->next_due_date)->format('d M Y') : '-' }}</td>
                             <td>{{ $row->last_payment_at ? \Carbon\Carbon::parse($row->last_payment_at)->format('d M Y') : '-' }}</td>
                             <td>{{ $row->collector_name ?: '-' }}</td>
-                            <td>{{ (int) $row->is_overdue === 1 ? $bi('Overdue', 'ហួសកំណត់') : $bi('Normal', 'ធម្មតា') }}</td>
+                            <td style="text-align: center;">
+                                @if((int) $row->is_overdue === 1)
+                                    <span class="label label-danger">{{ $bi('Overdue', 'ហួសកំណត់') }}</span>
+                                @else
+                                    <span class="label label-success">{{ $bi('Normal', 'ធម្មតា') }}</span>
+                                @endif
+                            </td>
                             <td>{{ $row->note ?: '-' }}</td>
                         </tr>
-                    @endforeach
+                    @empty
+                    @endforelse
                 </tbody>
             </table>
         </div>
-    </div>
-</section>
+    @endcomponent
+
+</div>
 @endsection
 
 @section('loan_js')
@@ -208,161 +523,150 @@
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 <script>
-    jQuery(function ($) {
-        var $filterForm = $('#installmentReportDateRange').closest('form');
-        var displayDateFormat = window.moment_date_format || 'MM-DD-YYYY';
-        var dateRangeSettings = window.dateRangeSettings ? $.extend(true, {}, window.dateRangeSettings) : {};
-        var $dateRange = $('#installmentReportDateRange');
+$(document).ready(function () {
+    var $filterForm = $('#installmentReportFilterForm');
+    $filterForm.on('change', 'select', function () {
+        $filterForm.submit();
+    });
 
-        if (window.moment && $.fn.daterangepicker && $dateRange.length) {
-            var startDate = @json($dateFrom) ? moment(@json($dateFrom)) : moment().startOf('month');
-            var endDate = @json($dateTo) ? moment(@json($dateTo)) : moment().endOf('month');
-            var fyStart = (typeof financial_year !== 'undefined' && financial_year.start && moment(financial_year.start).isValid())
-                ? moment(financial_year.start)
-                : moment().startOf('year');
-            var fyEnd = (typeof financial_year !== 'undefined' && financial_year.end && moment(financial_year.end).isValid())
-                ? moment(financial_year.end)
-                : moment().endOf('year');
+    var displayDateFormat = window.moment_date_format || 'MM-DD-YYYY';
+    var dateRangeSettings = window.dateRangeSettings ? $.extend(true, {}, window.dateRangeSettings) : {};
+    var $dateRange = $('#installmentReportDateRange');
 
-            $dateRange.daterangepicker($.extend(true, {}, dateRangeSettings, {
-                autoUpdateInput: false,
-                showDropdowns: true,
-                linkedCalendars: false,
-                startDate: startDate,
-                endDate: endDate,
-                parentEl: 'body',
-                opens: 'right',
-                drops: 'auto',
-                ranges: {
-                    'Today': [moment(), moment()],
-                    'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-                    'This Month': [moment().startOf('month'), moment().endOf('month')],
-                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-                    'This month last year': [moment().subtract(1, 'year').startOf('month'), moment().subtract(1, 'year').endOf('month')],
-                    'This Year': [moment().startOf('year'), moment().endOf('year')],
-                    'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
-                    'Current financial year': [fyStart.clone(), fyEnd.clone()],
-                    'Last financial year': [fyStart.clone().subtract(1, 'year'), fyEnd.clone().subtract(1, 'year')]
-                },
-                locale: $.extend(true, {}, dateRangeSettings.locale || {}, {
-                    format: displayDateFormat,
-                    separator: ' - ',
-                    applyLabel: @json($bi('Apply', 'អនុវត្ត')),
-                    cancelLabel: @json($bi('Clear', 'សម្អាត')),
-                    customRangeLabel: @json($bi('Custom Range', 'ជ្រើសរើសផ្ទាល់')),
-                    toLabel: '~'
-                })
-            }), function (start, end) {
-                $dateRange.val(start.format(displayDateFormat) + ' - ' + end.format(displayDateFormat));
-                $filterForm.find('[name="date_from"]').val(start.format('YYYY-MM-DD'));
-                $filterForm.find('[name="date_to"]').val(end.format('YYYY-MM-DD'));
-            });
+    if (window.moment && $.fn.daterangepicker && $dateRange.length) {
+        var startDate = @json($dateFrom) ? moment(@json($dateFrom)) : moment().startOf('month');
+        var endDate = @json($dateTo) ? moment(@json($dateTo)) : moment().endOf('month');
+        var fyStart = (typeof financial_year !== 'undefined' && financial_year.start && moment(financial_year.start).isValid())
+            ? moment(financial_year.start)
+            : moment().startOf('year');
+        var fyEnd = (typeof financial_year !== 'undefined' && financial_year.end && moment(financial_year.end).isValid())
+            ? moment(financial_year.end)
+            : moment().endOf('year');
 
-            $dateRange
-                .on('apply.daterangepicker', function (event, picker) {
-                    $(this).val(picker.startDate.format(displayDateFormat) + ' - ' + picker.endDate.format(displayDateFormat));
-                    $filterForm.find('[name="date_from"]').val(picker.startDate.format('YYYY-MM-DD'));
-                    $filterForm.find('[name="date_to"]').val(picker.endDate.format('YYYY-MM-DD'));
-                })
-                .on('cancel.daterangepicker', function () {
-                    $(this).val('');
-                    $filterForm.find('[name="date_from"], [name="date_to"]').val('');
-                });
-        } else {
-            $dateRange.prop('readonly', false).on('change', function () {
-                var parts = String($(this).val()).split(/\s+-\s+|\s+~\s+/);
-                if (parts.length === 2) {
-                    $filterForm.find('[name="date_from"]').val(parts[0]);
-                    $filterForm.find('[name="date_to"]').val(parts[1]);
-                }
-            });
-        }
-
-        $('#installmentReportFilters')
-            .on('shown.bs.collapse', function () {
-                var button = $('[data-ir-toggle]');
-                button.attr('aria-expanded', 'true');
-                button.find('[data-ir-label]').text(@json($bi('Collapse', 'បិទ')));
-                button.find('i').attr('class', 'fa fa-chevron-up');
+        $dateRange.daterangepicker($.extend(true, {}, dateRangeSettings, {
+            autoUpdateInput: false,
+            showDropdowns: true,
+            linkedCalendars: false,
+            startDate: startDate,
+            endDate: endDate,
+            parentEl: 'body',
+            opens: 'right',
+            drops: 'auto',
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                'This month last year': [moment().subtract(1, 'year').startOf('month'), moment().subtract(1, 'year').endOf('month')],
+                'This Year': [moment().startOf('year'), moment().endOf('year')],
+                'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+                'Current financial year': [fyStart.clone(), fyEnd.clone()],
+                'Last financial year': [fyStart.clone().subtract(1, 'year'), fyEnd.clone().subtract(1, 'year')]
+            },
+            locale: $.extend(true, {}, dateRangeSettings.locale || {}, {
+                format: displayDateFormat,
+                separator: ' - ',
+                applyLabel: @json($bi('Apply', 'អនុវត្ត')),
+                cancelLabel: @json($bi('Clear', 'សម្អាត')),
+                customRangeLabel: @json($bi('Custom Range', 'ជ្រើសរើសផ្ទាល់')),
+                toLabel: '~'
             })
-            .on('hidden.bs.collapse', function () {
-                var button = $('[data-ir-toggle]');
-                button.attr('aria-expanded', 'false');
-                button.find('[data-ir-label]').text(@json($bi('Expand', 'បើក')));
-                button.find('i').attr('class', 'fa fa-chevron-down');
+        }));
+
+        $dateRange
+            .on('apply.daterangepicker', function (event, picker) {
+                $(this).val(picker.startDate.format(displayDateFormat) + ' - ' + picker.endDate.format(displayDateFormat));
+                $filterForm.find('[name="date_from"]').val(picker.startDate.format('YYYY-MM-DD'));
+                $filterForm.find('[name="date_to"]').val(picker.endDate.format('YYYY-MM-DD'));
+                $filterForm.submit();
+            })
+            .on('cancel.daterangepicker', function () {
+                $(this).val('');
+                $filterForm.find('[name="date_from"], [name="date_to"]').val('');
+                $filterForm.submit();
             });
+    }
 
-        if (!$.fn.DataTable || $.fn.DataTable.isDataTable('#installmentReportsTable')) {
-            return;
-        }
-
+    if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#installmentReportsTable')) {
         var exportTitle = @json($bi('Installment Reports', 'របាយការណ៍រំលស់'));
         var tableButtons = [];
         if ($.fn.dataTable.Buttons) {
             tableButtons = [
                 {
                     extend: 'copy',
-                    text: '<i class="fa fa-copy" aria-hidden="true"></i> Copy',
+                    text: 'Copy',
                     className: 'btn btn-default btn-sm',
                     title: exportTitle,
-                    exportOptions: {columns: ':visible'}
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'csv',
-                    text: '<i class="fa fa-file-csv" aria-hidden="true"></i> Export CSV',
+                    text: '<i class="fa fa-file-text-o"></i> Export CSV',
                     className: 'btn btn-default btn-sm',
                     title: exportTitle,
-                    exportOptions: {columns: ':visible'}
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'excel',
-                    text: '<i class="fa fa-file-excel-o" aria-hidden="true"></i> Export Excel',
+                    text: '<i class="fa fa-file-excel-o"></i> Export Excel',
                     className: 'btn btn-default btn-sm',
                     title: exportTitle,
-                    exportOptions: {columns: ':visible'}
+                    exportOptions: { columns: ':visible' }
                 },
                 {
                     extend: 'print',
-                    text: '<i class="fa fa-print" aria-hidden="true"></i> Print',
+                    text: '<i class="fa fa-print"></i> Print',
                     className: 'btn btn-default btn-sm',
                     title: exportTitle,
-                    exportOptions: {columns: ':visible', stripHtml: true}
+                    exportOptions: { columns: ':visible', stripHtml: true }
                 },
                 {
                     extend: 'colvis',
-                    text: '<i class="fa fa-columns" aria-hidden="true"></i> Column visibility',
+                    text: '<i class="fa fa-columns"></i> Column visibility',
                     className: 'btn btn-default btn-sm'
                 },
                 {
                     extend: 'pdf',
-                    text: '<i class="fa fa-file-pdf-o" aria-hidden="true"></i> Export PDF',
+                    text: '<i class="fa fa-file-pdf-o"></i> Export PDF <i class="fa fa-caret-down" style="margin-left:2px;"></i>',
                     className: 'btn btn-default btn-sm',
                     title: exportTitle,
                     orientation: 'landscape',
                     pageSize: 'A4',
-                    exportOptions: {columns: ':visible'}
+                    exportOptions: { columns: ':visible' }
                 }
             ];
         }
 
         $('#installmentReportsTable').DataTable({
-            dom: '<"row margin-bottom-20 text-center"<"col-sm-2"l><"col-sm-8"B><"col-sm-2"f> r>tip',
+            dom: '<"lm-dt-top"<"lm-dt-length"l><"lm-dt-buttons"B><"lm-dt-search"f>>rt<"lm-dt-bottom"<"lm-dt-info"i><"lm-dt-pagination"p>>',
             buttons: tableButtons,
             pageLength: 25,
-            lengthMenu: [[25, 50, 100, -1], [25, 50, 100, 'All']],
+            lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "{{ $bi('All', 'ទាំងអស់') }}"]],
             order: [[1, 'desc']],
             autoWidth: false,
-            scrollX: true,
             language: {
                 search: '',
-                searchPlaceholder: 'Search ...'
+                searchPlaceholder: 'Search ...',
+                lengthMenu: 'Show _MENU_ entries',
+                emptyTable: '{{ $bi("No installment data found.", "មិនមានទិន្នន័យកម្ចីទេ។") }}',
+                info: '{{ $bi("Showing _START_ to _END_ of _TOTAL_ entries", "បង្ហាញពី _START_ ដល់ _END_ នៃ _TOTAL_ ធាតុ") }}',
+                infoEmpty: '{{ $bi("Showing 0 to 0 of 0 entries", "បង្ហាញ 0 នៃ 0 ធាតុ") }}',
+                infoFiltered: '({{ $bi("filtered from _MAX_ total entries", "ចម្រាញ់ចេញពី _MAX_ ធាតុសរុប") }})',
+                paginate: {
+                    first: '{{ $bi("First", "ដំបូង") }}',
+                    last: '{{ $bi("Last", "ចុងក្រោយ") }}',
+                    next: '{{ $bi("Next", "បន្ទាប់") }}',
+                    previous: '{{ $bi("Previous", "មុន") }}'
+                }
             },
             columnDefs: [
-                {targets: [8, 9, 10, 11, 12, 13], className: 'text-right'}
+                { targets: [8, 9, 10, 11, 12, 13], className: 'text-right' },
+                { targets: [6, 7, 17], className: 'text-center' }
             ]
         });
-    });
+    }
+});
 </script>
 @endsection

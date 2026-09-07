@@ -1,286 +1,402 @@
 @php
     $lmIsKhmer = session('user.language', config('app.locale')) === 'km';
     $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
+    $dateFrom = $filters['date_from'] ?? '';
+    $dateTo = $filters['date_to'] ?? '';
+    $dateRangeDisplay = $filters['date_range'] ?? ($dateFrom && $dateTo
+        ? \Carbon\Carbon::parse($dateFrom)->format('m-d-Y').' - '.\Carbon\Carbon::parse($dateTo)->format('m-d-Y')
+        : '');
 @endphp
 @extends('loanmanagement::layouts.app')
-@section('title', $lmText('Payments Ledger', 'បញ្ជីការទូទាត់ប្រាក់'))
+@section('title', $lmText('Payments & Collection Ledger', 'បញ្ជីការទូទាត់ និងប្រមូលប្រាក់'))
 
 @section('loan_css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
 <style>
-    *, *::before, *::after { box-sizing: border-box; }
-
-    .lm-pay-index-wrap {
+    /* =========================================================
+       ULTIMATE POS STANDARD STYLE FOR PAYMENTS LEDGER
+       ========================================================= */
+    .lm-pay-content {
         font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: #f1f5f9;
-        color: #1e293b;
-        margin: -15px -15px 0 -15px;
-        min-height: calc(100vh - 60px);
+    }
+
+    /* Filters Component Styling */
+    .lm-pos-filter-box {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .lm-pos-filter-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px 18px;
+        align-items: end;
+        padding: 6px 0;
+    }
+    @media (max-width: 1024px) {
+        .lm-pos-filter-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .lm-pos-filter-grid { grid-template-columns: 1fr; }
+    }
+    .lm-pos-filter-field {
         display: flex;
         flex-direction: column;
+        gap: 4px;
     }
-
-    /* Enterprise Dark Header Strip */
-    .lm-pay-index-header {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-        color: #fff;
-        padding: 8px 18px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        position: relative;
-        z-index: 10;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    .lm-pay-index-header-left { display: flex; align-items: center; gap: 10px; }
-    .lm-pay-index-icon {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: rgba(16, 185, 129, 0.25);
-        border: 1px solid rgba(52, 211, 153, 0.35);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 15px;
-        color: #34d399;
-    }
-    .lm-pay-index-title { font-size: 15px; font-weight: 700; margin: 0; color: #f8fafc; }
-    .lm-pay-index-sub { font-size: 11px; color: #94a3b8; margin: 1px 0 0; }
-
-    .lm-pay-index-body {
-        flex: 1;
-        padding: 10px 14px;
-        background: #f1f5f9;
-    }
-
-    /* KPI Summary Row */
-    .lm-payment-summary-grid {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 8px;
-        margin-bottom: 10px;
-    }
-    @media (max-width: 1100px) {
-        .lm-payment-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    }
-    @media (max-width: 600px) {
-        .lm-payment-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    .lm-payment-summary-card {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-height: 55px;
-        padding: 8px 12px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-    }
-    .lm-payment-summary-icon {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        flex: 0 0 32px;
-        width: 32px;
-        height: 32px;
-        border-radius: 6px;
-        color: #fff;
-        font-size: 14px;
-    }
-    .lm-payment-summary-copy { min-width: 0; flex: 1; }
-    .lm-payment-summary-copy span {
-        display: block;
-        color: #64748b;
-        font-size: 9.5px;
+    .lm-pos-filter-field label {
+        font-size: 13px;
         font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.2px;
-    }
-    .lm-payment-summary-copy strong {
-        display: block;
-        margin: 1px 0 0;
         color: #0f172a;
-        font-size: 14px;
-        font-weight: 800;
-        line-height: 1.15;
+        margin: 0;
+        line-height: 1.2;
     }
-    .lm-payment-summary-copy small {
-        display: block;
-        font-size: 9.5px;
-        color: #94a3b8;
-    }
-    .lm-payment-summary-card.tone-green .lm-payment-summary-icon { background: #16a34a; }
-    .lm-payment-summary-card.tone-cyan .lm-payment-summary-icon { background: #0891b2; }
-    .lm-payment-summary-card.tone-blue .lm-payment-summary-icon { background: #2563eb; }
-    .lm-payment-summary-card.tone-violet .lm-payment-summary-icon { background: #7c3aed; }
-    .lm-payment-summary-card.tone-orange .lm-payment-summary-icon { background: #ea580c; }
-
-    /* Compact Filter Panel */
-    .lm-filter-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-        overflow: hidden;
-    }
-    .lm-filter-header {
+    .lm-pos-filter-field .form-control {
+        height: 38px;
         padding: 6px 12px;
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .lm-filter-title {
-        font-size: 11px;
-        font-weight: 700;
-        color: #334155;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        border: 0;
-        background: transparent;
-        cursor: pointer;
-        padding: 0;
-    }
-    .lm-filter-toggle-btn {
-        min-height: 24px;
-        padding: 2px 8px;
+        font-size: 13px;
+        color: #1e293b;
+        background: #ffffff;
         border: 1px solid #cbd5e1;
-        border-radius: 4px;
-        background: #fff;
-        color: #475569;
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        cursor: pointer;
-    }
-    .lm-filter-toggle-btn:hover { background: #f1f5f9; color: #0f172a; }
-    .lm-filter-card.is-collapsed .lm-filter-body { display: none; }
-    .lm-filter-body { padding: 8px 12px; }
-
-    /* Form Controls */
-    .lm-filter-grid {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 6px 8px;
-    }
-    @media (max-width: 1200px) {
-        .lm-filter-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 600px) {
-        .lm-filter-grid { grid-template-columns: 1fr 1fr; }
-    }
-    .lm-filter-field { display: flex; flex-direction: column; gap: 2px; }
-    .lm-filter-lbl { font-size: 9.5px; font-weight: 700; text-transform: uppercase; color: #64748b; }
-    .lm-filter-input {
-        height: 28px;
-        padding: 3px 6px;
-        font-size: 11px;
-        border: 1px solid #cbd5e1;
-        border-radius: 5px;
+        border-radius: 6px;
         outline: none;
         width: 100%;
+        box-shadow: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
     }
-    .lm-filter-input:focus { border-color: #16a34a; box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.12); }
+    .lm-pos-filter-field .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    .lm-pos-filter-field select.form-control {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
 
-    .lm-filter-actions {
+    .lm-pos-filter-actions {
         display: flex;
-        align-items: flex-end;
-        gap: 6px;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
     }
-    .lm-btn-filter {
-        height: 28px;
-        padding: 0 10px;
-        border-radius: 5px;
-        font-size: 11px;
+    .lm-btn-pos-filter {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 6px;
+        font-size: 13px;
         font-weight: 600;
+        background: #0284c7;
+        color: #fff;
+        border: none;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        border: 1px solid transparent;
+        gap: 6px;
+    }
+    .lm-btn-pos-filter:hover { background: #0369a1; }
+    .lm-btn-pos-reset {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
         text-decoration: none;
-    }
-    .lm-btn-filter-apply { background: #16a34a; color: #fff; border-color: #15803d; }
-    .lm-btn-filter-apply:hover { background: #15803d; color: #fff; }
-    .lm-btn-filter-reset { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
-    .lm-btn-filter-reset:hover { background: #e2e8f0; color: #0f172a; text-decoration: none; }
-
-    /* Main Table Card */
-    .lm-table-card {
-        background: #fff;
-        border-radius: 8px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
-        overflow: hidden;
-    }
-    .lm-table-card-head {
-        padding: 6px 12px;
-        background: #f8fafc;
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
+        display: inline-flex;
         align-items: center;
-        justify-content: space-between;
+        gap: 6px;
     }
+    .lm-btn-pos-reset:hover { background: #e2e8f0; color: #0f172a; text-decoration: none; }
+
+    /* Add Button Styling */
+    .lm-btn-pos-add {
+        background: #4f46e5 !important;
+        color: #ffffff !important;
+        border-radius: 999px !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        padding: 6px 20px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        border: none !important;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35) !important;
+        text-decoration: none !important;
+        transition: all 0.15s ease !important;
+    }
+    .lm-btn-pos-add:hover {
+        background: #4338ca !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 16px rgba(79, 70, 229, 0.45) !important;
+        color: #ffffff !important;
+        text-decoration: none !important;
+    }
+
+    /* =========================================================
+       DATATABLES TOOLBAR (Exact layout from Ultimate POS)
+       ========================================================= */
+    .lm-dt-top {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        gap: 12px !important;
+        margin-bottom: 16px !important;
+        width: 100% !important;
+    }
+
+    /* Left: Show [25 v] entries */
+    .lm-dt-length {
+        flex: 0 0 auto !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+    .lm-dt-length .dataTables_length {
+        display: inline-flex !important;
+        align-items: center !important;
+        margin: 0 !important;
+        float: none !important;
+    }
+    .lm-dt-length label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        margin: 0 !important;
+        font-size: 13px !important;
+        font-weight: 500 !important;
+        color: #334155 !important;
+        white-space: nowrap !important;
+    }
+    .lm-dt-length select {
+        height: 32px !important;
+        min-width: 60px !important;
+        padding: 2px 8px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 4px !important;
+        background: #ffffff !important;
+        color: #1e293b !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        outline: none !important;
+        cursor: pointer !important;
+    }
+
+    /* Middle: [ Copy ] [ Export CSV ] [ Export Excel ] [ Print ] [ Column visibility ] [ Export PDF v ] */
+    .lm-dt-buttons {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 1 1 auto !important;
+        gap: 6px !important;
+    }
+    .lm-dt-buttons .dt-buttons {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        float: none !important;
+        margin: 0 !important;
+    }
+    .lm-dt-buttons .btn,
+    .lm-dt-buttons .dt-button {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        color: #64748b !important;
+        font-size: 12px !important;
+        font-weight: 600 !important;
+        padding: 4px 10px !important;
+        height: 32px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 5px !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+        transition: all 0.15s ease !important;
+        white-space: nowrap !important;
+    }
+    .lm-dt-buttons .btn:hover,
+    .lm-dt-buttons .dt-button:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+    .lm-dt-buttons .btn i,
+    .lm-dt-buttons .dt-button i {
+        font-size: 12px !important;
+        color: #64748b !important;
+    }
+    .lm-dt-buttons .btn:hover i,
+    .lm-dt-buttons .dt-button:hover i {
+        color: #0f172a !important;
+    }
+
+    /* Right: Search ... */
+    .lm-dt-search {
+        flex: 0 0 auto !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+    }
+    .lm-dt-search .dataTables_filter {
+        display: inline-flex !important;
+        align-items: center !important;
+        margin: 0 !important;
+        float: none !important;
+    }
+    .lm-dt-search label {
+        margin: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+    }
+    .lm-dt-search input {
+        height: 32px !important;
+        width: 200px !important;
+        padding: 4px 10px !important;
+        font-size: 12px !important;
+        color: #1e293b !important;
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 4px !important;
+        outline: none !important;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    .lm-dt-search input:focus {
+        border-color: #4f46e5 !important;
+        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15) !important;
+    }
+
+    /* Table styling */
     .lm-table-dense {
-        width: 100%;
-        margin-bottom: 0;
+        width: 100% !important;
+        margin-bottom: 0 !important;
         border-collapse: collapse;
-        font-size: 11px;
+        font-size: 12px;
     }
     .lm-table-dense th {
         background: #f8fafc;
         color: #475569;
         font-weight: 700;
         text-transform: uppercase;
-        font-size: 9.5px;
+        font-size: 10px;
         letter-spacing: 0.2px;
-        padding: 6px 8px;
-        border-bottom: 1px solid #cbd5e1;
+        padding: 8px 10px;
+        border-bottom: 1px solid #cbd5e1 !important;
         white-space: nowrap;
     }
     .lm-table-dense td {
-        padding: 5px 8px;
+        padding: 8px 10px;
         border-bottom: 1px solid #f1f5f9;
         color: #1e293b;
-        vertical-align: middle;
+        vertical-align: middle !important;
     }
     .lm-table-dense tr:hover td { background-color: #f8fafc; }
 
     /* Badges & Buttons */
     .lm-badge {
-        font-size: 9px;
+        font-size: 10.5px;
         font-weight: 700;
-        padding: 2px 6px;
-        border-radius: 4px;
+        padding: 3px 8px;
+        border-radius: 5px;
         display: inline-flex;
         align-items: center;
-        gap: 3px;
+        gap: 4px;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
     }
     .lm-badge-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .lm-badge-warning { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-    .lm-badge-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .lm-badge-info { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
     .lm-badge-gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+    /* Professional Payment Type Badges */
+    .lm-type-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        line-height: 1.2;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        transition: all 0.15s ease;
+    }
+    .lm-type-monthly {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+    }
+    .lm-type-payoff {
+        background: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+    .lm-type-deposit, .lm-type-loan {
+        background: #f5f3ff;
+        color: #6d28d9;
+        border: 1px solid #ddd6fe;
+    }
+    .lm-type-advance {
+        background: #f0fdfa;
+        color: #0f766e;
+        border: 1px solid #99f6e4;
+    }
+    .lm-type-penalty {
+        background: #fff1f2;
+        color: #be123c;
+        border: 1px solid #fecdd3;
+    }
+    .lm-type-default {
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Professional Payment Method Badges */
+    .lm-method-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: #f8fafc;
+        color: #334155;
+        border: 1px solid #e2e8f0;
+        line-height: 1.2;
+    }
+    .lm-method-cash { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .lm-method-bank { background: #f0f9ff; color: #0369a1; border-color: #bae6fd; }
+    .lm-method-aba { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
+    .lm-method-acleda { background: #f0fdfa; color: #115e59; border-color: #99f6e4; }
+    .lm-method-wing { background: #fefce8; color: #854d0e; border-color: #fef08a; }
 
     .lm-btn-tbl {
         display: inline-flex;
         align-items: center;
         gap: 3px;
-        padding: 2px 6px;
-        font-size: 10px;
+        padding: 3px 8px;
+        font-size: 11px;
         font-weight: 600;
-        border-radius: 4px;
+        border-radius: 5px;
         border: 1px solid transparent;
         cursor: pointer;
         text-decoration: none;
+        transition: all 0.15s ease;
     }
     .lm-btn-tbl-info { background: #e0f2fe; color: #0284c7; border-color: #bae6fd; }
     .lm-btn-tbl-info:hover { background: #bae6fd; color: #0369a1; text-decoration: none; }
@@ -289,202 +405,150 @@
     .lm-btn-tbl-del { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
     .lm-btn-tbl-del:hover { background: #fecaca; color: #991b1b; }
 
-    /* Mobile Responsive Card List */
-    .lm-payment-mobile-list { display: none; }
-    @media (max-width: 767px) {
-        .lm-table-dense { display: none; }
-        .lm-payment-mobile-list { display: block; padding: 8px; }
-        .lm-payment-mobile-card {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #fff;
-            padding: 8px;
-            margin-bottom: 6px;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-        }
-        .lm-payment-mobile-card-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #f1f5f9;
-            padding-bottom: 4px;
-            margin-bottom: 4px;
-        }
-        .lm-payment-mobile-actions {
-            display: flex;
-            gap: 4px;
-            margin-top: 6px;
-            padding-top: 4px;
-            border-top: 1px dashed #e2e8f0;
-        }
+    /* Bottom footer in DataTable */
+    .lm-dt-bottom {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+        margin-top: 14px !important;
+        padding-top: 10px !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-info { font-size: 12px; color: #64748b; font-weight: 500; }
+    .lm-dt-pagination .pagination { margin: 0 !important; }
+
+    @media (max-width: 991px) {
+        .lm-dt-top { flex-wrap: wrap !important; }
+        .lm-dt-search { width: 100%; justify-content: flex-start !important; }
+        .lm-dt-search input { width: 100% !important; }
     }
 </style>
 @endsection
 
 @section('content_body')
-<div class="lm-pay-index-wrap">
-    <!-- Enterprise Dark Header Strip -->
-    <header class="lm-pay-index-header">
-        <div class="lm-pay-index-header-left">
-            <div class="lm-pay-index-icon">
-                <i class="fa fa-money"></i>
-            </div>
-            <div>
-                <h1 class="lm-pay-index-title">{{ $lmText('Payments & Collection Ledger', 'បញ្ជីការទូទាត់ និងប្រមូលប្រាក់') }}</h1>
-                <p class="lm-pay-index-sub">{{ $lmText('Manage receipts, installment collections and pay-offs', 'គ្រប់គ្រងបង្កាន់ដៃ ការប្រមូលប្រាក់រំលស់ និងការទូទាត់ផ្តាច់') }}</p>
-            </div>
-        </div>
-    </header>
+<div class="lm-pay-content">
+    <!-- Header Section (Ultimate POS Standard) -->
+    <section class="content-header no-print">
+        <h1 class="tw-text-xl md:tw-text-3xl tw-font-bold tw-text-black">
+            {{ $lmText('Payments', 'ការទូទាត់ប្រាក់') }}
+            <small class="tw-text-sm md:tw-text-base tw-text-gray-700 tw-font-semibold">{{ $lmText('Manage your payments & collection ledger', 'គ្រប់គ្រងបញ្ជីការទូទាត់ និងប្រមូលប្រាក់') }}</small>
+        </h1>
+    </section>
 
-    <!-- Main Workspace Body -->
-    <div class="lm-pay-index-body">
-        <!-- Top KPI Summary Cards -->
-        <div class="lm-payment-summary-grid">
-            <div class="lm-payment-summary-card tone-green">
-                <div class="lm-payment-summary-icon"><i class="fa fa-money"></i></div>
-                <div class="lm-payment-summary-copy">
-                    <span>{{ $lmText('Filtered Total', 'ទឹកប្រាក់សរុប') }}</span>
-                    <strong>$ {{ number_format($summary['amount'] ?? 0, 2) }}</strong>
-                    <small>{{ $lmText('Matching filters', 'តាមលក្ខខណ្ឌចម្រោះ') }}</small>
-                </div>
-            </div>
+    <!-- Main Content Section -->
+    <section class="content no-print" style="padding-top: 10px;">
+        
+        <!-- =========================================================
+             1. FILTERS WIDGET (Ultimate POS Component Filters)
+             ========================================================= -->
+        @component('components.filters', ['title' => $lmText('Filters', 'តម្រងស្វែងរក')])
+            <form method="GET" action="{{ route('loan-management.payments.index') }}" id="loanPaymentFilterForm">
+                <div class="lm-pos-filter-grid">
+                    <!-- Row 1, Col 1: Business Location -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('Business Location:', 'ទីតាំងសាខា:') }}</label>
+                        <select name="location_id" class="form-control" onchange="this.form.submit()">
+                            <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                            @foreach($locations as $id => $name)
+                                <option value="{{ $id }}" {{ (string)($filters['location_id'] ?? '') === (string)$id ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-            <div class="lm-payment-summary-card tone-cyan">
-                <div class="lm-payment-summary-icon"><i class="fa fa-list"></i></div>
-                <div class="lm-payment-summary-copy">
-                    <span>{{ $lmText('Payments Count', 'ចំនួនបង្កាន់ដៃ') }}</span>
-                    <strong>{{ number_format($summary['count'] ?? 0) }}</strong>
-                    <small>{{ $lmText('Total receipts', 'បង្កាន់ដៃសរុប') }}</small>
-                </div>
-            </div>
+                    <!-- Row 1, Col 2: Customer -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('Customer:', 'អតិថិជន:') }}</label>
+                        <select name="customer" class="form-control" onchange="this.form.submit()">
+                            <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                            @foreach($customers as $cName)
+                                <option value="{{ $cName }}" {{ ($filters['customer'] ?? '') === $cName ? 'selected' : '' }}>{{ $cName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-            <div class="lm-payment-summary-card tone-blue">
-                <div class="lm-payment-summary-icon"><i class="fa fa-bank"></i></div>
-                <div class="lm-payment-summary-copy">
-                    <span>{{ $lmText('Installment Payments', 'ការបង់រំលស់') }}</span>
-                    <strong>$ {{ number_format($summary['loan_amount'] ?? 0, 2) }}</strong>
-                    <small>{{ number_format($summary['loan_count'] ?? 0) }} {{ $lmText('records', 'ប្រតិបត្តិការ') }}</small>
-                </div>
-            </div>
+                    <!-- Row 1, Col 3: Payment Status -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('Payment Status:', 'ស្ថានភាពទូទាត់:') }}</label>
+                        <select name="status" class="form-control" onchange="this.form.submit()">
+                            <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                            @foreach($statuses as $statusKey => $label)
+                                <option value="{{ $statusKey }}" {{ ($filters['status'] ?? '') == $statusKey ? 'selected' : '' }}>{{ ucfirst($label) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-            <div class="lm-payment-summary-card tone-violet">
-                <div class="lm-payment-summary-icon"><i class="fa fa-calendar"></i></div>
-                <div class="lm-payment-summary-copy">
-                    <span>{{ $lmText('Monthly Scheduled', 'បង់តាមវគ្គ') }}</span>
-                    <strong>$ {{ number_format($summary['monthly_amount'] ?? 0, 2) }}</strong>
-                    <small>{{ number_format($summary['monthly_count'] ?? 0) }} {{ $lmText('records', 'ប្រតិបត្តិការ') }}</small>
-                </div>
-            </div>
+                    <!-- Row 1, Col 4: Date Range -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('Date Range:', 'ចន្លោះកាលបរិច្ឆេទ:') }}</label>
+                        <input type="text" name="date_range" id="loanPaymentDateRange" class="form-control" value="{{ $dateRangeDisplay }}" placeholder="MM-DD-YYYY - MM-DD-YYYY" autocomplete="off">
+                        <input type="hidden" name="date_from" value="{{ $dateFrom }}">
+                        <input type="hidden" name="date_to" value="{{ $dateTo }}">
+                    </div>
 
-            <div class="lm-payment-summary-card tone-orange">
-                <div class="lm-payment-summary-icon"><i class="fa fa-check-circle"></i></div>
-                <div class="lm-payment-summary-copy">
-                    <span>{{ $lmText('Pay Off / Closed', 'បង់ផ្តាច់') }}</span>
-                    <strong>$ {{ number_format($summary['payoff_amount'] ?? 0, 2) }}</strong>
-                    <small>{{ number_format($summary['payoff_count'] ?? 0) }} {{ $lmText('records', 'ប្រតិបត្តិការ') }}</small>
-                </div>
-            </div>
-        </div>
+                    <!-- Row 2, Col 1: User -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('User:', 'អ្នកប្រើប្រាស់ / បុគ្គលិក:') }}</label>
+                        <select name="user_id" class="form-control" onchange="this.form.submit()">
+                            <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                            @foreach($users as $uId => $uName)
+                                <option value="{{ $uId }}" {{ (string)($filters['user_id'] ?? '') === (string)$uId ? 'selected' : '' }}>{{ $uName }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-        <!-- Filter Panel -->
-        <div class="lm-filter-card is-collapsed" id="loanPaymentFilterPanel">
-            <div class="lm-filter-header">
-                <button type="button" class="lm-filter-title" id="loanPaymentFilterTitle">
-                    <i class="fa fa-filter text-primary"></i> {{ $lmText('Filters & Advanced Search', 'តម្រង និងស្វែងរកកម្រិតខ្ពស់') }}
-                </button>
-                <button type="button" class="lm-filter-toggle-btn" id="loanPaymentFilterToggle">
-                    <span id="loanPaymentFilterToggleText">{{ $lmText('Expand', 'ពង្រីក') }}</span>
-                    <i class="fa fa-chevron-down" id="loanPaymentFilterToggleIcon" aria-hidden="true"></i>
-                </button>
-            </div>
-            <div class="lm-filter-body" id="loanPaymentFilterBody">
-                <form method="GET" action="{{ route('loan-management.payments.index') }}" id="loanPaymentFilterForm">
-                    <div class="lm-filter-grid">
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Search', 'ស្វែងរក') }}</label>
-                            <input type="text" name="search" class="lm-filter-input" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $lmText('Receipt, loan, customer...', 'បង្កាន់ដៃ, កិច្ចសន្យា...') }}">
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Installment #', 'លេខកិច្ចសន្យា') }}</label>
-                            <input type="text" name="loan_number" class="lm-filter-input" value="{{ $filters['loan_number'] ?? '' }}" placeholder="LN-...">
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Customer Name/Phone', 'ឈ្មោះ/ទូរស័ព្ទ') }}</label>
-                            <input type="text" name="customer" class="lm-filter-input" value="{{ $filters['customer'] ?? '' }}" placeholder="{{ $lmText('Name or phone', 'ឈ្មោះ ឬទូរស័ព្ទ') }}">
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Payment Method', 'វិធីទូទាត់') }}</label>
-                            <select name="method" class="lm-filter-input">
-                                <option value="">{{ $lmText('-- All Methods --', '-- គ្រប់វិធីទូទាត់ --') }}</option>
-                                @foreach($methods as $key => $label)
-                                    @php
-                                        $displayFilterMethod = (string) $label;
-                                        if (str_starts_with($displayFilterMethod, 'lang_v1.') || str_starts_with($displayFilterMethod, 'messages.')) {
-                                            $rawFilterKey = str_replace(['lang_v1.', 'messages.'], '', $displayFilterMethod);
-                                            $displayFilterMethod = $rawFilterKey === 'advance' ? $lmText('Advance Payment', 'ប្រាក់បង់មុន / បុរេប្រទាន (Advance)') : ucfirst(str_replace('_', ' ', $rawFilterKey));
-                                        }
-                                    @endphp
-                                    <option value="{{ $label }}" {{ ($filters['method'] ?? '') == $label || ($filters['method'] ?? '') == $key ? 'selected' : '' }}>{{ $displayFilterMethod }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Payment Type', 'ប្រភេទបង់') }}</label>
-                            <select name="payment_type" class="lm-filter-input">
-                                <option value="">{{ $lmText('-- All Types --', '-- គ្រប់ប្រភេទ --') }}</option>
-                                <option value="loan" {{ ($filters['payment_type'] ?? '') === 'loan' ? 'selected' : '' }}>{{ $lmText('Installment', 'រំលស់') }}</option>
-                                <option value="monthly" {{ ($filters['payment_type'] ?? '') === 'monthly' ? 'selected' : '' }}>{{ $lmText('Monthly', 'ប្រចាំខែ') }}</option>
-                                <option value="payoff" {{ ($filters['payment_type'] ?? '') === 'payoff' ? 'selected' : '' }}>{{ $lmText('Pay Off', 'បង់ផ្តាច់') }}</option>
-                            </select>
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Location / Branch', 'សាខា') }}</label>
-                            <select name="location_id" class="lm-filter-input">
-                                <option value="">{{ $lmText('-- All Branches --', '-- គ្រប់សាខា --') }}</option>
-                                @foreach($locations as $id => $name)
-                                    <option value="{{ $id }}" {{ (string)($filters['location_id'] ?? '') === (string)$id ? 'selected' : '' }}>{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Status', 'ស្ថានភាព') }}</label>
-                            <select name="status" class="lm-filter-input">
-                                <option value="">{{ $lmText('-- All Status --', '-- គ្រប់ស្ថានភាព --') }}</option>
-                                @foreach($statuses as $status => $label)
-                                    <option value="{{ $status }}" {{ ($filters['status'] ?? '') == $status ? 'selected' : '' }}>{{ ucfirst($label) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Date From', 'ពីថ្ងៃ') }}</label>
-                            <input type="date" name="date_from" class="lm-filter-input" value="{{ $filters['date_from'] ?? '' }}">
-                        </div>
-                        <div class="lm-filter-field">
-                            <label class="lm-filter-lbl">{{ $lmText('Date To', 'ដល់ថ្ងៃ') }}</label>
-                            <input type="date" name="date_to" class="lm-filter-input" value="{{ $filters['date_to'] ?? '' }}">
-                        </div>
-                        <div class="lm-filter-field lm-filter-actions" style="grid-column: span 3;">
-                            <button type="submit" class="lm-btn-filter lm-btn-filter-apply" id="loanPaymentFilterApply">
-                                <i class="fa fa-filter"></i> {{ $lmText('Apply Filter', 'អនុវត្ត') }}
+                    <!-- Row 2, Col 2: Payment Type -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('Payment Type:', 'ប្រភេទនៃការបង់:') }}</label>
+                        <select name="payment_type" class="form-control" onchange="this.form.submit()">
+                            <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                            <option value="loan" {{ ($filters['payment_type'] ?? '') === 'loan' ? 'selected' : '' }}>{{ $lmText('Installment', 'រំលស់') }}</option>
+                            <option value="monthly" {{ ($filters['payment_type'] ?? '') === 'monthly' ? 'selected' : '' }}>{{ $lmText('Monthly', 'ប្រចាំខែ') }}</option>
+                            <option value="payoff" {{ ($filters['payment_type'] ?? '') === 'payoff' ? 'selected' : '' }}>{{ $lmText('Pay Off', 'បង់ផ្តាច់') }}</option>
+                        </select>
+                    </div>
+
+                    <!-- Row 2, Col 3: Filter / Reset Actions -->
+                    <div class="lm-pos-filter-field">
+                        <label>&nbsp;</label>
+                        <div class="lm-pos-filter-actions">
+                            <button type="submit" class="lm-btn-pos-filter">
+                                <i class="fa fa-filter"></i> {{ $lmText('Filter', 'ចម្រាញ់') }}
                             </button>
-                            <a href="{{ route('loan-management.payments.index') }}" class="lm-btn-filter lm-btn-filter-reset" id="loanPaymentFilterReset">
+                            <a href="{{ route('loan-management.payments.index') }}" class="lm-btn-pos-reset">
                                 <i class="fa fa-refresh"></i> {{ $lmText('Reset', 'កំណត់ឡើងវិញ') }}
                             </a>
                         </div>
                     </div>
-                </form>
-            </div>
-        </div>
 
-        <!-- Payments Table -->
-        <div class="lm-table-card">
-            <div class="lm-table-card-head">
-                <h3 style="font-size: 11px; font-weight: 700; color: #334155; margin: 0; text-transform: uppercase;">
-                    <i class="fa fa-list text-primary"></i> {{ $lmText('Payment Records Ledger', 'បញ្ជីប្រតិបត្តិការទូទាត់') }}
-                </h3>
-            </div>
+                    <!-- Row 2, Col 4: Payment Method -->
+                    <div class="lm-pos-filter-field">
+                        <label>{{ $lmText('Payment Method:', 'វិធីសាស្ត្រទូទាត់:') }}</label>
+                        <select name="method" class="form-control" onchange="this.form.submit()">
+                            <option value="">{{ $lmText('All', 'ទាំងអស់') }}</option>
+                            @foreach($methods as $key => $label)
+                                @php
+                                    $displayFilterMethod = (string) $label;
+                                    if (str_starts_with($displayFilterMethod, 'lang_v1.') || str_starts_with($displayFilterMethod, 'messages.')) {
+                                        $rawFilterKey = str_replace(['lang_v1.', 'messages.'], '', $displayFilterMethod);
+                                        $displayFilterMethod = $rawFilterKey === 'advance' ? $lmText('Advance Payment', 'ប្រាក់បង់មុន / បុរេប្រទាន') : ucfirst(str_replace('_', ' ', $rawFilterKey));
+                                    }
+                                @endphp
+                                <option value="{{ $label }}" {{ ($filters['method'] ?? '') == $label || ($filters['method'] ?? '') == $key ? 'selected' : '' }}>{{ $displayFilterMethod }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </form>
+        @endcomponent
+
+        <!-- =========================================================
+             2. TABLE WIDGET (Ultimate POS Component Widget)
+             ========================================================= -->
+        @component('components.widget', ['class' => 'box-primary', 'title' => $lmText('All payments', 'បញ្ជីការទូទាត់ទាំងអស់')])
             <div class="table-responsive">
-                <table class="lm-table-dense">
+                <table class="lm-table-dense table table-bordered table-striped table-hover" id="loanPaymentsTable">
                     <thead>
                         <tr>
                             <th>{{ $lmText('Receipt #', 'លេខបង្កាន់ដៃ') }}</th>
@@ -497,7 +561,7 @@
                             <th class="text-center">{{ $lmText('Status', 'ស្ថានភាព') }}</th>
                             <th>{{ $lmText('Reference', 'លេខយោង') }}</th>
                             <th>{{ $lmText('Received By', 'អ្នកទទួលប្រាក់') }}</th>
-                            <th class="text-center" style="width: 120px;">{{ $lmText('Action', 'សកម្មភាព') }}</th>
+                            <th class="text-center no-export" style="width: 100px;">{{ $lmText('Action', 'សកម្មភាព') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -505,6 +569,40 @@
                         @php
                             $paymentStatus = strtolower((string)($payment->status ?? 'confirmed'));
                             $isPaid = in_array($paymentStatus, ['paid', 'confirmed', 'completed']);
+
+                            $rawType = strtolower(trim((string)($payment->payment_type ?? 'monthly')));
+                            $typeLabel = \Modules\LoanManagement\Http\Controllers\LoanPaymentController::paymentTypeLabel($rawType);
+                            $typeClass = match($rawType) {
+                                'payoff', 'pay_off' => 'lm-type-payoff',
+                                'loan', 'down_payment', 'downpayment', 'deposit', 'initial' => 'lm-type-deposit',
+                                'advance', 'prepayment' => 'lm-type-advance',
+                                'penalty', 'late_fee' => 'lm-type-penalty',
+                                default => 'lm-type-monthly',
+                            };
+                            $typeIcon = match($rawType) {
+                                'payoff', 'pay_off' => 'fa fa-check-circle',
+                                'loan', 'down_payment', 'downpayment', 'deposit', 'initial' => 'fa fa-bookmark',
+                                'advance', 'prepayment' => 'fa fa-forward',
+                                'penalty', 'late_fee' => 'fa fa-exclamation-circle',
+                                default => 'fa fa-calendar-check-o',
+                            };
+
+                            $rawMethod = strtolower(trim((string)($payment->payment_method ?? 'cash')));
+                            $methodClass = match(true) {
+                                str_contains($rawMethod, 'cash') => 'lm-method-cash',
+                                str_contains($rawMethod, 'aba') => 'lm-method-aba',
+                                str_contains($rawMethod, 'acleda') => 'lm-method-acleda',
+                                str_contains($rawMethod, 'wing') => 'lm-method-wing',
+                                str_contains($rawMethod, 'bank') || str_contains($rawMethod, 'transfer') => 'lm-method-bank',
+                                default => '',
+                            };
+                            $methodIcon = match(true) {
+                                str_contains($rawMethod, 'cash') => 'fa fa-money',
+                                str_contains($rawMethod, 'aba') || str_contains($rawMethod, 'acleda') || str_contains($rawMethod, 'bank') || str_contains($rawMethod, 'transfer') => 'fa fa-university',
+                                str_contains($rawMethod, 'wing') => 'fa fa-mobile',
+                                str_contains($rawMethod, 'card') => 'fa fa-credit-card',
+                                default => 'fa fa-credit-card-alt',
+                            };
                         @endphp
                         <tr>
                             <td>
@@ -512,7 +610,7 @@
                                     {{ $payment->receipt_number ?? ('#'.$payment->id) }}
                                 </a>
                             </td>
-                            <td>{{ ! empty($payment->paid_date) ? \Carbon\Carbon::parse($payment->paid_date)->format('d-m-Y') : '-' }}</td>
+                            <td>{{ ! empty($payment->paid_date) ? \Carbon\Carbon::parse($payment->paid_date)->format('Y-m-d') : '-' }}</td>
                             <td>
                                 @if(Route::has('loan-management.loans.view') && ! empty($payment->loan_id))
                                     <a href="{{ route('loan-management.loans.view', $payment->loan_id) }}" target="_blank" style="font-weight: 600; color: #0f172a;">
@@ -529,16 +627,16 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="lm-badge lm-badge-info">
-                                    {{ \Modules\LoanManagement\Http\Controllers\LoanPaymentController::paymentTypeLabel($payment->payment_type ?? 'monthly') }}
+                                <span class="lm-type-badge {{ $typeClass }}">
+                                    <i class="{{ $typeIcon }}"></i> {{ $typeLabel }}
                                 </span>
                             </td>
                             <td>
-                                <span class="lm-badge lm-badge-gray">
-                                    {{ $payment->payment_method ?? '-' }}
+                                <span class="lm-method-badge {{ $methodClass }}">
+                                    <i class="{{ $methodIcon }}"></i> {{ $payment->payment_method ?? '-' }}
                                 </span>
                             </td>
-                            <td class="text-right" style="font-weight: 700; color: #16a34a; font-size: 12px;">
+                            <td class="text-right" style="font-weight: 700; color: #16a34a; font-size: 13px;">
                                 $ {{ number_format((float) ($payment->amount ?? 0), 2) }}
                             </td>
                             <td class="text-center">
@@ -567,102 +665,154 @@
                             </td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="11" class="text-center text-muted" style="padding: 16px;">
-                                <i class="fa fa-info-circle"></i> {{ $lmText('No payments found matching your criteria.', 'រកមិនឃើញទិន្នន័យការទូទាត់ទេ។') }}
-                            </td>
-                        </tr>
                     @endforelse
                     </tbody>
                 </table>
             </div>
+        @endcomponent
 
-            <!-- Mobile Card List -->
-            <div class="lm-payment-mobile-list">
-                @forelse($payments as $payment)
-                    @php
-                        $paymentShowUrl = route('loan-management.payments.show', $payment->id);
-                        $paymentStatus = $payment->status ?? '-';
-                        $paymentIsPaid = in_array($paymentStatus, ['paid', 'confirmed', 'completed']);
-                    @endphp
-                    <div class="lm-payment-mobile-card">
-                        <div class="lm-payment-mobile-card-top">
-                            <div>
-                                <a href="{{ $paymentShowUrl }}" style="font-weight: 700; color: #2563eb;">{{ $payment->receipt_number ?? ('#'.$payment->id) }}</a>
-                                <small style="display:block; color: #64748b;">{{ ! empty($payment->paid_date) ? \Carbon\Carbon::parse($payment->paid_date)->format('d-m-Y') : '-' }}</small>
-                            </div>
-                            <strong style="color: #16a34a; font-size: 13px;">$ {{ number_format((float) ($payment->amount ?? 0), 2) }}</strong>
-                        </div>
-                        <div style="font-size: 11px; margin-bottom: 4px;">
-                            <strong>{{ $payment->customer_name ?? '-' }}</strong> &bull; <span class="text-muted">{{ $payment->loan_number ?? '-' }}</span>
-                        </div>
-                        <div class="lm-payment-mobile-actions">
-                            <a href="{{ $paymentShowUrl }}" class="lm-btn-tbl lm-btn-tbl-info"><i class="fa fa-eye"></i> {{ $lmText('View', 'មើល') }}</a>
-                            @if(\Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.payment|loan_management.payments.create|loan_management.edit'))
-                                <a href="{{ route('loan-management.payments.edit', $payment->id) }}" class="lm-btn-tbl lm-btn-tbl-edit"><i class="fa fa-pencil"></i> {{ $lmText('Edit', 'កែប្រែ') }}</a>
-                            @endif
-                        </div>
-                    </div>
-                @empty
-                    <div class="text-center text-muted" style="padding: 12px;">{{ $lmText('No payments found.', 'រកមិនឃើញទិន្នន័យទេ។') }}</div>
-                @endforelse
-            </div>
-
-            @if($payments->hasPages())
-            <div style="padding: 8px 12px; border-top: 1px solid #e2e8f0; text-align: center;">
-                {{ $payments->links() }}
-            </div>
-            @endif
-        </div>
-    </div>
+    </section>
 </div>
 @endsection
 
 @section('loan_js')
+<script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        var panel = document.getElementById('loanPaymentFilterPanel');
-        var title = document.getElementById('loanPaymentFilterTitle');
-        var toggle = document.getElementById('loanPaymentFilterToggle');
-        var toggleText = document.getElementById('loanPaymentFilterToggleText');
-        var toggleIcon = document.getElementById('loanPaymentFilterToggleIcon');
-        var form = document.getElementById('loanPaymentFilterForm');
-        var reset = document.getElementById('loanPaymentFilterReset');
-        var storageKey = 'lm_payment_filters_collapsed_v1';
+    jQuery(document).ready(function ($) {
+        // Date Range Picker initialization
+        var $dateRange = $('#loanPaymentDateRange');
+        var $filterForm = $('#loanPaymentFilterForm');
+        var displayDateFormat = window.moment_date_format || 'MM-DD-YYYY';
+        var dateRangeSettings = window.dateRangeSettings ? $.extend(true, {}, window.dateRangeSettings) : {};
 
-        if (!panel || !toggle || !toggleText || !toggleIcon) {
-            return;
+        if (window.moment && $.fn.daterangepicker && $dateRange.length) {
+            var startDate = @json($dateFrom) ? moment(@json($dateFrom)) : moment().subtract(29, 'days');
+            var endDate = @json($dateTo) ? moment(@json($dateTo)) : moment();
+
+            $dateRange.daterangepicker($.extend(true, {}, dateRangeSettings, {
+                autoUpdateInput: false,
+                showDropdowns: true,
+                linkedCalendars: false,
+                startDate: startDate,
+                endDate: endDate,
+                parentEl: 'body',
+                opens: 'right',
+                drops: 'auto',
+                ranges: {
+                    'Today': [moment(), moment()],
+                    'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                    'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                    'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                    'This Month': [moment().startOf('month'), moment().endOf('month')],
+                    'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                    'This Year': [moment().startOf('year'), moment().endOf('year')],
+                    'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')]
+                },
+                locale: $.extend(true, {}, dateRangeSettings.locale || {}, {
+                    format: displayDateFormat,
+                    separator: ' - ',
+                    applyLabel: @json($lmText('Apply', 'អនុវត្ត')),
+                    cancelLabel: @json($lmText('Clear', 'សម្អាត')),
+                    customRangeLabel: @json($lmText('Custom Range', 'ជ្រើសរើសផ្ទាល់')),
+                    toLabel: '~'
+                })
+            }));
+
+            $dateRange
+                .on('apply.daterangepicker', function (event, picker) {
+                    $(this).val(picker.startDate.format(displayDateFormat) + ' - ' + picker.endDate.format(displayDateFormat));
+                    $filterForm.find('[name="date_from"]').val(picker.startDate.format('YYYY-MM-DD'));
+                    $filterForm.find('[name="date_to"]').val(picker.endDate.format('YYYY-MM-DD'));
+                    $filterForm.submit();
+                })
+                .on('cancel.daterangepicker', function () {
+                    $(this).val('');
+                    $filterForm.find('[name="date_from"], [name="date_to"]').val('');
+                    $filterForm.submit();
+                });
         }
 
-        function setCollapsed(collapsed) {
-            panel.classList.toggle('is-collapsed', collapsed);
-            toggleText.textContent = collapsed ? '{{ $lmText("Expand", "ពង្រីក") }}' : '{{ $lmText("Collapse", "បង្រួម") }}';
-            toggleIcon.classList.toggle('fa-chevron-down', collapsed);
-            toggleIcon.classList.toggle('fa-chevron-up', !collapsed);
-            try { window.localStorage.setItem(storageKey, collapsed ? '1' : '0'); } catch (e) {}
-        }
+        // Initialize DataTables with exact toolbar
+        if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#loanPaymentsTable')) {
+            var tableButtons = [];
+            if ($.fn.dataTable.Buttons) {
+                tableButtons = [
+                    {
+                        extend: 'copy',
+                        text: 'Copy',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'csv',
+                        text: '<i class="fa fa-file-text-o"></i> Export CSV',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<i class="fa fa-file-excel-o"></i> Export Excel',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fa fa-print"></i> Print',
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible:not(.no-export)', stripHtml: true }
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fa fa-columns"></i> Column visibility',
+                        className: 'btn btn-default btn-sm'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fa fa-file-pdf-o"></i> Export PDF <i class="fa fa-caret-down" style="margin-left:2px;"></i>',
+                        className: 'btn btn-default btn-sm',
+                        orientation: 'landscape',
+                        pageSize: 'A4',
+                        exportOptions: { columns: ':visible:not(.no-export)' }
+                    }
+                ];
+            }
 
-        function togglePanel() {
-            setCollapsed(!panel.classList.contains('is-collapsed'));
-        }
-
-        try {
-            var savedState = window.localStorage.getItem(storageKey);
-            setCollapsed(savedState === null ? true : savedState === '1');
-        } catch (e) {
-            setCollapsed(true);
-        }
-
-        toggle.addEventListener('click', togglePanel);
-        if (title) {
-            title.addEventListener('click', togglePanel);
-        }
-        if (form) {
-            form.addEventListener('submit', function () { setCollapsed(true); });
-        }
-        if (reset) {
-            reset.addEventListener('click', function () {
-                try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
+            $('#loanPaymentsTable').DataTable({
+                dom: '<"lm-dt-top"<"lm-dt-length"l><"lm-dt-buttons"B><"lm-dt-search"f>>rt<"lm-dt-bottom"<"lm-dt-info"i><"lm-dt-pagination"p>>',
+                buttons: tableButtons,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "{{ $lmText('All', 'ទាំងអស់') }}"]],
+                order: [[1, 'desc']],
+                autoWidth: false,
+                language: {
+                    search: '',
+                    searchPlaceholder: 'Search ...',
+                    lengthMenu: 'Show _MENU_ entries',
+                    emptyTable: '{{ $lmText("No payments found matching your criteria.", "រកមិនឃើញទិន្នន័យការទូទាត់ទេ។") }}',
+                    info: '{{ $lmText("Showing _START_ to _END_ of _TOTAL_ entries", "បង្ហាញពី _START_ ដល់ _END_ នៃ _TOTAL_ ធាតុ") }}',
+                    infoEmpty: '{{ $lmText("Showing 0 to 0 of 0 entries", "បង្ហាញ 0 នៃ 0 ធាតុ") }}',
+                    infoFiltered: '({{ $lmText("filtered from _MAX_ total entries", "ចម្រាញ់ចេញពី _MAX_ ធាតុសរុប") }})',
+                    paginate: {
+                        first: '{{ $lmText("First", "ដំបូង") }}',
+                        last: '{{ $lmText("Last", "ចុងក្រោយ") }}',
+                        next: '{{ $lmText("Next", "បន្ទាប់") }}',
+                        previous: '{{ $lmText("Previous", "មុន") }}'
+                    }
+                },
+                columnDefs: [
+                    { targets: [6], className: 'text-right' },
+                    { targets: [7, 10], className: 'text-center' },
+                    { targets: [10], orderable: false, className: 'no-export' }
+                ]
             });
         }
     });

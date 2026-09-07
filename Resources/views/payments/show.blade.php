@@ -100,6 +100,26 @@
     .lm-status-pill.pending { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
     .lm-status-pill.failed, .lm-status-pill.cancelled { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
 
+    /* Professional Payment Type Badges */
+    .lm-type-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        line-height: 1.2;
+        letter-spacing: 0.2px;
+        white-space: nowrap;
+    }
+    .lm-type-monthly { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    .lm-type-payoff { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+    .lm-type-deposit, .lm-type-loan { background: #f5f3ff; color: #6d28d9; border: 1px solid #ddd6fe; }
+    .lm-type-advance { background: #f0fdfa; color: #0f766e; border: 1px solid #99f6e4; }
+    .lm-type-penalty { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+    .lm-type-default { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
     .lm-btn-nav {
         display: inline-flex;
         align-items: center;
@@ -289,7 +309,29 @@
             </div>
             <div class="lm-kpi-card">
                 <div class="lm-kpi-lbl">{{ $lmText('Payment Type', 'ប្រភេទ') }}</div>
-                <div class="lm-kpi-val" style="font-size: 13px;">{{ \Modules\LoanManagement\Http\Controllers\LoanPaymentController::paymentTypeLabel($payment->payment_type ?? 'monthly') }}</div>
+                <div class="lm-kpi-val" style="font-size: 13px; margin-top: 4px;">
+                    @php
+                        $showRawType = strtolower(trim((string)($payment->payment_type ?? 'monthly')));
+                        $showTypeClass = match($showRawType) {
+                            'payoff', 'pay_off' => 'lm-type-payoff',
+                            'loan', 'down_payment', 'downpayment', 'deposit', 'initial' => 'lm-type-deposit',
+                            'advance', 'prepayment' => 'lm-type-advance',
+                            'penalty', 'late_fee' => 'lm-type-penalty',
+                            default => 'lm-type-monthly',
+                        };
+                        $showTypeIcon = match($showRawType) {
+                            'payoff', 'pay_off' => 'fa fa-check-circle',
+                            'loan', 'down_payment', 'downpayment', 'deposit', 'initial' => 'fa fa-bookmark',
+                            'advance', 'prepayment' => 'fa fa-forward',
+                            'penalty', 'late_fee' => 'fa fa-exclamation-circle',
+                            default => 'fa fa-calendar-check-o',
+                        };
+                    @endphp
+                    <span class="lm-type-badge {{ $showTypeClass }}">
+                        <i class="{{ $showTypeIcon }}"></i>
+                        {{ \Modules\LoanManagement\Http\Controllers\LoanPaymentController::paymentTypeLabel($payment->payment_type ?? 'monthly') }}
+                    </span>
+                </div>
             </div>
             <div class="lm-kpi-card">
                 <div class="lm-kpi-lbl">{{ $lmText('Remaining Loan Balance', 'សមតុល្យកិច្ចសន្យា') }}</div>

@@ -16,8 +16,10 @@ use Modules\LoanManagement\Http\Controllers\LoanInstallmentListController;
 use Modules\LoanManagement\Http\Controllers\LoanLocationController;
 use Modules\LoanManagement\Http\Controllers\LoanPaymentController;
 use Modules\LoanManagement\Http\Controllers\LoanProductController;
+use Modules\LoanManagement\Http\Controllers\LoanRoleController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramChatController;
 use Modules\LoanManagement\Http\Controllers\LoanTelegramWebhookController;
+use Modules\LoanManagement\Http\Controllers\LoanUserController;
 use Modules\LoanManagement\Http\Controllers\PublicAppController;
 use Modules\LoanManagement\Http\Controllers\SettingsController;
 use Modules\LoanManagement\Http\Controllers\SystemHealthController;
@@ -86,6 +88,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/loans/create', [LoanCreateController::class, 'index'])->name('loan-management.loans.create');
         Route::get('/loans/create-standalone-modal', [LoanCreateController::class, 'modal'])->name('loan-management.loans.create-standalone-modal');
         Route::get('/loans/ajax/search-loan-customers', [LoanCreateController::class, 'searchCustomers'])->name('loan-management.loans.ajax.search-customers');
+        Route::get('/loans/ajax/check-customer-duplicate', [LoanCreateController::class, 'checkCustomerDuplicate'])->name('loan-management.loans.ajax.check-customer-duplicate');
         Route::get('/loans/ajax/product-by-serial', [LoanCreateController::class, 'lookupProductBySerial'])->name('loan-management.loans.ajax.product-by-serial');
         Route::post('/loans/ajax/scan-id-card', [LoanCreateController::class, 'scanIdCard'])->name('loan-management.loans.ajax.scan-id-card');
         Route::post('/loans/ajax/scan-product-photo', [LoanCreateController::class, 'scanProductPhoto'])->name('loan-management.loans.ajax.scan-product-photo');
@@ -243,6 +246,30 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/system-check', [SystemHealthController::class, 'status'])->name('loan-management.system.check');
 
         Route::get('/activity-logs', [LoanActivityLogController::class, 'index'])->name('loan-management.activity-logs.index');
+
+        Route::get('/users/export', [LoanUserController::class, 'export'])->name('loan-management.users.export');
+        Route::get('/users/import-template', [LoanUserController::class, 'downloadTemplate'])->name('loan-management.users.import-template');
+        Route::post('/users/import', [LoanUserController::class, 'import'])->name('loan-management.users.import');
+        Route::get('/users', [LoanUserController::class, 'index'])->name('loan-management.users.index');
+        Route::get('/users/create', [LoanUserController::class, 'create'])->name('loan-management.users.create');
+        Route::post('/users', [LoanUserController::class, 'store'])->name('loan-management.users.store');
+        Route::get('/users/{user}', [LoanUserController::class, 'show'])->where(['user' => '[0-9]+'])->name('loan-management.users.show');
+        Route::get('/users/{user}/edit', [LoanUserController::class, 'edit'])->where(['user' => '[0-9]+'])->name('loan-management.users.edit');
+        Route::put('/users/{user}', [LoanUserController::class, 'update'])->where(['user' => '[0-9]+'])->name('loan-management.users.update');
+        Route::delete('/users/{user}', [LoanUserController::class, 'destroy'])->where(['user' => '[0-9]+'])->name('loan-management.users.destroy');
+        Route::post('/users/{user}/toggle-status', [LoanUserController::class, 'toggleStatus'])->where(['user' => '[0-9]+'])->name('loan-management.users.toggle-status');
+        Route::post('/users/{user}/reset-password', [LoanUserController::class, 'resetPassword'])->where(['user' => '[0-9]+'])->name('loan-management.users.reset-password');
+
+        Route::get('/roles/export', [LoanRoleController::class, 'export'])->name('loan-management.roles.export');
+        Route::get('/roles/import-template', [LoanRoleController::class, 'downloadTemplate'])->name('loan-management.roles.import-template');
+        Route::post('/roles/import', [LoanRoleController::class, 'import'])->name('loan-management.roles.import');
+        Route::get('/roles', [LoanRoleController::class, 'index'])->name('loan-management.roles.index');
+        Route::get('/roles/create', [LoanRoleController::class, 'create'])->name('loan-management.roles.create');
+        Route::post('/roles', [LoanRoleController::class, 'store'])->name('loan-management.roles.store');
+        Route::get('/roles/{role}/edit', [LoanRoleController::class, 'edit'])->where(['role' => '[0-9]+'])->name('loan-management.roles.edit');
+        Route::put('/roles/{role}', [LoanRoleController::class, 'update'])->where(['role' => '[0-9]+'])->name('loan-management.roles.update');
+        Route::delete('/roles/{role}', [LoanRoleController::class, 'destroy'])->where(['role' => '[0-9]+'])->name('loan-management.roles.destroy');
+
         Route::get('/tools/import-export', [LoanImportExportController::class, 'index'])->name('loan-management.import.index');
         Route::post('/tools/import', [LoanImportExportController::class, 'import'])->name('loan-management.import.upload');
         Route::post('/tools/import/start', [LoanImportExportController::class, 'startImport'])->name('loan-management.import.start');
@@ -270,6 +297,8 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/reports/yearly-loan-summary', [DashboardController::class, 'yearlyLoanSummary'])->name('loan-management.reports.yearly-loan-summary');
         Route::get('/reports/payment-summary-by-type', [DashboardController::class, 'paymentSummaryByType'])->name('loan-management.reports.payment-summary-by-type');
         Route::get('/reports/payments', [DashboardController::class, 'paymentSummaryByType'])->name('loan-management.reports.payments');
-        Route::get('/guarantors', [DashboardController::class, 'placeholder'])->defaults('page', 'Guarantors')->name('loan-management.guarantors.index');
+        Route::get('/blacklist/export-csv', [DashboardController::class, 'blacklistExportCsv'])->name('loan-management.blacklist.export-csv');
+        Route::get('/blacklist/search-customers', [LoanCustomerController::class, 'blacklistSearchCustomers'])->name('loan-management.blacklist.search-customers');
         Route::get('/blacklist', [DashboardController::class, 'blacklistIndex'])->name('loan-management.blacklist.index');
+        Route::post('/blacklist', [LoanCustomerController::class, 'blacklistStore'])->name('loan-management.blacklist.store');
     });

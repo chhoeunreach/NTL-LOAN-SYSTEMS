@@ -7,7 +7,7 @@
 <div class="lm-pro-loan-modal" style="font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f1f5f9; color: #1e293b; display: flex; flex-direction: column; max-height: calc(100vh - 24px); overflow: hidden;">
     <style>
         .lm-pro-loan-modal *, .lm-pro-loan-modal *::before, .lm-pro-loan-modal *::after { box-sizing: border-box; }
-        
+
         /* Modal Compact Header */
         .lm-pro-header {
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -46,6 +46,24 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
+        .lm-dup-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-right: 8px;
+            margin-bottom: 4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 1.2;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .lm-dup-status-badge--success { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+        .lm-dup-status-badge--warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+        .lm-dup-status-badge--danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+        .lm-dup-status-badge--neutral { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }
         .lm-pro-header-right { display: flex; align-items: center; gap: 8px; }
         .lm-pro-btn-calc {
             display: inline-flex;
@@ -253,23 +271,123 @@
         .lm-modal-preset-chip i { color: #f59e0b; font-size: 9px; }
         .lm-modal-preset-chip:hover i { color: #fff; }
 
-        /* Customer Select & KYC Strip (Compact) */
+        /* Customer Search Box & Live Results Dropdown */
         .lm-customer-search-box {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             background: #f8fafc;
-            padding: 6px 8px;
-            border-radius: 8px;
+            padding: 8px 10px;
+            border-radius: 10px;
             border: 1px solid #e2e8f0;
         }
-        .lm-customer-search-box .select2-container { flex: 1; min-width: 0; }
-        .lm-customer-search-box .select2-selection {
-            border-radius: 6px !important;
-            min-height: 32px !important;
-            border-color: #cbd5e1 !important;
-            padding-top: 2px;
+        .lm-customer-search-wrap {
+            flex: 1;
+            min-width: 0;
+            position: relative;
+        }
+        .lm-search-input-inner {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .lm-search-input-field {
+            height: 40px !important;
+            border-radius: 8px !important;
+            padding-left: 36px !important;
+            padding-right: 32px !important;
+            font-size: 13px !important;
+            border: 1.5px solid #cbd5e1 !important;
+            background: #fff !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            transition: all 0.2s ease;
+            width: 100% !important;
+            color: #0f172a !important;
+        }
+        .lm-search-input-field:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.18) !important;
+            outline: none !important;
+        }
+        .lm-customer-search-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            max-height: 320px;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 14px 30px -4px rgba(15,23,42,0.22);
+            z-index: 99999;
+        }
+        .lm-customer-search-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+        .lm-customer-search-dropdown::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .lm-cs-row {
+            padding: 9px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+        .lm-cs-row:last-child {
+            border-bottom: none;
+        }
+        .lm-cs-row:hover, .lm-cs-row.selected {
+            background: #eff6ff;
+        }
+        .lm-cs-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #cbd5e1;
+            flex-shrink: 0;
+        }
+        .lm-cs-avatar-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #e0f2fe;
+            color: #0284c7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .lm-cs-info {
+            flex: 1;
+            min-width: 0;
+            line-height: 1.35;
+        }
+        .lm-cs-name {
+            font-weight: 700;
+            color: #0f172a;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .lm-cs-sub {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         /* Smart KYC Strip (Profile + ID Card) */
@@ -627,7 +745,7 @@
         }
         .lm-pro-footer-pill strong { color: #0f172a; }
         .lm-pro-footer-actions { display: flex; align-items: center; gap: 8px; }
-        
+
         .lm-btn {
             padding: 6px 14px;
             border-radius: 6px;
@@ -841,22 +959,26 @@
                     <div class="lm-card" id="mobCustomerInfoCard">
                         <div class="lm-card-head">
                             <h3 class="lm-card-title"><i class="fa fa-user-circle"></i> {{ $lmText('Customer KYC & Identity', 'ព័ត៌មានអតិថិជន & អត្តសញ្ញាណ') }}</h3>
-                            <button type="button" class="btn btn-xs btn-default" id="modalClearCustomer" title="{{ $lmText('Clear Customer', 'ជម្រះអតិថិជន') }}">
+                            <button type="button" class="btn btn-xs btn-default" id="modalClearCustomer" onclick="mobClearCustomerKYC()" title="{{ $lmText('Clear Customer', 'ជម្រះអតិថិជន') }}">
                                 <i class="fa fa-refresh"></i> {{ $lmText('Clear', 'ជម្រះ') }}
                             </button>
                         </div>
                         <div class="lm-card-body">
                             <input type="hidden" name="customer_id" id="modalCustomerId" value="">
 
-                            <!-- Quick Search Existing Customer & Quick Add -->
+                            <!-- Direct Search Existing Customer & Quick Add -->
                             <div class="lm-customer-search-box">
-                                <div style="flex: 1;">
-                                    <select id="modalCustomerSelect" class="form-control" style="width: 100%;">
-                                        <option value="">{{ $lmText('Search existing customer by Name, Phone, or ID...', 'ស្វែងរកអតិថិជនចាស់ តាមឈ្មោះ លេខទូរស័ព្ទ ឬអត្តសញ្ញាណប័ណ្ណ...') }}</option>
-                                    </select>
+                                <div class="lm-customer-search-wrap">
+                                    <div class="lm-search-input-inner">
+                                        <i class="fa fa-search" style="position: absolute; left: 12px; color: #94a3b8; font-size: 14px; pointer-events: none; z-index: 2;"></i>
+                                        <input type="text" id="modalCustomerSearchInput" class="form-control lm-search-input-field" placeholder="{{ $lmText('Search existing customer by Name, Phone, or ID...', 'ស្វែងរកអតិថិជនចាស់ តាមឈ្មោះ លេខទូរស័ព្ទ ឬអត្តសញ្ញាណប័ណ្ណ...') }}" autocomplete="off" spellcheck="false">
+                                        <button type="button" id="modalBtnClearSearchText" onclick="mobClearSearchInputOnly()" style="display: none; position: absolute; right: 8px; border: none; background: transparent; color: #94a3b8; font-size: 14px; cursor: pointer; padding: 4px; z-index: 2;" title="Clear search"><i class="fa fa-times-circle"></i></button>
+                                    </div>
+                                    <!-- Live Dropdown Results -->
+                                    <div id="modalCustomerSearchResults" class="lm-customer-search-dropdown"></div>
                                 </div>
-                                <button type="button" class="btn btn-primary btn-sm" data-toggle="modal" data-target=".contact_modal" style="height: 38px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">
-                                    <i class="fa fa-plus"></i> <span>{{ $lmText('Quick Add', 'បង្កើតថ្មី') }}</span>
+                                <button type="button" class="btn btn-primary btn-sm" id="modalBtnQuickAddCustomer" onclick="mobQuickAddNewCustomer()" title="{{ $lmText('Click to create new customer & fill KYC', 'ចុចដើម្បីបង្កើតអតិថិជនថ្មី & បំពេញព័ត៌មាន') }}" style="height: 40px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 6px rgba(37,99,235,0.2); white-space: nowrap;">
+                                    <i class="fa fa-plus-circle"></i> <span>{{ $lmText('Quick Add', 'បង្កើតថ្មី') }}</span>
                                 </button>
                             </div>
 
@@ -934,6 +1056,29 @@
                                 <input type="text" name="alternate_phone" id="modalAlternatePhone" class="lm-control" placeholder="{{ $lmText('Secondary Phone', 'លេខទូរស័ព្ទទីពីរ') }}">
                             </div>
 
+                            <!-- Live Duplicate Customer Warning Banner -->
+                            <div id="modalCustomerDuplicateAlert" style="display: none; margin-top: 10px; margin-bottom: 6px; padding: 10px 12px; background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 8px; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.12);">
+                                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 200px;">
+                                        <i class="fa fa-exclamation-triangle" style="color: #d97706; font-size: 16px; margin-top: 2px;"></i>
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 700; color: #92400e;" id="modalCustomerDuplicateTitle">
+                                                {{ $lmText('Existing Customer Found!', 'បានរកឃើញអតិថិជនមានស្រាប់!') }}
+                                            </div>
+                                            <div style="font-size: 11px; color: #b45309; margin-top: 2px;" id="modalCustomerDuplicateDesc"></div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                                        <button type="button" class="btn btn-warning btn-xs" id="modalBtnLinkDuplicateCustomer" onclick="mobLinkDuplicateCustomer()" style="font-weight: 600; border-radius: 6px; padding: 4px 10px; background: #f59e0b; border-color: #d97706; color: #fff; display: inline-flex; align-items: center; gap: 4px;">
+                                            <i class="fa fa-link"></i> <span>{{ $lmText('Link This Customer', 'ភ្ជាប់អតិថិជននេះ') }}</span>
+                                        </button>
+                                        <button type="button" class="btn btn-default btn-xs" id="modalBtnDismissDuplicateAlert" onclick="mobDismissDuplicateAlert()" style="border-radius: 6px; padding: 4px 8px;" title="Dismiss">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Cambodia Administrative Hierarchy Address -->
                             <div style="margin-top: 14px; padding-top: 14px; border-top: 1px solid #f1f5f9;">
                                 <label class="lm-label" style="color: #2563eb; display: flex; align-items: center; gap: 6px;">
@@ -993,7 +1138,7 @@
                                 </label>
                             </div>
                             <input type="file" id="mobDocInput" accept="image/*,.pdf,.txt,.csv,.doc,.docx" multiple style="display:none;" onchange="mobHandleDocs(this)">
-                            
+
                             <div style="margin-top: 12px;">
                                 <label class="lm-label">{{ $lmText('Telegram Summary Note', 'កំណត់ចំណាំផ្ញើទៅ Telegram') }}</label>
                                 <textarea name="document_text" class="lm-control" rows="2" placeholder="{{ $lmText('Write document note or extra details for telegram notification...', 'កំណត់ចំណាំឯកសារ ឬព័ត៌មានបន្ថែមសម្រាប់ជូនដំណឹង Telegram...') }}" style="height: auto; padding: 8px 12px;"></textarea>
@@ -1318,7 +1463,7 @@ jQuery(function($) {
     if ($list.length && !$list.find('.mob-product-item').length) {
         $('#modalBtnAddItem').trigger('click');
     }
-    
+
     // Sync deposit hint
     $('#mobDpToggle').on('click', function() {
         var on = $(this).hasClass('on');
@@ -1329,6 +1474,9 @@ jQuery(function($) {
     $('input[name="interest_rate"], select[name="interest_type"], input[name="duration_months"]').on('input change', function() {
         updateFooterPills();
     });
+
+    // Initialize Direct Customer Search & Address cascading
+    mobInitCustomerSearch();
 });
 
 function updateFooterPills() {
@@ -1627,6 +1775,454 @@ document.getElementById('modalBtnShowAlternatePhone')?.addEventListener('click',
     if (group) group.style.display = group.style.display === 'none' ? 'block' : 'none';
     if (input && group.style.display === 'block') input.focus();
 });
+
+// ==================== CUSTOMER KYC & DIRECT SEARCH CONTROLLERS ====================
+var mobCustomerSearchTimer = null;
+var mobCustomerSearchSelectedIndex = -1;
+var mobCustomerSearchResultsCache = [];
+
+function mobInitCustomerSearch() {
+    var $input = jQuery('#modalCustomerSearchInput');
+    var $dropdown = jQuery('#modalCustomerSearchResults');
+    var $clearBtn = jQuery('#modalBtnClearSearchText');
+    if (!$input.length) return;
+
+    // Trigger lookup on focus or click
+    $input.off('focus click').on('focus click', function() {
+        var val = $input.val().trim();
+        mobPerformCustomerSearch(val);
+    });
+
+    // Realtime typing search (debounced 100ms)
+    $input.off('input').on('input', function() {
+        var val = $input.val();
+        $clearBtn.toggle(!!val.length);
+        clearTimeout(mobCustomerSearchTimer);
+        mobCustomerSearchTimer = setTimeout(function() {
+            mobPerformCustomerSearch(val.trim());
+        }, 100);
+    });
+}
+
+window.mobInitCustomerSearch = mobInitCustomerSearch;
+window.mobPerformCustomerSearch = mobPerformCustomerSearch;
+
+// Document delegation to ensure writing to search always works in modal
+jQuery(document).on('focus click', '#modalCustomerSearchInput', function() {
+    var val = jQuery(this).val().trim();
+    mobPerformCustomerSearch(val);
+});
+
+jQuery(document).on('input', '#modalCustomerSearchInput', function() {
+    var val = jQuery(this).val();
+    jQuery('#modalBtnClearSearchText').toggle(!!val.length);
+    clearTimeout(mobCustomerSearchTimer);
+    mobCustomerSearchTimer = setTimeout(function() {
+        mobPerformCustomerSearch(val.trim());
+    }, 100);
+});
+
+    // Keyboard navigation (ArrowDown, ArrowUp, Enter, Escape)
+    $input.off('keydown').on('keydown', function(e) {
+        var $rows = $dropdown.find('.lm-cs-row');
+        if (!$rows.length || $dropdown.is(':hidden')) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            mobCustomerSearchSelectedIndex = (mobCustomerSearchSelectedIndex + 1) % $rows.length;
+            $rows.removeClass('selected').eq(mobCustomerSearchSelectedIndex).addClass('selected');
+            $rows.eq(mobCustomerSearchSelectedIndex)[0]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            mobCustomerSearchSelectedIndex = (mobCustomerSearchSelectedIndex - 1 + $rows.length) % $rows.length;
+            $rows.removeClass('selected').eq(mobCustomerSearchSelectedIndex).addClass('selected');
+            $rows.eq(mobCustomerSearchSelectedIndex)[0]?.scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'Enter') {
+            if (mobCustomerSearchSelectedIndex >= 0 && mobCustomerSearchSelectedIndex < $rows.length) {
+                e.preventDefault();
+                $rows.eq(mobCustomerSearchSelectedIndex).trigger('click');
+            }
+        } else if (e.key === 'Escape') {
+            $dropdown.hide();
+        }
+    });
+
+    // Close dropdown on outside click
+    jQuery(document).off('click.lmCsOut').on('click.lmCsOut', function(e) {
+        if (!jQuery(e.target).closest('.lm-customer-search-wrap').length) {
+            $dropdown.hide();
+        }
+    });
+
+    // Row selection click
+    $dropdown.off('click', '.lm-cs-row').on('click', '.lm-cs-row', function() {
+        var idx = jQuery(this).data('index');
+        var customer = mobCustomerSearchResultsCache[idx];
+        if (customer) {
+            mobApplySelectedCustomer(customer);
+            $dropdown.hide();
+        }
+    });
+}
+
+function mobPerformCustomerSearch(query) {
+    var $dropdown = jQuery('#modalCustomerSearchResults');
+    if (!$dropdown.length) return;
+    $dropdown.html('<div style="padding:14px; text-align:center; color:#64748b; font-size:12px;"><i class="fa fa-spinner fa-spin" style="color:#2563eb; margin-right:6px;"></i> {{ $lmText("Searching existing customers...", "កំពុងស្វែងរកអតិថិជន...") }}</div>').show();
+
+    jQuery.ajax({
+        url: "{{ route('loan-management.loans.ajax.search-customers') }}",
+        method: 'GET',
+        data: { q: query, term: query },
+        dataType: 'json',
+        success: function(res) {
+            var items = (res && (res.results || res.data)) || [];
+            mobCustomerSearchResultsCache = items;
+            mobCustomerSearchSelectedIndex = -1;
+
+            if (!items.length) {
+                var safeQ = jQuery('<div>').text(query).html();
+                $dropdown.html(
+                    '<div style="padding: 16px; text-align: center; color: #64748b;">' +
+                        '<div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">{{ $lmText("No existing customer found", "រកមិនឃើញអតិថិជនចាស់ទេ") }}' + (safeQ ? ' for "' + safeQ + '"' : '') + '</div>' +
+                        '<div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">{{ $lmText("Click Quick Add to create a new customer directly", "ចុច បង្កើតថ្មី ដើម្បីបំពេញព័ត៌មានអតិថិជនថ្មី") }}</div>' +
+                        '<button type="button" class="btn btn-primary btn-xs" onclick="mobQuickAddNewCustomer()" style="border-radius: 6px; font-weight: 600; padding: 5px 14px; display: inline-flex; align-items: center; gap: 4px;">' +
+                            '<i class="fa fa-plus-circle"></i> {{ $lmText("Quick Add New Customer", "បង្កើតអតិថិជនថ្មី") }}' +
+                        '</button>' +
+                    '</div>'
+                );
+                return;
+            }
+
+            var html = '';
+            items.forEach(function(c, i) {
+                var khmer = c.khmer_name || '';
+                var name = c.name || '';
+                var phone = c.phone || '';
+                var idcard = c.id_card_number || '';
+                var code = c.customer_code || '';
+                var photo = c.photo_url || '';
+
+                var avatarHtml = photo
+                    ? '<img src="' + photo + '" class="lm-cs-avatar">'
+                    : '<div class="lm-cs-avatar-icon"><i class="fa fa-user"></i></div>';
+
+                var primaryName = khmer || name || 'Customer #' + (c.id || '');
+                var secondaryName = (khmer && name && khmer !== name) ? ' <span style="font-weight:400; color:#64748b; font-size:12px;">(' + name + ')</span>' : '';
+
+                var metaBadges = [];
+                if (phone) metaBadges.push('<span><i class="fa fa-phone" style="color:#64748b;"></i> ' + phone + '</span>');
+                if (idcard) metaBadges.push('<span><i class="fa fa-id-card-o" style="color:#64748b;"></i> ' + idcard + '</span>');
+                if (code) metaBadges.push('<span class="label label-default" style="font-size:10px; font-weight:600; padding: 2px 6px;">' + code + '</span>');
+
+                html += '<div class="lm-cs-row" data-index="' + i + '">' +
+                    avatarHtml +
+                    '<div class="lm-cs-info">' +
+                        '<div class="lm-cs-name">' + primaryName + secondaryName + '</div>' +
+                        (metaBadges.length ? '<div class="lm-cs-sub">' + metaBadges.join(' &bull; ') + '</div>' : '') +
+                    '</div>' +
+                    '<i class="fa fa-chevron-right" style="color:#cbd5e1; font-size:11px;"></i>' +
+                '</div>';
+            });
+
+            $dropdown.html(html);
+        },
+        error: function() {
+            $dropdown.html('<div style="padding:12px; text-align:center; color:#ef4444; font-size:12px;">Failed to load customers.</div>');
+        }
+    });
+}
+
+function mobClearSearchInputOnly() {
+    jQuery('#modalCustomerSearchInput').val('').focus();
+    jQuery('#modalBtnClearSearchText').hide();
+    mobPerformCustomerSearch('');
+}
+
+function mobApplySelectedCustomer(data) {
+    if (!data) return;
+    jQuery('#modalCustomerId').val(data.id || '');
+    var khmerName = data.khmer_name || data.name || '';
+    var englishName = data.name || '';
+    jQuery('#modalCustomerKhmerName').val(khmerName);
+    jQuery('#modalCustomerEnglishName').val(englishName);
+    jQuery('#modalCustomerName').val(khmerName || englishName);
+    jQuery('#modalCustomerPhone').val(data.phone || data.mobile || '');
+    jQuery('#modalCustomerIdCard').val(data.id_card_number || '');
+
+    var altPhone = data.alternate_phone || data.alternate_number || '';
+    jQuery('#modalAlternatePhone').val(altPhone);
+    if (altPhone) {
+        jQuery('#modalAlternatePhoneGroup').show();
+    }
+
+    jQuery('#modalCustomerAddress').val(data.address || data.shipping_address || '');
+
+    // Update the search bar text
+    var displayText = (khmerName || englishName) + (data.phone ? ' (' + data.phone + ')' : '');
+    jQuery('#modalCustomerSearchInput').val(displayText);
+    jQuery('#modalBtnClearSearchText').show();
+    jQuery('#modalCustomerSearchResults').hide();
+
+    if (typeof modalSelectAddressFromCustomer === 'function') {
+        modalSelectAddressFromCustomer(jQuery('#standaloneLoanModalBody').length ? jQuery('#standaloneLoanModalBody') : jQuery(document), data);
+    }
+
+    if (data.photo_url) {
+        var prev = document.getElementById('mobCustomerPhotoPreview');
+        if (prev) {
+            prev.innerHTML = '<img src="' + data.photo_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' +
+                '<button type="button" class="lm-kyc-remove" onclick="mobRemoveCustomerProfile()" title="Remove photo"><i class="fa fa-times"></i></button>';
+        }
+    }
+
+    var card = document.getElementById('mobCustomerInfoCard');
+    if (card) {
+        card.style.transition = 'all 0.3s ease';
+        card.style.borderColor = '#10b981';
+        card.style.boxShadow = '0 0 16px rgba(16, 185, 129, 0.25)';
+        setTimeout(function() {
+            card.style.borderColor = '';
+            card.style.boxShadow = '';
+        }, 2200);
+    }
+}
+
+function mobClearCustomerKYC() {
+    jQuery('#modalCustomerId').val('');
+    jQuery('#modalCustomerSearchInput').val('');
+    jQuery('#modalBtnClearSearchText').hide();
+    jQuery('#modalCustomerSearchResults').hide();
+    jQuery('#modalCustomerKhmerName').val('');
+    jQuery('#modalCustomerEnglishName').val('');
+    jQuery('#modalCustomerName').val('');
+    jQuery('#modalCustomerPhone').val('');
+    jQuery('#modalCustomerIdCard').val('');
+    jQuery('#modalAlternatePhone').val('');
+    jQuery('#modalAlternatePhoneGroup').hide();
+    jQuery('#modalCustomerAddress').val('');
+
+    if (typeof modalClearAddressSelects === 'function') {
+        modalClearAddressSelects(jQuery('#standaloneLoanModalBody').length ? jQuery('#standaloneLoanModalBody') : jQuery(document));
+    }
+
+    var prev = document.getElementById('mobCustomerPhotoPreview');
+    if (prev) prev.innerHTML = '<i class="fa fa-user"></i>';
+    mobCustomerProfileData = '';
+
+    mobRemoveIdCard();
+}
+
+function mobQuickAddNewCustomer() {
+    // 1. Unlink existing customer
+    jQuery('#modalCustomerId').val('');
+    jQuery('#modalCustomerSearchResults').hide();
+
+    // 2. Grab what user typed in search bar
+    var searchedText = jQuery('#modalCustomerSearchInput').val().trim();
+
+    // 3. Pre-populate search query if applicable
+    if (searchedText) {
+        if (/^[0-9\s+-]+$/.test(searchedText)) {
+            if (!jQuery('#modalCustomerPhone').val()) {
+                jQuery('#modalCustomerPhone').val(searchedText);
+            }
+        } else {
+            if (!jQuery('#modalCustomerKhmerName').val()) {
+                jQuery('#modalCustomerKhmerName').val(searchedText);
+                jQuery('#modalCustomerEnglishName').val(searchedText);
+                jQuery('#modalCustomerName').val(searchedText);
+            }
+        }
+    }
+
+    // 4. Highlight KYC Card & Scroll
+    var card = document.getElementById('mobCustomerInfoCard');
+    if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        card.style.transition = 'all 0.3s ease';
+        card.style.borderColor = '#2563eb';
+        card.style.boxShadow = '0 0 20px rgba(37, 99, 235, 0.35)';
+        setTimeout(function() {
+            card.style.borderColor = '';
+            card.style.boxShadow = '';
+        }, 2500);
+    }
+
+    // 5. Focus the first field
+    setTimeout(function() {
+        var input = document.getElementById('modalCustomerKhmerName');
+        if (input) {
+            input.focus();
+            if (input.select) input.select();
+        }
+    }, 250);
+
+    if (window.toastr) {
+        toastr.info('{{ $lmText("Please fill in Customer KYC details below", "សូមបំពេញព័ត៌មានអតិថិជន & អត្តសញ្ញាណប័ណ្ណខាងក្រោម") }}', '{{ $lmText("New Customer KYC", "អតិថិជនថ្មី") }}');
+    }
+}
+
+window.mobInitCustomerSearch = mobInitCustomerSearch;
+window.mobPerformCustomerSearch = mobPerformCustomerSearch;
+window.mobClearSearchInputOnly = mobClearSearchInputOnly;
+window.mobApplySelectedCustomer = mobApplySelectedCustomer;
+window.mobClearCustomerKYC = mobClearCustomerKYC;
+window.mobQuickAddNewCustomer = mobQuickAddNewCustomer;
+
+// ==================== LIVE DUPLICATE CUSTOMER VALIDATION ====================
+var mobDuplicateCheckTimer = null;
+var mobPendingDuplicateCustomer = null;
+
+function mobCheckCustomerDuplicate() {
+    clearTimeout(mobDuplicateCheckTimer);
+    mobDuplicateCheckTimer = setTimeout(function() {
+        var phone = (jQuery('#modalCustomerPhone').val() || '').trim();
+        var idCard = (jQuery('#modalCustomerIdCard').val() || '').trim();
+        var currentCustomerId = (jQuery('#modalCustomerId').val() || '').trim();
+
+        var cleanPhone = phone.replace(/[^0-9+]/g, '');
+        var cleanIdCard = idCard.replace(/[^a-zA-Z0-9]/g, '');
+
+        if (cleanPhone.length < 6 && cleanIdCard.length < 3) {
+            mobClearDuplicateAlert();
+            return;
+        }
+
+        jQuery.ajax({
+            url: "{{ route('loan-management.loans.ajax.check-customer-duplicate') }}",
+            type: 'GET',
+            data: {
+                phone: phone,
+                id_card_number: idCard,
+                customer_id: currentCustomerId
+            },
+            dataType: 'json',
+            success: function(res) {
+                if (res && res.exists && res.duplicate && res.duplicate.customer) {
+                    var dup = res.duplicate.customer;
+                    if (!currentCustomerId || String(currentCustomerId) !== String(dup.id)) {
+                        mobShowDuplicateAlert(res.duplicate);
+                    } else {
+                        mobClearDuplicateAlert();
+                    }
+                } else {
+                    mobClearDuplicateAlert();
+                }
+            },
+            error: function() {
+                // Silently ignore network failures
+            }
+        });
+    }, 250);
+}
+
+function mobEscapeHtml(value) {
+    return String(value || '').replace(/[&<>"']/g, function(ch) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[ch];
+    });
+}
+
+function mobCustomerStatusBadge(customer) {
+    var status = String(customer.status || 'active').toLowerCase();
+    var isBlacklisted = customer.blacklist_status === true || customer.blacklist_status === 1 || customer.blacklist_status === '1';
+    var label = '';
+    var badgeClass = '';
+    var icon = '';
+
+    if (isBlacklisted) {
+        label = '{{ $lmText("Blacklisted", "ក្នុងបញ្ជីខ្មៅ") }}';
+        badgeClass = 'lm-dup-status-badge--danger';
+        icon = 'fa fa-ban';
+    } else if (['active', 'normal', 'approved'].indexOf(status) !== -1) {
+        label = '{{ $lmText("Normal / Recommended", "ធម្មតា / អាចណែនាំបាន") }}';
+        badgeClass = 'lm-dup-status-badge--success';
+        icon = 'fa fa-check-circle';
+    } else if (['pending', 'inactive', 'suspended'].indexOf(status) !== -1) {
+        label = status.charAt(0).toUpperCase() + status.slice(1);
+        badgeClass = 'lm-dup-status-badge--warning';
+        icon = 'fa fa-info-circle';
+    } else {
+        label = status ? status.charAt(0).toUpperCase() + status.slice(1) : '{{ $lmText("Normal", "ធម្មតា") }}';
+        badgeClass = 'lm-dup-status-badge--neutral';
+        icon = 'fa fa-user';
+    }
+
+    var reason = isBlacklisted && customer.blacklist_reason
+        ? ' title="' + mobEscapeHtml(customer.blacklist_reason) + '"'
+        : '';
+
+    return '<span class="lm-dup-status-badge ' + badgeClass + '"' + reason + '><i class="' + icon + '"></i> ' + mobEscapeHtml(label) + '</span>';
+}
+
+function mobShowDuplicateAlert(dupData) {
+    var c = dupData.customer;
+    mobPendingDuplicateCustomer = c;
+
+    var matchedBy = dupData.matched_by || 'phone';
+    var matchText = '';
+    if (matchedBy === 'both') {
+        matchText = '{{ $lmText("Both Primary Phone & National ID Card match existing customer:", "លេខទូរស័ព្ទ & អត្តសញ្ញាណប័ណ្ណត្រូវគ្នាជាមួយអតិថិជនមានស្រាប់:") }}';
+    } else if (matchedBy === 'id_card_number') {
+        matchText = '{{ $lmText("National ID Card number matches existing customer:", "លេខអត្តសញ្ញាណប័ណ្ណនេះត្រូវគ្នាជាមួយអតិថិជនមានស្រាប់:") }}';
+    } else {
+        matchText = '{{ $lmText("Primary Phone matches existing customer:", "លេខទូរស័ព្ទនេះត្រូវគ្នាជាមួយអតិថិជនមានស្រាប់:") }}';
+    }
+
+    var primaryName = c.khmer_name || c.name || ('Customer #' + (c.id || ''));
+    var secondaryName = (c.khmer_name && c.name && c.khmer_name !== c.name) ? ' (' + c.name + ')' : '';
+    var metaInfo = [];
+    if (c.phone) metaInfo.push('<i class="fa fa-phone"></i> ' + mobEscapeHtml(c.phone));
+    if (c.id_card_number) metaInfo.push('<i class="fa fa-id-card-o"></i> ' + mobEscapeHtml(c.id_card_number));
+    if (c.customer_code) metaInfo.push('[' + mobEscapeHtml(c.customer_code) + ']');
+
+    jQuery('#modalCustomerDuplicateTitle').html('<i class="fa fa-exclamation-triangle text-warning"></i> ' + matchText);
+    jQuery('#modalCustomerDuplicateDesc').html(
+        mobCustomerStatusBadge(c) +
+        '<strong style="color:#0f172a; font-size:12px;">' + mobEscapeHtml(primaryName) + mobEscapeHtml(secondaryName) + '</strong>' +
+        (metaInfo.length ? ' &bull; <span style="color:#64748b;">' + metaInfo.join(' &bull; ') + '</span>' : '')
+    );
+
+    if (matchedBy === 'phone' || matchedBy === 'both') {
+        jQuery('#modalCustomerPhone').css({ 'border-color': '#f59e0b', 'background': '#fffdf5' });
+    }
+    if (matchedBy === 'id_card_number' || matchedBy === 'both') {
+        jQuery('#modalCustomerIdCard').css({ 'border-color': '#f59e0b', 'background': '#fffdf5' });
+    }
+
+    jQuery('#modalCustomerDuplicateAlert').slideDown(200);
+}
+
+function mobClearDuplicateAlert() {
+    mobPendingDuplicateCustomer = null;
+    jQuery('#modalCustomerDuplicateAlert').slideUp(150);
+    jQuery('#modalCustomerPhone').css({ 'border-color': '', 'background': '' });
+    jQuery('#modalCustomerIdCard').css({ 'border-color': '', 'background': '' });
+}
+
+function mobDismissDuplicateAlert() {
+    jQuery('#modalCustomerDuplicateAlert').slideUp(150);
+}
+
+function mobLinkDuplicateCustomer() {
+    if (mobPendingDuplicateCustomer) {
+        mobApplySelectedCustomer(mobPendingDuplicateCustomer);
+        mobClearDuplicateAlert();
+        if (window.toastr) {
+            toastr.success('{{ $lmText("Existing customer linked and autofilled!", "បានភ្ជាប់ និងបំពេញទិន្នន័យអតិថិជនជោគជ័យ!") }}');
+        }
+    }
+}
+
+window.mobCheckCustomerDuplicate = mobCheckCustomerDuplicate;
+window.mobLinkDuplicateCustomer = mobLinkDuplicateCustomer;
+window.mobDismissDuplicateAlert = mobDismissDuplicateAlert;
+window.mobClearDuplicateAlert = mobClearDuplicateAlert;
+
+jQuery(document).off('input.lmDup change.lmDup blur.lmDup', '#modalCustomerPhone, #modalCustomerIdCard')
+    .on('input.lmDup change.lmDup blur.lmDup', '#modalCustomerPhone, #modalCustomerIdCard', function() {
+        mobCheckCustomerDuplicate();
+    });
 
 // External Document Links
 jQuery(document).on('click', '#mobAddDocumentLink', function() {
@@ -1953,7 +2549,7 @@ function mobPreviewSchedule() {
     var $form = jQuery('#standaloneLoanModalForm');
     document.getElementById('modalCustomerName').value = document.getElementById('modalCustomerKhmerName').value || document.getElementById('modalCustomerEnglishName').value || '';
     var urls = { previewSchedule: "{{ route('loan-management.loans.preview-standalone-schedule') }}" };
-    
+
     jQuery.post(urls.previewSchedule, $form.serialize(), function(res) {
         var rows = res.data || [];
         var $tb = jQuery('#modalScheduleTable tbody');
@@ -1972,7 +2568,7 @@ function mobPreviewSchedule() {
         $table.find('tfoot th').eq(3).text('$' + totalA.toFixed(2));
         $table.find('tfoot th').eq(4).text('$' + totalB.toFixed(2));
         document.getElementById('modalScheduleSection').style.display = 'block';
-        
+
         var months = parseInt(document.querySelector('input[name="duration_months"]').value) || 1;
         var monthly = (totalA / months).toFixed(2);
         document.getElementById('modalSummaryMonthly').textContent = '$' + monthly;
@@ -1990,16 +2586,16 @@ function mobSubmit(action) {
         form.reportValidity();
         return;
     }
-    
+
     var fd = new FormData(form);
     if (mobIdCardData) fd.append('id_card_image', mobIdCardData);
     if (mobCustomerProfileData) fd.append('customer_profile_image', mobCustomerProfileData);
     mobDocFiles.forEach(function(d) { if (d) fd.append('documents[]', d.dataUri); });
     fd.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-    
+
     var urls = { storeLoan: "{{ route('loan-management.loans.store-standalone') }}", loanViewBase: "{{ url('/loan-management/loans') }}" };
     var $btns = jQuery('.lm-pro-footer button').prop('disabled', true);
-    
+
     jQuery.ajax({
         url: urls.storeLoan,
         method: 'POST',

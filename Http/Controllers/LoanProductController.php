@@ -104,8 +104,12 @@ class LoanProductController extends Controller
         $totalStockQty = (int) LoanProduct::sum('qty_available');
         $totalCostValue = (float) LoanProduct::sum(DB::raw('COALESCE(cost_price, 0) * COALESCE(qty_available, 0)'));
         $totalRetailValue = (float) LoanProduct::sum(DB::raw('COALESCE(selling_price, 0) * COALESCE(qty_available, 0)'));
+        $perPage = (int) $request->input('per_page', 250);
+        if ($perPage <= 0 || $perPage > 1000) {
+            $perPage = 250;
+        }
 
-        $products = $query->paginate(15)->appends($request->query());
+        $products = $query->paginate($perPage)->appends($request->query());
 
         // Extract unique Categories & Brands for filter dropdowns
         $allProductsMeta = LoanProduct::select('meta_json')->get();

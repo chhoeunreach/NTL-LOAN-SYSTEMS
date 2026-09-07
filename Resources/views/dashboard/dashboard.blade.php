@@ -4,12 +4,12 @@
     $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
 
     $cards = [
-        ['key' => 'total_loans', 'label' => $lmText('All Installment', 'រំលស់ទាំងអស់'), 'icon' => 'fa fa-list-alt', 'tone' => 'slate', 'url' => route('loan-management.loans.index')],
-        ['key' => 'pending_requests', 'label' => $lmText('Pending Requests', 'សំណើកំពុងរង់ចាំ'), 'icon' => 'fa fa-clock-o', 'tone' => 'amber', 'url' => route('loan-management.loans.index', ['status' => 'pending'])],
+        ['key' => 'total_loans', 'label' => $lmText('All Installments', 'រំលស់ទាំងអស់'), 'icon' => 'fa fa-files-o', 'tone' => 'slate', 'url' => route('loan-management.loans.index')],
+        ['key' => 'pending_requests', 'label' => $lmText('Pending Requests', 'សំណើកំពុងរង់ចាំ'), 'icon' => 'fa fa-hourglass-half', 'tone' => 'amber', 'url' => route('loan-management.loans.index', ['status' => 'pending'])],
         ['key' => 'due_today', 'label' => $lmText('Due Today', 'ដល់ថ្ងៃបង់ថ្ងៃនេះ'), 'icon' => 'fa fa-calendar-check-o', 'tone' => 'blue', 'url' => route('loan-management.operations.page', ['page' => 'due-today'])],
-        ['key' => 'overdue_accounts', 'label' => $lmText('Overdue Accounts', 'គណនីហួសកំណត់'), 'icon' => 'fa fa-exclamation-triangle', 'tone' => 'red', 'url' => route('loan-management.collection.page', ['page' => 'overdue-accounts'])],
+        ['key' => 'overdue_accounts', 'label' => $lmText('Overdue Accounts', 'គណនីហួសកំណត់'), 'icon' => 'fa fa-exclamation-circle', 'tone' => 'red', 'url' => route('loan-management.collection.page', ['page' => 'overdue-accounts'])],
         ['key' => 'broken_ptp', 'label' => $lmText('Broken PTP', 'ខកខានសន្យា'), 'icon' => 'fa fa-chain-broken', 'tone' => 'amber', 'url' => route('loan-management.collection.page', ['page' => 'broken-promise'])],
-        ['key' => 'collection_amount_today', 'label' => $lmText('Collection Amount Today', 'ចំនួនប្រមូលបានថ្ងៃនេះ'), 'icon' => 'fa fa-dollar', 'tone' => 'green', 'url' => route('loan-management.payments.index', ['date_from' => now()->toDateString(), 'date_to' => now()->toDateString()])],
+        ['key' => 'collection_amount_today', 'label' => $lmText('Collection Today', 'ចំនួនប្រមូលបានថ្ងៃនេះ'), 'icon' => 'fa fa-money', 'tone' => 'green', 'url' => route('loan-management.payments.index', ['date_from' => now()->toDateString(), 'date_to' => now()->toDateString()])],
     ];
     $dashboardBadgeCounts = \Modules\LoanManagement\Helpers\LoanMenuHelper::badgeCounts();
     $dashboardUnreadChats = (int) ($dashboardBadgeCounts['unread_chat'] ?? 0);
@@ -21,9 +21,61 @@
     $dashboardTodayCollection = (float) ($quickCards['today_collection'] ?? ($quickCards['collection_amount_today'] ?? 0));
     $dashboardMonthlyIncome = (float) ($quickCards['monthly_income'] ?? 0);
     $dashboardPriorityTotal = $dashboardOverdue + $dashboardDueToday + $dashboardBrokenPtp + $dashboardHighRisk + $dashboardPendingVisits + $dashboardUnreadChats;
+    $dashboardHealthLabel = !empty($systemHealth) && !empty($systemHealth['has_issues'])
+        ? ($systemHealth['has_critical_errors'] ? $lmText('Critical system notice', 'ប្រព័ន្ធមានបញ្ហាសំខាន់') : $lmText('System needs attention', 'ប្រព័ន្ធត្រូវការត្រួតពិនិត្យ'))
+        : $lmText('System healthy', 'ប្រព័ន្ធដំណើរការល្អ');
+    $dashboardHealthTone = !empty($systemHealth) && !empty($systemHealth['has_issues'])
+        ? ($systemHealth['has_critical_errors'] ? 'danger' : 'warning')
+        : 'success';
+    $dashboardActions = [
+        ['label' => $lmText('New Installment', 'បង្កើតរំលស់ថ្មី'), 'icon' => 'fa fa-plus-circle', 'tone' => 'primary', 'url' => route('loan-management.loans.create')],
+        ['label' => $lmText('Collect Payment', 'ប្រមូលប្រាក់បង់'), 'icon' => 'fa fa-money', 'tone' => 'success', 'url' => route('loan-management.operations.page', ['page' => 'due-today'])],
+        ['label' => $lmText('Customers', 'អតិថិជន'), 'icon' => 'fa fa-users', 'tone' => 'info', 'url' => route('loan-management.customers.index')],
+        ['label' => $lmText('Reports', 'របាយការណ៍'), 'icon' => 'fa fa-line-chart', 'tone' => 'neutral', 'url' => route('loan-management.reports.index')],
+    ];
+    $dashboardSummary = [
+        ['label' => $lmText('Today Collection', 'ប្រមូលថ្ងៃនេះ'), 'value' => number_format($dashboardTodayCollection, 2), 'icon' => 'fa fa-money', 'tone' => 'green'],
+        ['label' => $lmText('Monthly Income', 'ចំណូលប្រចាំខែ'), 'value' => number_format($dashboardMonthlyIncome, 2), 'icon' => 'fa fa-bar-chart', 'tone' => 'blue'],
+        ['label' => $lmText('Priority Work', 'ការងារអាទិភាព'), 'value' => number_format($dashboardPriorityTotal), 'icon' => 'fa fa-bolt', 'tone' => 'amber'],
+        ['label' => $lmText('Unread Chat', 'សារមិនទាន់អាន'), 'value' => number_format($dashboardUnreadChats), 'icon' => 'fa fa-comments', 'tone' => 'slate'],
+    ];
 @endphp
 
 <div class="lm-dashboard">
+    <section class="lm-dashboard-command">
+        <div class="lm-dashboard-command__main">
+            <span class="lm-dashboard-command__eyebrow"><i class="fa fa-tachometer"></i> {{ $lmText('Loan Management', 'ការគ្រប់គ្រងរំលស់') }}</span>
+            <h2 class="lm-dashboard-command__title">{{ $lmText('Dashboard', 'ផ្ទាំងគ្រប់គ្រង') }}</h2>
+            <p class="lm-dashboard-command__subtitle">{{ $lmText('Monitor collections, customer follow-up, overdue risk, and daily payment activity from one clear workspace.', 'តាមដានការប្រមូលប្រាក់ ការតាមដានអតិថិជន ហានិភ័យហួសកំណត់ និងសកម្មភាពបង់ប្រាក់ប្រចាំថ្ងៃក្នុងផ្ទាំងតែមួយ។') }}</p>
+            <div class="lm-dashboard-command__chips">
+                <span class="lm-dashboard-chip lm-dashboard-chip--{{ $dashboardHealthTone }}"><i class="fa fa-heartbeat"></i> {{ $dashboardHealthLabel }}</span>
+                <span class="lm-dashboard-chip"><i class="fa fa-calendar"></i> {{ now()->format('M d, Y') }}</span>
+                <a href="{{ route('loan-management.chat.index') }}" class="lm-dashboard-chip lm-dashboard-chip--link"><i class="fa fa-comments"></i> {{ number_format($dashboardUnreadChats) }} {{ $lmText('Unread', 'មិនទាន់អាន') }}</a>
+                <a href="{{ route('loan-management.collection.page', ['page' => 'overdue-accounts']) }}" class="lm-dashboard-chip lm-dashboard-chip--link lm-dashboard-chip--danger"><i class="fa fa-exclamation-circle"></i> {{ number_format($dashboardOverdue) }} {{ $lmText('Overdue', 'ហួសកំណត់') }}</a>
+            </div>
+        </div>
+        <div class="lm-dashboard-command__actions">
+            @foreach($dashboardActions as $action)
+                <a href="{{ $action['url'] }}" class="lm-dashboard-action lm-dashboard-action--{{ $action['tone'] }}">
+                    <span><i class="{{ $action['icon'] }}"></i></span>
+                    <strong>{{ $action['label'] }}</strong>
+                </a>
+            @endforeach
+        </div>
+    </section>
+
+    <section class="lm-dashboard-summary-strip">
+        @foreach($dashboardSummary as $summary)
+            <div class="lm-dashboard-summary-card">
+                <span class="lm-dashboard-summary-card__icon lm-tone-{{ $summary['tone'] }}"><i class="{{ $summary['icon'] }}"></i></span>
+                <div>
+                    <span class="lm-dashboard-summary-card__label">{{ $summary['label'] }}</span>
+                    <strong class="lm-dashboard-summary-card__value">{{ $summary['value'] }}</strong>
+                </div>
+            </div>
+        @endforeach
+    </section>
+
     @if (!empty($systemHealth) && !empty($systemHealth['has_issues']))
         <div class="alert alert-{{ $systemHealth['has_critical_errors'] ? 'danger' : 'warning' }}" style="border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08); border-left: 6px solid {{ $systemHealth['has_critical_errors'] ? '#dc2626' : '#f59e0b' }};">
             <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
@@ -66,7 +118,7 @@
                 <div>
                     <span class="lm-stat-card__label">{{ $card['label'] }}</span>
                     <span class="lm-stat-card__value" data-loan-card="{{ $card['key'] }}" data-format="{{ in_array($card['key'], ['collection_amount_today']) ? 'money' : 'int' }}">{{ in_array($card['key'], ['collection_amount_today']) ? number_format((float) $val, 2) : (int) $val }}</span>
-                    <span class="lm-stat-card__meta">{{ $lmText('Click to view details', 'ចុចដើម្បីមើលលម្អិត') }}</span>
+                    <span class="lm-stat-card__meta"><i class="fa fa-arrow-circle-right"></i> {{ $lmText('View details', 'មើលលម្អិត') }}</span>
                 </div>
             </a>
         @endforeach
@@ -105,8 +157,8 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="table-responsive lm-table-wrap lm-table-wrap--hover-actions lm-collect-payment-scroll">
-                            <table class="table table-condensed table-bordered lm-dashboard-table lm-mini-table" id="loanDashboardQuickSearchTable">
+                        <div class="lm-table-wrap lm-table-wrap--hover-actions lm-collect-payment-scroll">
+                            <table class="table table-condensed lm-dashboard-table lm-mini-table" id="loanDashboardQuickSearchTable">
                                 <thead>
                                     <tr>
                                         <th class="lm-col-customer">{{ $lmText('Customer', 'អតិថិជន') }}</th>
@@ -567,8 +619,8 @@
             return;
         }
 
-        var liveUrl = "{{ route('loan-management.dashboard.data', [], true) }}";
-        var quickSearchUrl = "{{ route('loan-management.dashboard.quick-search', [], true) }}";
+        var liveUrl = "{{ route('loan-management.dashboard.data', [], false) }}";
+        var quickSearchUrl = "{{ route('loan-management.dashboard.quick-search', [], false) }}";
         var refreshMs = 30000;
         var loading = false;
         var timer = null;
@@ -577,7 +629,7 @@
         var liveChatSearchTimer = null;
         var liveChatThreads = [];
         var activeLiveChatId = {{ (int) ($initialLiveChat['id'] ?? 0) }};
-        var liveChatApiUrl = "{{ route('loan-management.chat-api.index') }}";
+        var liveChatApiUrl = "{{ route('loan-management.chat-api.index', [], false) }}";
         var liveChatFrameBaseUrl = "{{ url('loan-management/live-chat') }}";
         var loanLanguage = "{{ $loanLanguage }}";
         var isKhmer = loanLanguage === 'km';

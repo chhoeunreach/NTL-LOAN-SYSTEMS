@@ -885,7 +885,7 @@ class LoanInstallmentListController extends Controller
 
         $hasSchedules = $this->loanTableExists('loan_payment_schedules');
         $nextDueExpr = $hasSchedules
-            ? '(SELECT MIN(due_date) FROM loan_payment_schedules WHERE loan_id = l.id AND status = "pending" AND deleted_at IS NULL)'
+            ? '(SELECT MIN(due_date) FROM loan_payment_schedules WHERE loan_id = l.id AND LOWER(COALESCE(status, "unpaid")) IN ("pending", "unpaid", "partial", "late", "overdue") AND deleted_at IS NULL)'
             : 'NULL';
         $paidInstallmentsExpr = $hasSchedules
             ? '(SELECT COUNT(*) FROM loan_payment_schedules WHERE loan_id = l.id AND status = "paid" AND deleted_at IS NULL)'
@@ -906,6 +906,7 @@ class LoanInstallmentListController extends Controller
                 ($this->hasCol('loan_date') ? 'l.loan_date' : 'l.created_at').' as loan_date, '.
                 ($this->hasCol('customer_id') ? 'l.customer_id' : 'NULL').' as customer_id, '.
                 ($canJoinCustomers && $this->loanTableHasCol('loan_customers', 'telegram_chat_id') ? 'c.telegram_chat_id' : 'NULL').' as telegram_chat_id, '.
+                ($canJoinCustomers && $this->loanTableHasCol('loan_customers', 'customer_photo_file_id') ? 'c.customer_photo_file_id' : 'NULL').' as customer_photo_file_id, '.
                 $customerNameExpr.' as customer_name_snapshot, '.
                 ($this->hasCol('customer_phone_snapshot') ? 'l.customer_phone_snapshot' : 'NULL').' as customer_phone_snapshot, '.
                 ($this->hasCol('product_name_snapshot') ? 'l.product_name_snapshot' : 'NULL').' as product_name_snapshot, '.
@@ -1051,16 +1052,56 @@ class LoanInstallmentListController extends Controller
             ->editColumn('total_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.($r->total_amount ?? $r->principal_amount).'</span>')
             ->editColumn('paid_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->paid_amount.'</span>')
             ->editColumn('balance_amount', fn ($r) => '<span class="display_currency" data-currency_symbol="true">'.$r->balance_amount.'</span>')
+            ->editColumn('source_invoice_no', function ($r) {
+                $invoice = trim((string) ($r->source_invoice_no ?? ''));
+                if ($invoice === '') {
+                    return '<span class="text-muted">-</span>';
+                }
+
+                return '<span class="lm-loan-invoice"><i class="fa fa-file-text-o"></i> '.e($invoice).'</span>';
+            })
+            ->editColumn('customer_name_snapshot', function ($r) {
+                $name = trim((string) ($r->customer_name_snapshot ?? ''));
+                $phone = trim((string) ($r->customer_phone_snapshot ?? ''));
+                $customerUrl = ! empty($r->customer_id) ? route('loan-management.customers.show', $r->customer_id, false) : '';
+                $displayName = $name !== '' ? $name : 'Customer #'.($r->customer_id ?: $r->id);
+                $photoFileId = (int) ($r->customer_photo_file_id ?? 0);
+                $photoUrl = $photoFileId > 0 ? url('loan-management/chat-files/'.$photoFileId) : '';
+                $initial = mb_substr(trim($displayName), 0, 1, 'UTF-8') ?: 'C';
+
+                $html = '<div class="lm-loan-customer-cell">';
+                $html .= $photoUrl !== ''
+                    ? '<img src="'.e($photoUrl).'" class="lm-loan-customer-avatar" alt="'.e($displayName).'">'
+                    : '<span class="lm-loan-customer-avatar-fallback">'.e(mb_strtoupper($initial, 'UTF-8')).'</span>';
+                $html .= '<div class="lm-loan-customer-info">';
+                if ($customerUrl !== '') {
+                    $html .= '<a href="'.e($customerUrl).'" class="lm-loan-customer-name"><i class="fa fa-user-circle"></i> '.e($displayName).'</a>';
+                } else {
+                    $html .= '<span class="lm-loan-customer-name"><i class="fa fa-user-circle"></i> '.e($displayName).'</span>';
+                }
+                if ($phone !== '') {
+                    $html .= '<a href="tel:'.e($phone).'" class="lm-loan-customer-phone"><i class="fa fa-phone"></i> '.e($phone).'</a>';
+                }
+                $html .= '</div>';
+                $html .= '</div>';
+
+                return $html;
+            })
             ->editColumn('product_name_snapshot', function ($r) {
                 $product = trim((string) ($r->product_name_snapshot ?? ''));
                 if ($product === '') {
-                    return '<span class="text-muted">-</span>';
+                    $product = '-';
                 }
-                $html = '<div style="font-weight:600; color:#1e293b; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="'.e($product).'">'.e($product).'</div>';
+
+                $price = $r->item_price ?? 0;
+                $html = '<div class="lm-loan-product-wrap">';
+                $html .= '<div class="lm-loan-product-cell" title="'.e($product).'"><i class="fa fa-cube"></i> '.e($product).'</div>';
+                $html .= '<small class="lm-loan-product-price"><i class="fa fa-tag"></i> <span class="display_currency" data-currency_symbol="true">'.e($price).'</span></small>';
                 $imei = trim((string) ($r->imei_snapshot ?? ''));
                 if ($imei !== '') {
-                    $html .= '<small class="text-muted" style="font-size:11px; font-family:monospace;"><i class="fa fa-barcode"></i> '.e($imei).'</small>';
+                    $html .= '<small class="lm-loan-product-imei"><i class="fa fa-barcode"></i> '.e($imei).'</small>';
                 }
+                $html .= '</div>';
                 return $html;
             })
             ->addColumn('installment_terms', function ($r) {
@@ -1075,27 +1116,29 @@ class LoanInstallmentListController extends Controller
                     : '';
                 return '<div style="white-space:nowrap;"><strong style="color:#0f172a;">'.$count.' '.($count == 1 ? 'Term' : 'Terms').'</strong> '.$badge.'<br><small class="text-muted" style="font-size:11px;">'.$freq.'</small></div>';
             })
-            ->addColumn('next_due_date', function ($r) {
+            ->editColumn('next_due_date', function ($r) {
                 $due = $r->next_due_date ?? null;
                 if (! $due) {
                     if (in_array(strtolower((string) $r->status), ['completed', 'closed'])) {
-                        return '<span class="text-success" style="font-weight:700; font-size:12px;"><i class="fa fa-check-circle"></i> Paid Off</span>';
+                        return '<div class="lm-next-due-cell lm-next-due-paid"><strong><i class="fa fa-check-circle"></i> Paid Off</strong><small>No pay date remaining</small></div>';
                     }
-                    return '<span class="text-muted">-</span>';
+                    return '<div class="lm-next-due-cell lm-next-due-empty"><strong>-</strong><small>No pay date</small></div>';
                 }
                 try {
                     $dueDate = \Carbon\Carbon::parse($due);
                     $now = \Carbon\Carbon::today();
                     $diffDays = $now->diffInDays($dueDate, false);
 
-                    $formattedDate = $dueDate->format('d M Y');
+                    $formattedDate = $dueDate->format('Y-m-d');
                     if ($diffDays < 0) {
                         $days = abs($diffDays);
-                        return '<div style="white-space:nowrap;"><strong class="text-danger">'.$formattedDate.'</strong><br><span class="label label-danger" style="font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:2px;"><i class="fa fa-exclamation-triangle"></i> '.$days.'d Overdue</span></div>';
+                        $label = $days === 1 ? '1 day overdue' : $days.' days overdue';
+                        return '<div class="lm-next-due-cell lm-next-due-overdue"><strong><i class="fa fa-calendar"></i> '.e($formattedDate).'</strong><small><i class="fa fa-exclamation-triangle"></i> Pay date: '.e($label).'</small></div>';
                     } elseif ($diffDays === 0) {
-                        return '<div style="white-space:nowrap;"><strong style="color:#d97706;">'.$formattedDate.'</strong><br><span class="label label-warning" style="font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; display:inline-block; margin-top:2px;"><i class="fa fa-clock-o"></i> Due Today</span></div>';
+                        return '<div class="lm-next-due-cell lm-next-due-today"><strong><i class="fa fa-calendar"></i> '.e($formattedDate).'</strong><small><i class="fa fa-clock-o"></i> Pay today</small></div>';
                     } else {
-                        return '<div style="white-space:nowrap;"><span style="color:#334155; font-weight:600;">'.$formattedDate.'</span><br><small class="text-muted" style="font-size:11px;">in '.$diffDays.' days</small></div>';
+                        $label = $diffDays === 1 ? 'Remind tomorrow' : 'Remind in '.$diffDays.' days';
+                        return '<div class="lm-next-due-cell lm-next-due-upcoming"><strong><i class="fa fa-calendar"></i> '.e($formattedDate).'</strong><small><i class="fa fa-bell-o"></i> '.e($label).'</small></div>';
                     }
                 } catch (\Exception $e) {
                     return e($due);
@@ -1144,7 +1187,11 @@ class LoanInstallmentListController extends Controller
                     $options .= '<option value="'.e($value).'"'.($value === $status ? ' selected' : '').'>'.e(ucfirst($value)).'</option>';
                 }
 
-                return '<select class="form-control input-sm js-loan-status-select loan-status-select status-'.$c.'" data-original-status="'.e($status).'" data-url="'.route('loan-management.loans.status', $r->id).'" style="min-width:120px;">'.$options.'</select>';
+                return '<select class="form-control input-sm js-loan-status-select loan-status-select status-'.$c.'" data-original-status="'.e($status).'" data-url="'.route('loan-management.loans.status', $r->id, false).'" style="min-width:120px;">'.$options.'</select>';
+            })
+            ->orderColumn('next_due_date', function ($query, $order) use ($nextDueExpr) {
+                $direction = strtolower((string) $order) === 'asc' ? 'asc' : 'desc';
+                $query->orderByRaw($nextDueExpr.' '.$direction);
             })
             ->addColumn('action', function ($r) {
                 $user = auth()->user();
@@ -1153,31 +1200,34 @@ class LoanInstallmentListController extends Controller
                 $canDelete = $user instanceof \Illuminate\Contracts\Auth\Authenticatable
                     && \Illuminate\Support\Facades\Gate::forUser($user)->allows('loan_management.delete');
 
-                $actions = '<div class="btn-group btn-group-xs">';
-                $actions .= '<button type="button" class="btn btn-xs btn-primary btn-flat dropdown-toggle" data-toggle="dropdown" aria-expanded="false"><i class="fa fa-ellipsis-v"></i> Action <span class="caret"></span></button>';
-                $actions .= '<ul class="dropdown-menu dropdown-menu-right" role="menu">';
-                $actions .= '<li><a href="'.route('loan-management.loans.view', $r->id).'"><i class="fa fa-eye"></i> View</a></li>';
-                $actions .= '<li><a href="#" data-href="'.route('loan-management.loans.payment.create', $r->id).'" data-container=".view_modal" class="btn-modal"><i class="fa fa-money"></i> Collect Payment</a></li>';
+                $actions = '<div class="btn-group btn-group-xs lm-loan-action-menu">';
+                $actions .= '<button type="button" class="btn btn-xs btn-primary btn-flat js-loan-action-toggle" aria-expanded="false" title="Actions"><i class="fa fa-ellipsis-v"></i> <span class="hidden-xs">Action</span> <span class="caret"></span></button>';
+                $actions .= '<ul class="dropdown-menu lm-loan-action-dropdown" role="menu" style="display:none;">';
+                $actions .= '<li><a href="'.route('loan-management.loans.view', $r->id, false).'"><i class="fa fa-eye"></i> View</a></li>';
+                $actions .= '<li><a href="#" data-href="'.route('loan-management.loans.payment.create', $r->id, false).'" data-container=".view_modal" class="btn-modal"><i class="fa fa-money"></i> Collect Payment</a></li>';
                 if (! empty($r->customer_id) && $canEdit) {
                     if (! empty($r->telegram_chat_id)) {
                         $actions .= '<li><a href="#" class="disabled text-muted" onclick="return false;"><i class="fa fa-check-circle"></i> Telegram Connected</a></li>';
                     } else {
-                        $actions .= '<li><a href="#" data-url="'.route('loan-management.customers.telegram.link', $r->customer_id).'" data-customer="'.e($r->customer_name_snapshot ?? 'Customer').'" class="js-loan-telegram-link"><i class="fa fa-paper-plane"></i> Connect Telegram</a></li>';
+                        $actions .= '<li><a href="#" data-url="'.route('loan-management.customers.telegram.link', $r->customer_id, false).'" data-customer="'.e($r->customer_name_snapshot ?? 'Customer').'" class="js-loan-telegram-link"><i class="fa fa-paper-plane"></i> Connect Telegram</a></li>';
                     }
                 }
-                $actions .= '<li><a href="#" data-href="'.route('loan-management.loans.print-modal', $r->id).'" data-container=".view_modal" class="btn-modal"><i class="fa fa-print"></i> Print</a></li>';
-                $actions .= '<li><a href="#" data-url="'.route('loan-management.loans.payment.copy-info', $r->id).'" class="js-copy-loan-payment-info"><i class="fa fa-copy"></i> Copy</a></li>';
+                $actions .= '<li><a href="#" data-href="'.route('loan-management.loans.print-modal', $r->id, false).'" data-container=".view_modal" class="btn-modal"><i class="fa fa-print"></i> Print</a></li>';
+                $actions .= '<li><a href="#" data-url="'.route('loan-management.loans.payment.copy-info', $r->id, false).'" class="js-copy-loan-payment-info"><i class="fa fa-copy"></i> Copy</a></li>';
+                if (! empty($r->customer_id) && $canEdit) {
+                    $actions .= '<li><a href="#" data-url="'.route('loan-management.customers.blacklist', $r->customer_id, false).'" data-customer="'.e($r->customer_name_snapshot ?? 'Customer').'" class="js-loan-blacklist-customer text-red"><i class="fa fa-user-times"></i> Add to Blacklist</a></li>';
+                }
                 if ($canEdit) {
-                    $actions .= '<li><a href="'.route('loan-management.loans.edit', $r->id).'"><i class="fa fa-pencil"></i> Edit</a></li>';
+                    $actions .= '<li><a href="'.route('loan-management.loans.edit', $r->id, false).'"><i class="fa fa-pencil"></i> Edit</a></li>';
                 }
                 if ($canDelete && in_array(strtolower((string) $r->status), ['draft', 'pending'])) {
-                    $actions .= '<li><a href="#" class="btn-delete-loan text-red" data-url="'.route('loan-management.loans.destroy', $r->id).'"><i class="fa fa-trash"></i> Delete</a></li>';
+                    $actions .= '<li><a href="#" class="btn-delete-loan text-red" data-url="'.route('loan-management.loans.destroy', $r->id, false).'"><i class="fa fa-trash"></i> Delete</a></li>';
                 }
                 $actions .= '</ul></div>';
 
                 return $actions;
             })
-            ->rawColumns(['status', 'item_price', 'down_payment', 'principal_amount', 'total_amount', 'paid_amount', 'balance_amount', 'product_name_snapshot', 'installment_terms', 'next_due_date', 'repayment_progress', 'action'])
+            ->rawColumns(['status', 'item_price', 'down_payment', 'principal_amount', 'total_amount', 'paid_amount', 'balance_amount', 'source_invoice_no', 'customer_name_snapshot', 'product_name_snapshot', 'installment_terms', 'next_due_date', 'repayment_progress', 'action'])
             ->with('status_counts', $this->getLoanStatusCounts())
             ->make(true);
     }

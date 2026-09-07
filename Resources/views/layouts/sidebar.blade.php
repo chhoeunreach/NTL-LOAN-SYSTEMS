@@ -101,8 +101,8 @@
             'label' => $lmText('Administration', 'រដ្ឋបាល'),
             'items' => [
                 ['label' => $lmText('Users & Roles', 'អ្នកប្រើប្រាស់ និងតួនាទី'), 'icon' => 'fa fa-user-o', 'tone' => 'blue', 'children' => [
-                    ['label' => $lmText('Manage Users', 'គ្រប់គ្រងអ្នកប្រើប្រាស់'), 'route' => 'users.index', 'can' => 'user.view|user.create'],
-                    ['label' => $lmText('Roles', 'តួនាទី'), 'route' => 'roles.index', 'can' => 'roles.view|roles.create'],
+                    ['label' => $lmText('Manage Users', 'គ្រប់គ្រងអ្នកប្រើប្រាស់'), 'route' => 'loan-management.users.index', 'can' => 'user.view|user.create'],
+                    ['label' => $lmText('Roles', 'តួនាទី'), 'route' => 'loan-management.roles.index', 'can' => 'roles.view|roles.create'],
                 ]],
                 ['label' => $lmText('Branches', 'សាខា'), 'icon' => 'fa fa-building-o', 'route' => 'loan-management.locations.index', 'can' => 'loan_management.view', 'tone' => 'blue'],
                 ['label' => $lmText('Audit Logs', 'កំណត់ហេតុសវនកម្ម'), 'icon' => 'fa fa-check-circle-o', 'route' => 'loan-management.activity-logs.index', 'can' => 'loan_management.view', 'tone' => 'blue'],

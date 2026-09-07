@@ -63,8 +63,23 @@
     height: auto;
     background: var(--lm-bg);
     overflow: visible;
-    contain: layout style;
-    will-change: contents;
+}
+
+/* Modal Stacking Guarantees */
+.modal {
+    z-index: 1050 !important;
+}
+.modal-backdrop {
+    z-index: 1040 !important;
+}
+.modal.fade.in, .modal.show {
+    z-index: 1050 !important;
+}
+.modal-backdrop.fade.in, .modal-backdrop.show {
+    z-index: 1040 !important;
+}
+.select2-container--open, .select2-dropdown {
+    z-index: 1060 !important;
 }
 
 .loan-management-page .btn-primary,
@@ -2313,48 +2328,65 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
 .lm-dashboard-panel--quick-payment .lm-dashboard-panel__body,
 .lm-dashboard-panel--quick-payment .lm-quick-grid,
 .lm-dashboard-panel--quick-payment .lm-quick-box--loan { display: flex; flex: 1; min-height: 0; flex-direction: column; }
+.lm-dashboard-panel--quick-payment .lm-dashboard-panel__body {
+    padding-top: 14px;
+}
 .lm-dashboard-panel--quick-payment .lm-table-wrap { flex: 1; }
 .lm-collect-payment-scroll {
+    min-height: 260px;
     max-height: 430px;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--lm-border);
+    border-radius: var(--lm-radius);
+    background: #fff;
+    box-shadow: inset 0 1px 0 rgba(15,23,42,.03);
 }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable > thead > tr > th {
     position: sticky;
     top: 0;
     z-index: 2;
     background: var(--lm-bg-subtle);
+    border-bottom: 1px solid var(--lm-border);
 }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable {
-    width: auto !important;
-    min-width: 0;
+    width: 100% !important;
+    min-width: 760px;
     table-layout: auto;
 }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable th,
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable td {
     vertical-align: middle;
-    padding: 1mm !important;
+    padding: 7px 8px !important;
     font-size: 12px;
-    line-height: 1.25;
+    line-height: 1.3;
+    border-top: 1px solid var(--lm-border-light);
+    border-left: 0;
+    border-right: 0;
 }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable th {
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: 0;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    color: var(--lm-text-secondary);
+}
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable tbody tr:hover td {
+    background: #f8fafc;
 }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-customer {
-    width: 190px;
-    max-width: 190px;
+    width: 210px;
+    max-width: 210px;
 }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code {
-    width: clamp(78px, 10vw, 125px);
-    min-width: 78px;
-    max-width: 125px;
+    width: 130px;
+    min-width: 120px;
+    max-width: 150px;
 }
-.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-date { width: 84px; }
-.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-money { width: 88px; }
-.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-status { width: 68px; }
-.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-action { width: 135px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-date { width: 112px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-money { width: 100px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-status { width: 86px; }
+.lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-action { width: 150px; }
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-customer,
 .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code {
     white-space: normal;
@@ -2409,26 +2441,29 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
 }
 .lm-collect-payment-scroll .lm-pay-status {
     margin-top: 0;
-    padding: 1px 4px;
-    font-size: 9px;
+    padding: 3px 7px;
+    font-size: 10px;
     letter-spacing: 0;
+    border-radius: 999px;
 }
 .lm-collect-payment-scroll .lm-pay-btn {
-    min-height: 22px;
-    padding: 1px 4px;
-    font-size: 10px;
+    min-height: 28px;
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 6px;
 }
 .lm-collect-payment-scroll .lm-print-btn,
 .lm-collect-payment-scroll .lm-pay-more .btn {
-    min-height: 22px;
-    padding: 1px 4px;
-    font-size: 10px;
+    min-height: 28px;
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 6px;
 }
 @media (max-width: 1199px) {
     .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code {
-        width: clamp(70px, 12vw, 110px);
-        min-width: 70px;
-        max-width: 110px;
+        width: 118px;
+        min-width: 110px;
+        max-width: 130px;
     }
 
     .lm-collect-payment-scroll #loanDashboardQuickSearchTable .lm-col-code .lm-pay-code {
@@ -2851,3 +2886,313 @@ body.lm-sidebar-collapsed .lm-main { width: calc(100% - var(--lm-sidebar-rail-wi
 .lm-action-menu__list > li > button:hover i { color: var(--lm-primary); }
 .lm-action-menu__list > li > button[data-title="Edit Loan"] i { color: var(--lm-warning); }
 .lm-action-menu__list > li.divider { margin: 4px 0; }
+
+/* ============================================================
+   DASHBOARD PROFESSIONAL POLISH
+   ============================================================ */
+.lm-dashboard {
+    gap: 18px;
+    color: #0f172a;
+}
+.lm-dashboard-command {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 430px);
+    gap: 18px;
+    align-items: stretch;
+    padding: 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+}
+.lm-dashboard-command__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.lm-dashboard-command__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-bottom: 8px;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.lm-dashboard-command__title {
+    margin: 0;
+    color: #0f172a;
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0;
+}
+.lm-dashboard-command__subtitle {
+    max-width: 760px;
+    margin: 8px 0 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.lm-dashboard-command__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+.lm-dashboard-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 6px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.lm-dashboard-chip:hover,
+.lm-dashboard-chip:focus {
+    color: #1d4ed8;
+    text-decoration: none;
+    border-color: #bfdbfe;
+    background: #eff6ff;
+}
+.lm-dashboard-chip--success {
+    color: #166534;
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+.lm-dashboard-chip--warning {
+    color: #92400e;
+    border-color: #fde68a;
+    background: #fffbeb;
+}
+.lm-dashboard-chip--danger {
+    color: #991b1b;
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+.lm-dashboard-command__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.lm-dashboard-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #334155;
+    text-decoration: none;
+    transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease;
+}
+.lm-dashboard-action span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: #e2e8f0;
+    color: #334155;
+    flex: 0 0 auto;
+}
+.lm-dashboard-action strong {
+    min-width: 0;
+    color: inherit;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.25;
+}
+.lm-dashboard-action:hover,
+.lm-dashboard-action:focus {
+    transform: translateY(-1px);
+    color: #0f172a;
+    text-decoration: none;
+    border-color: #cbd5e1;
+    background: #fff;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+}
+.lm-dashboard-action--primary span { background: #dbeafe; color: #2563eb; }
+.lm-dashboard-action--success span { background: #dcfce7; color: #16a34a; }
+.lm-dashboard-action--info span { background: #cffafe; color: #0891b2; }
+.lm-dashboard-action--neutral span { background: #e2e8f0; color: #475569; }
+.lm-dashboard-summary-strip {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+.lm-dashboard-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    min-height: 76px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
+}
+.lm-dashboard-summary-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: #fff;
+    flex: 0 0 auto;
+}
+.lm-dashboard-summary-card__label {
+    display: block;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.lm-dashboard-summary-card__value {
+    display: block;
+    margin-top: 4px;
+    color: #0f172a;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+}
+.lm-dashboard-cards {
+    grid-template-columns: repeat(6, minmax(150px, 1fr));
+    gap: 12px;
+}
+.lm-stat-card {
+    min-height: 112px;
+    padding: 14px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
+}
+.lm-stat-card__icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+}
+.lm-stat-card__label {
+    color: #64748b;
+    letter-spacing: .04em;
+}
+.lm-stat-card__value {
+    font-size: 23px;
+}
+.lm-stat-card__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: #2563eb;
+    font-weight: 700;
+}
+.lm-dashboard-panel,
+.lm-quick-box,
+.lm-action-menu__list {
+    border-radius: 8px;
+}
+.lm-dashboard-panel--feature {
+    background: #fff;
+}
+.lm-dashboard-panel__header {
+    background: #fff;
+}
+.lm-dashboard-table > thead > tr > th {
+    background: #f8fafc;
+}
+.lm-dashboard-panel--quick-payment .lm-quick-box {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+}
+.lm-dashboard-panel--quick-payment .lm-quick-box:hover {
+    transform: none;
+    box-shadow: none;
+    background: #fff;
+}
+.lm-dashboard-panel--quick-payment .lm-quick-box__topline {
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.lm-dashboard-panel--quick-payment .lm-quick-box__footer {
+    margin-top: 10px;
+}
+.lm-dashboard-panel--quick-payment .lm-collect-payment-scroll {
+    max-height: 430px;
+    overflow-y: auto;
+    overflow-x: auto;
+}
+.lm-dashboard-panel--quick-payment .lm-collect-payment-scroll::-webkit-scrollbar,
+.lm-dashboard-panel--quick-payment .lm-collect-payment-mobile-list::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.lm-dashboard-panel--quick-payment .lm-collect-payment-scroll::-webkit-scrollbar-thumb,
+.lm-dashboard-panel--quick-payment .lm-collect-payment-mobile-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+}
+.lm-dashboard-panel--quick-payment .lm-collect-payment-card {
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(15,23,42,.06);
+}
+
+@media (max-width: 1199px) {
+    .lm-dashboard-command {
+        grid-template-columns: 1fr;
+    }
+    .lm-dashboard-cards {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 991px) {
+    .lm-dashboard-summary-strip {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 767px) {
+    .lm-dashboard-command {
+        padding: 16px;
+    }
+    .lm-dashboard-command__title {
+        font-size: 22px;
+    }
+    .lm-dashboard-command__actions,
+    .lm-dashboard-summary-strip,
+    .lm-dashboard-cards {
+        grid-template-columns: 1fr;
+    }
+    .lm-dashboard-action {
+        min-height: 50px;
+    }
+    .lm-dashboard-chip {
+        max-width: 100%;
+        white-space: normal;
+        line-height: 1.3;
+    }
+    .lm-dashboard-panel--quick-payment .lm-collect-payment-mobile-list {
+        max-height: min(64vh, 520px);
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+}

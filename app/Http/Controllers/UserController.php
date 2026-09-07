@@ -42,7 +42,12 @@ class UserController extends Controller
             $query->whereHas('roles', fn ($roleQuery) => $roleQuery->whereKey((int) $request->input('role')));
         }
 
-        $users = $query->paginate(20)->appends($request->query());
+        $perPage = (int) $request->input('per_page', 250);
+        if ($perPage <= 0 || $perPage > 1000) {
+            $perPage = 250;
+        }
+
+        $users = $query->paginate($perPage)->appends($request->query());
         $roles = $this->rolesForSelect();
 
         return view('standalone.users.index', compact('users', 'stats', 'roles'));

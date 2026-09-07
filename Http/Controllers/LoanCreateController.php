@@ -183,17 +183,63 @@ class LoanCreateController extends Controller
 
     public function searchCustomers(Request $request): JsonResponse
     {
-        $keyword = trim((string) $request->input('q', ''));
+        $keyword = trim((string) $request->input('q', $request->input('term', '')));
 
-        if (mb_strlen($keyword) < 2) {
-            return response()->json(['success' => true, 'data' => []]);
-        }
+        $rawCustomers = $this->service->searchCustomers($keyword);
 
-        $customers = $this->service->searchCustomers($keyword);
+        $customers = $rawCustomers->map(function ($c) {
+            $primaryName = !empty($c->khmer_name) ? $c->khmer_name : ($c->name ?? '');
+            $displayText = $primaryName;
+            if (!empty($c->phone)) {
+                $displayText .= ' (' . $c->phone . ')';
+            }
+            if (!empty($c->customer_code)) {
+                $displayText .= ' [' . $c->customer_code . ']';
+            }
+
+            return [
+                'id' => $c->id ?? null,
+                'main_contact_id' => $c->main_contact_id ?? null,
+                'text' => $displayText,
+                'name' => $c->name ?? '',
+                'khmer_name' => $c->khmer_name ?? '',
+                'phone' => $c->phone ?? '',
+                'alternate_phone' => $c->alternate_phone ?? '',
+                'id_card_number' => $c->id_card_number ?? '',
+                'address' => $c->address ?? '',
+                'province_code' => $c->province_code ?? '',
+                'district_code' => $c->district_code ?? '',
+                'commune_code' => $c->commune_code ?? '',
+                'village_code' => $c->village_code ?? '',
+                'province' => $c->province ?? '',
+                'district' => $c->district ?? '',
+                'commune' => $c->commune ?? '',
+                'village' => $c->village ?? '',
+                'customer_code' => $c->customer_code ?? '',
+                'photo_url' => $c->photo_url ?? null,
+            ];
+        });
 
         return response()->json([
             'success' => true,
             'data' => $customers,
+            'results' => $customers,
+        ]);
+    }
+
+    public function checkCustomerDuplicate(Request $request): JsonResponse
+    {
+        $phone = $request->input('phone', $request->input('customer_phone'));
+        $idCard = $request->input('id_card_number', $request->input('id_card'));
+        $excludeCustomerId = $request->filled('customer_id') ? (int) $request->input('customer_id') : null;
+
+        $duplicate = $this->service->findCustomerDuplicate($phone, $idCard, $excludeCustomerId);
+
+        return response()->json([
+            'success' => true,
+            'exists' => ! empty($duplicate),
+            'data' => $duplicate,
+            'duplicate' => $duplicate,
         ]);
     }
 

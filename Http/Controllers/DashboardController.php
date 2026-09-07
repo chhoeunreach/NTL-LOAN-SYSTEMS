@@ -37,11 +37,142 @@ class DashboardController extends Controller
         if ($page === 'Blacklist') {
             return $this->blacklistIndex($request);
         }
+        if ($page === 'Guarantors') {
+            return $this->guarantorsIndex($request);
+        }
 
         $payload = $this->buildPagePayload($page);
         return view('loanmanagement::dashboard.placeholder', [
             'page' => $page,
             'payload' => $payload,
+        ]);
+    }
+
+    public function guarantorsIndex(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $isKhmer = session('user.language', config('app.locale')) === 'km';
+        $conn = DB::connection('mysql_loan');
+        $hasGuarantorsTable = Schema::connection('mysql_loan')->hasTable('loan_guarantors');
+        $hasLoansTable = Schema::connection('mysql_loan')->hasTable('loans');
+
+        $name = trim((string) $request->input('name', ''));
+        $phone = trim((string) $request->input('phone', ''));
+        $nationalId = trim((string) $request->input('national_id', ''));
+        $relationship = trim((string) $request->input('relationship', ''));
+        $loanNumber = trim((string) $request->input('loan_number', ''));
+        $status = trim((string) $request->input('status', ''));
+
+        $guarantors = collect();
+
+        if ($hasGuarantorsTable) {
+            $query = $conn->table('loan_guarantors as g');
+            if ($hasLoansTable) {
+                $query->leftJoin('loans as l', 'l.id', '=', 'g.loan_id')
+                      ->select(
+                          'g.*',
+                          'l.loan_number',
+                          'l.customer_name_snapshot',
+                          'l.customer_phone_snapshot',
+                          'l.status as loan_status',
+                          'l.principal_amount',
+                          'l.balance_amount'
+                      );
+            } else {
+                $query->select('g.*');
+            }
+
+            if ($name !== '') {
+                $query->where(function ($q) use ($name) {
+                    $q->where('g.name', 'like', "%{$name}%")
+                      ->orWhere('g.guarantor_name', 'like', "%{$name}%");
+                });
+            }
+            if ($phone !== '') {
+                $query->where(function ($q) use ($phone) {
+                    $q->where('g.phone', 'like', "%{$phone}%")
+                      ->orWhere('g.guarantor_phone', 'like', "%{$phone}%");
+                });
+            }
+            if ($nationalId !== '') {
+                $query->where(function ($q) use ($nationalId) {
+                    $q->where('g.national_id', 'like', "%{$nationalId}%")
+                      ->orWhere('g.id_number', 'like', "%{$nationalId}%");
+                });
+            }
+            if ($relationship !== '') {
+                $query->where(function ($q) use ($relationship) {
+                    $q->where('g.relationship', 'like', "%{$relationship}%")
+                      ->orWhere('g.relation', 'like', "%{$relationship}%");
+                });
+            }
+            if ($loanNumber !== '' && $hasLoansTable) {
+                $query->where('l.loan_number', 'like', "%{$loanNumber}%");
+            }
+            if ($status !== '' && $hasLoansTable) {
+                $query->where('l.status', $status);
+            }
+
+            $perPage = (int) $request->input('per_page', 250);
+            if ($perPage <= 0 || $perPage > 1000) {
+                $perPage = 250;
+            }
+
+            $guarantors = $query->orderByDesc('g.id')->paginate($perPage)->appends($request->query());
+        } elseif ($hasLoansTable) {
+            $query = $conn->table('loans as l')
+                ->where(function ($q) {
+                    $q->whereNotNull('l.guarantor_name')->where('l.guarantor_name', '!=', '')
+                      ->orWhereNotNull('l.guarantor_phone')->where('l.guarantor_phone', '!=', '');
+                })
+                ->select(
+                    'l.id as loan_id',
+                    'l.id as id',
+                    'l.guarantor_name as name',
+                    'l.guarantor_phone as phone',
+                    'l.guarantor_national_id as national_id',
+                    'l.guarantor_address as address',
+                    'l.guarantor_relationship as relationship',
+                    'l.loan_number',
+                    'l.customer_name_snapshot',
+                    'l.customer_phone_snapshot',
+                    'l.status as loan_status',
+                    'l.principal_amount',
+                    'l.balance_amount',
+                    'l.created_at'
+                );
+
+            if ($name !== '') {
+                $query->where('l.guarantor_name', 'like', "%{$name}%");
+            }
+            if ($phone !== '') {
+                $query->where('l.guarantor_phone', 'like', "%{$phone}%");
+            }
+            if ($nationalId !== '') {
+                $query->where('l.guarantor_national_id', 'like', "%{$nationalId}%");
+            }
+            if ($relationship !== '') {
+                $query->where('l.guarantor_relationship', 'like', "%{$relationship}%");
+            }
+            if ($loanNumber !== '') {
+                $query->where('l.loan_number', 'like', "%{$loanNumber}%");
+            }
+            if ($status !== '') {
+                $query->where('l.status', $status);
+            }
+
+            $perPage = (int) $request->input('per_page', 250);
+            if ($perPage <= 0 || $perPage > 1000) {
+                $perPage = 250;
+            }
+
+            $guarantors = $query->orderByDesc('l.id')->paginate($perPage)->appends($request->query());
+        }
+
+        return view('loanmanagement::guarantors.index', [
+            'guarantors' => $guarantors,
+            'isKhmer' => $isKhmer,
         ]);
     }
 
@@ -121,12 +252,20 @@ class DashboardController extends Controller
         // Active customers who can be flagged
         $eligibleCustomers = collect();
         if (Schema::connection('mysql_loan')->hasTable('loan_customers')) {
+            $selectCols = ['id', 'customer_code', 'name', 'phone'];
+            if (Schema::connection('mysql_loan')->hasColumn('loan_customers', 'khmer_name')) {
+                $selectCols[] = 'khmer_name';
+            }
+            if (Schema::connection('mysql_loan')->hasColumn('loan_customers', 'id_card_number')) {
+                $selectCols[] = 'id_card_number';
+            }
             $eligibleCustomers = $conn->table('loan_customers')
-                ->where('blacklist_status', 0)
+                ->where(function ($q) {
+                    $q->whereNull('blacklist_status')->orWhere('blacklist_status', 0);
+                })
                 ->whereNull('deleted_at')
-                ->select('id', 'customer_code', 'name', 'phone')
+                ->select($selectCols)
                 ->orderBy('name')
-                ->limit(300)
                 ->get();
         }
 
@@ -149,6 +288,102 @@ class DashboardController extends Controller
             'isKhmer',
             'filters'
         ));
+    }
+
+    public function blacklistExportCsv(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $filters = $this->blacklistFilters($request);
+        $rows = [];
+
+        if (Schema::connection('mysql_loan')->hasTable('loan_customers')) {
+            $conn = DB::connection('mysql_loan');
+            $hasLoans = Schema::connection('mysql_loan')->hasTable('loans');
+            $query = $conn->table('loan_customers as c')
+                ->where('c.blacklist_status', 1)
+                ->whereNull('c.deleted_at');
+
+            $this->applyBlacklistFilters($query, $filters);
+
+            if ($hasLoans) {
+                $query->leftJoin('loans as l', function ($join) {
+                    $join->on('l.customer_id', '=', 'c.id')->whereNull('l.deleted_at');
+                });
+                $query->selectRaw('
+                    c.id,
+                    c.customer_code,
+                    c.name,
+                    c.khmer_name,
+                    c.phone,
+                    c.id_card_number,
+                    c.address,
+                    c.blacklist_reason,
+                    c.blacklist_date,
+                    c.blacklist_by,
+                    COUNT(DISTINCT l.id) as total_loans,
+                    COALESCE(SUM(l.balance_amount), 0) as total_debt
+                ')->groupBy('c.id');
+            } else {
+                $query->selectRaw('
+                    c.id,
+                    c.customer_code,
+                    c.name,
+                    c.khmer_name,
+                    c.phone,
+                    c.id_card_number,
+                    c.address,
+                    c.blacklist_reason,
+                    c.blacklist_date,
+                    c.blacklist_by,
+                    0 as total_loans,
+                    0 as total_debt
+                ');
+            }
+
+            $customers = $query->orderByDesc('c.blacklist_date')->orderByDesc('c.id')->get();
+            $staffIds = $customers->pluck('blacklist_by')->filter()->unique()->values();
+            $staffNames = [];
+            if ($staffIds->isNotEmpty() && Schema::hasTable('users')) {
+                $staffNames = DB::table('users')
+                    ->whereIn('id', $staffIds)
+                    ->selectRaw("id, COALESCE(NULLIF(TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))), ''), username) as display_name")
+                    ->pluck('display_name', 'id')
+                    ->all();
+            }
+
+            foreach ($customers as $customer) {
+                $rows[] = [
+                    'Customer ID' => $customer->id,
+                    'Code' => $customer->customer_code ?: '#'.$customer->id,
+                    'Customer Name' => $customer->name ?? '',
+                    'Khmer Name' => $customer->khmer_name ?? '',
+                    'Phone' => $customer->phone ?? '',
+                    'ID Card' => $customer->id_card_number ?? '',
+                    'Address' => $customer->address ?? '',
+                    'Blacklist Reason' => $customer->blacklist_reason ?? '',
+                    'Flagged Date' => ! empty($customer->blacklist_date) ? \Carbon\Carbon::parse($customer->blacklist_date)->format('Y-m-d H:i:s') : '',
+                    'Flagged By' => $staffNames[$customer->blacklist_by] ?? ($customer->blacklist_by ? 'Staff #'.$customer->blacklist_by : ''),
+                    'Linked Installments' => (int) ($customer->total_loans ?? 0),
+                    'Debt at Risk' => number_format((float) ($customer->total_debt ?? 0), 2, '.', ''),
+                    'Status' => 'Blacklisted',
+                ];
+            }
+        }
+
+        $filename = 'loan-blacklisted-customers-'.now()->format('Ymd-His').'.csv';
+
+        return response()->streamDownload(function () use ($rows) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, [
+                'Customer ID', 'Code', 'Customer Name', 'Khmer Name', 'Phone', 'ID Card', 'Address',
+                'Blacklist Reason', 'Flagged Date', 'Flagged By', 'Linked Installments', 'Debt at Risk', 'Status',
+            ]);
+            foreach ($rows as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     protected function blacklistFilters(Request $request): array
@@ -256,10 +491,15 @@ class DashboardController extends Controller
             'completed' => $resultColumn ? (int) (clone $summaryQuery)->whereIn('v.'.$resultColumn, ['visited', 'completed', 'success', 'paid', 'promise_to_pay'])->count() : 0,
         ];
 
+        $perPage = (int) $request->input('per_page', 250);
+        if ($perPage <= 0 || $perPage > 1000) {
+            $perPage = 250;
+        }
+
         $visits = $query
             ->orderByDesc($dateColumn ? 'v.'.$dateColumn : 'v.id')
             ->orderByDesc('v.id')
-            ->paginate(25)
+            ->paginate($perPage)
             ->appends($request->query());
 
         return view('loanmanagement::collection_visits.index', [
@@ -1134,17 +1374,22 @@ class DashboardController extends Controller
 
     protected function paymentSummaryFilters(Request $request): array
     {
-        $dateFrom = $request->input('date_from', now()->toDateString());
-        $dateTo = $request->input('date_to', now()->toDateString());
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        $dateRange = trim((string) $request->input('date_range', ''));
 
-        try {
-            $dateFrom = \Carbon\Carbon::parse($dateFrom)->toDateString();
-        } catch (\Throwable $e) {
-            $dateFrom = now()->toDateString();
+        if ($dateRange !== '' && (! $request->filled('date_from') || ! $request->filled('date_to')) && ($parsedRange = $this->parseSummaryDateRange($dateRange))) {
+            [$dateFrom, $dateTo] = $parsedRange;
         }
 
         try {
-            $dateTo = \Carbon\Carbon::parse($dateTo)->toDateString();
+            $dateFrom = $dateFrom ? \Carbon\Carbon::parse($dateFrom)->toDateString() : now()->startOfMonth()->toDateString();
+        } catch (\Throwable $e) {
+            $dateFrom = now()->startOfMonth()->toDateString();
+        }
+
+        try {
+            $dateTo = $dateTo ? \Carbon\Carbon::parse($dateTo)->toDateString() : now()->toDateString();
         } catch (\Throwable $e) {
             $dateTo = now()->toDateString();
         }
@@ -1935,7 +2180,7 @@ class DashboardController extends Controller
         $summary = [];
 
         foreach ($recentPayments as $payment) {
-            $type = 'monthly';
+            $type = $this->dashboardPaymentTypeKey((string) ($payment->payment_type ?? 'monthly'));
             if (! isset($summary[$type])) {
                 $summary[$type] = $this->emptyDashboardPaymentSummaryRow($type);
             }
@@ -2003,12 +2248,12 @@ class DashboardController extends Controller
     {
         $type = strtolower(trim($type));
 
-        if (in_array($type, ['monthly', 'collection', 'installment'], true)) {
-            return 'monthly';
+        if (in_array($type, ['loan', 'initial', 'down_payment', 'downpayment', 'deposit', 'customer_deposit', 'customer_deposit_payment', 'loan_deposit'], true)) {
+            return 'loan';
         }
 
-        if (in_array($type, ['loan', 'initial', 'down_payment', 'downpayment', 'deposit'], true)) {
-            return 'loan';
+        if (in_array($type, ['monthly', 'collection', 'schedule', 'installment_payment', 'installment_collection'], true)) {
+            return 'monthly';
         }
 
         return $type !== '' ? $type : 'monthly';
@@ -2515,15 +2760,20 @@ class DashboardController extends Controller
             });
         }
 
-        if ($excludeInitialDownPayments
-            && Schema::connection('mysql_loan')->hasColumn('loans', 'loan_date')
-            && Schema::connection('mysql_loan')->hasColumn('loans', 'down_payment')) {
-            $query->where(function ($paymentQuery) use ($dateColumn, $amountExpr) {
-                $paymentQuery->whereNull('l.down_payment')
-                    ->orWhere('l.down_payment', '<=', 0)
-                    ->orWhereRaw('DATE(p.'.$dateColumn.') <> DATE(l.loan_date)')
-                    ->orWhereRaw('ABS(('.$amountExpr.') - l.down_payment) > 0.0001');
-            });
+        if ($excludeInitialDownPayments) {
+            if (Schema::connection('mysql_loan')->hasColumn('loan_payments', 'payment_type')) {
+                $query->whereNotIn('p.payment_type', ['loan', 'initial', 'down_payment', 'downpayment', 'deposit', 'customer_deposit', 'customer_deposit_payment', 'loan_deposit']);
+            } elseif (Schema::connection('mysql_loan')->hasColumn('loan_payments', 'schedule_id')) {
+                $query->whereNotNull('p.schedule_id');
+            } elseif (Schema::connection('mysql_loan')->hasColumn('loans', 'loan_date')
+                && Schema::connection('mysql_loan')->hasColumn('loans', 'down_payment')) {
+                $query->where(function ($paymentQuery) use ($dateColumn, $amountExpr) {
+                    $paymentQuery->whereNull('l.down_payment')
+                        ->orWhere('l.down_payment', '<=', 0)
+                        ->orWhereRaw('DATE(p.'.$dateColumn.') <> DATE(l.loan_date)')
+                        ->orWhereRaw('ABS(('.$amountExpr.') - l.down_payment) > 0.0001');
+                });
+            }
         }
 
         $this->applyDashboardLoanLocationAndSearchFilters($query, $filters, 'l');

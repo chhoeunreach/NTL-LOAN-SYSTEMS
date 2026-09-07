@@ -1,7 +1,10 @@
 @extends('loanmanagement::layouts.app')
-@section('title', 'Collection Visits')
+@section('title', 'Field Collection Visits')
 
 @php
+    $lmIsKhmer = session('user.language', config('app.locale')) === 'km';
+    $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
+
     $resultBadge = function ($result) {
         $result = strtolower((string) $result);
         return match ($result) {
@@ -11,131 +14,426 @@
             default => 'default',
         };
     };
+
+    $dateFrom = $filters['date_from'] ?? '';
+    $dateTo = $filters['date_to'] ?? '';
+    $dateRangeDisplay = $dateFrom && $dateTo
+        ? \Carbon\Carbon::parse($dateFrom)->format('m-d-Y').' - '.\Carbon\Carbon::parse($dateTo)->format('m-d-Y')
+        : '';
 @endphp
 
+@section('loan_css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
+<style>
+    /* =========================================================
+       ULTIMATE POS STANDARD STYLE FOR FIELD COLLECTION VISITS
+       ========================================================= */
+    .lm-visit-content {
+        font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Filters Component Styling */
+    .lm-pos-filter-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.2fr 1.2fr 1.5fr auto;
+        gap: 14px 18px;
+        align-items: end;
+        padding: 6px 0;
+    }
+    @media (max-width: 1200px) {
+        .lm-pos-filter-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .lm-pos-filter-grid { grid-template-columns: 1fr; }
+    }
+    .lm-pos-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .lm-pos-filter-field label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.2;
+    }
+    .lm-pos-filter-field .form-control {
+        height: 38px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: #1e293b;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        outline: none;
+        width: 100%;
+        box-shadow: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .lm-pos-filter-field .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    .lm-pos-filter-field select.form-control {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+
+    .lm-pos-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+    }
+    .lm-btn-pos-filter {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #0284c7;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .lm-btn-pos-filter:hover { background: #0369a1; }
+    .lm-btn-pos-reset {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    .lm-btn-pos-reset:hover { background: #e2e8f0; color: #1e293b; text-decoration: none; }
+
+    /* Ultimate POS DataTables Toolbar Layout */
+    .lm-dt-top {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-length label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        font-weight: 500 !important;
+        font-size: 13px !important;
+        color: #475569 !important;
+    }
+    .lm-dt-length select {
+        height: 34px !important;
+        padding: 2px 28px 2px 10px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 13px !important;
+        color: #1e293b !important;
+        background-color: #fff !important;
+        outline: none !important;
+    }
+    .lm-dt-buttons {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        flex-wrap: wrap !important;
+    }
+    .lm-dt-buttons .btn {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.15s ease !important;
+    }
+    .lm-dt-buttons .btn:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+    .lm-dt-search {
+        margin: 0 !important;
+    }
+    .lm-dt-search label {
+        margin: 0 !important;
+        display: block !important;
+    }
+    .lm-dt-search input {
+        height: 34px !important;
+        min-width: 220px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        outline: none !important;
+        background: #ffffff !important;
+        box-shadow: none !important;
+        transition: border-color 0.15s ease !important;
+    }
+    .lm-dt-search input:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+    }
+
+    /* Table Typography & Styling */
+    .lm-table-dense {
+        margin-bottom: 0 !important;
+        border-collapse: collapse !important;
+    }
+    .lm-table-dense th {
+        font-size: 12.5px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.3px !important;
+        color: #475569 !important;
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        padding: 10px 12px !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+    }
+    .lm-table-dense td {
+        font-size: 13px !important;
+        color: #1e293b !important;
+        padding: 10px 12px !important;
+        vertical-align: middle !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    .lm-table-dense tbody tr:hover {
+        background-color: #f8fafc !important;
+    }
+
+    /* Bottom Info & Pagination */
+    .lm-dt-bottom {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-info {
+        font-size: 13px !important;
+        color: #64748b !important;
+        padding: 0 !important;
+    }
+    .lm-dt-pagination .pagination {
+        margin: 0 !important;
+    }
+    .lm-dt-pagination .pagination > li > a {
+        border-radius: 4px !important;
+        margin: 0 2px !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    .lm-dt-pagination .pagination > .active > a {
+        background-color: #0284c7 !important;
+        border-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
+
+    /* --- KPI STATS CARDS --- */
+    .lm-visit-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 20px;
+    }
+    .lm-visit-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .lm-visit-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+    .lm-visit-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    .lm-visit-blue .lm-visit-card-icon { background: #eff6ff; color: #2563eb; }
+    .lm-visit-green .lm-visit-card-icon { background: #ecfdf5; color: #16a34a; }
+    .lm-visit-amber .lm-visit-card-icon { background: #fffbeb; color: #d97706; }
+    .lm-visit-purple .lm-visit-card-icon { background: #faf5ff; color: #9333ea; }
+    .lm-visit-card-content small {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        margin-bottom: 2px;
+    }
+    .lm-visit-card-content strong {
+        display: block;
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.15;
+    }
+
+    @media (max-width: 992px) {
+        .lm-visit-summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .lm-visit-summary-grid { grid-template-columns: 1fr; }
+    }
+</style>
+@endsection
+
 @section('content_body')
-<section class="content-header">
-    <h1>Collection Visits</h1>
-</section>
+<div class="lm-visit-content">
 
-<section class="content">
+    {{-- Content Header (Page header) --}}
+    <section class="content-header" style="padding: 0 0 16px 0;">
+        <h1 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">
+            {{ $lmText('Field Collection Visits', 'កំណត់ត្រាចុះជួបអតិថិជន') }}
+            <small style="font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px;">
+                {{ $lmText('Track field collector visit history, GPS locations, customer encounters, and follow-up notes', 'តាមដានប្រវត្តិចុះជួបអតិថិជន ទីតាំង GPS និងកំណត់សម្គាល់ការទារបំណុល') }}
+            </small>
+        </h1>
+    </section>
+
+    {{-- 4 KPI Metric Cards --}}
     <div class="lm-visit-summary-grid">
-        <div class="lm-visit-summary-card tone-blue">
-            <div class="lm-visit-summary-icon"><i class="fa fa-street-view"></i></div>
-            <div class="lm-visit-summary-copy">
-                <span>Total Visits</span>
+        <div class="lm-visit-card lm-visit-blue">
+            <div class="lm-visit-card-icon"><i class="fa fa-street-view"></i></div>
+            <div class="lm-visit-card-content">
+                <small>{{ $lmText('Total Visits', 'ការចុះជួបសរុប') }}</small>
                 <strong>{{ number_format($summary['total'] ?? 0) }}</strong>
-                <small>Matching current filters</small>
             </div>
         </div>
-        <div class="lm-visit-summary-card tone-green">
-            <div class="lm-visit-summary-icon"><i class="fa fa-calendar-check-o"></i></div>
-            <div class="lm-visit-summary-copy">
-                <span>Today</span>
+        <div class="lm-visit-card lm-visit-green">
+            <div class="lm-visit-card-icon"><i class="fa fa-calendar-check-o"></i></div>
+            <div class="lm-visit-card-content">
+                <small>{{ $lmText('Today', 'ថ្ងៃនេះ') }}</small>
                 <strong>{{ number_format($summary['today'] ?? 0) }}</strong>
-                <small>Visited today</small>
             </div>
         </div>
-        <div class="lm-visit-summary-card tone-orange">
-            <div class="lm-visit-summary-icon"><i class="fa fa-clock-o"></i></div>
-            <div class="lm-visit-summary-copy">
-                <span>Pending</span>
+        <div class="lm-visit-card lm-visit-amber">
+            <div class="lm-visit-card-icon"><i class="fa fa-clock-o"></i></div>
+            <div class="lm-visit-card-content">
+                <small>{{ $lmText('Pending / Scheduled', 'រង់ចាំ / គ្រោងទុក') }}</small>
                 <strong>{{ number_format($summary['pending'] ?? 0) }}</strong>
-                <small>Needs follow-up</small>
             </div>
         </div>
-        <div class="lm-visit-summary-card tone-violet">
-            <div class="lm-visit-summary-icon"><i class="fa fa-check-circle"></i></div>
-            <div class="lm-visit-summary-copy">
-                <span>Completed</span>
+        <div class="lm-visit-card lm-visit-purple">
+            <div class="lm-visit-card-icon"><i class="fa fa-check-circle"></i></div>
+            <div class="lm-visit-card-content">
+                <small>{{ $lmText('Completed', 'បានបញ្ចប់') }}</small>
                 <strong>{{ number_format($summary['completed'] ?? 0) }}</strong>
-                <small>Finished visits</small>
             </div>
         </div>
     </div>
 
-    <div class="box box-primary lm-visit-filter-panel is-collapsed" id="loanVisitFilterPanel">
-        <div class="box-header with-border">
-            <h3 class="box-title">
-                <button type="button" class="lm-visit-filter-title" id="loanVisitFilterTitle" aria-expanded="false" aria-controls="loanVisitFilterBody">
-                    <i class="fa fa-filter"></i> Filters
-                </button>
-            </h3>
-            <div class="box-tools pull-right">
-                <button type="button" class="btn btn-box-tool lm-visit-filter-toggle" id="loanVisitFilterToggle" aria-expanded="false" aria-controls="loanVisitFilterBody">
-                    <span id="loanVisitFilterToggleText">Expand</span>
-                    <i class="fa fa-chevron-down" id="loanVisitFilterToggleIcon" aria-hidden="true"></i>
-                </button>
-            </div>
-        </div>
-        <div class="box-body" id="loanVisitFilterBody">
-            <form method="GET" action="{{ route('loan-management.collection-visits.index') }}" id="loanVisitFilterForm">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label>Search</label>
-                            <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="Installment, customer, phone, address">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label>Collector</label>
-                            <select name="collector" class="form-control">
-                                <option value="">All</option>
-                                @foreach($collectors as $value => $label)
-                                    <option value="{{ $value }}" {{ ($filters['collector'] ?? '') === (string) $value ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label>Result</label>
-                            <select name="result" class="form-control">
-                                <option value="">All</option>
-                                @foreach($results as $value => $label)
-                                    <option value="{{ $value }}" {{ ($filters['result'] ?? '') === (string) $value ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label>Date From</label>
-                            <input type="date" name="date_from" class="form-control" value="{{ $filters['date_from'] ?? '' }}">
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="form-group">
-                            <label>Date To</label>
-                            <input type="date" name="date_to" class="form-control" value="{{ $filters['date_to'] ?? '' }}">
-                        </div>
-                    </div>
-                    <div class="col-md-1 lm-visit-filter-actions">
-                        <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-filter"></i> Apply</button>
-                        <a href="{{ route('loan-management.collection-visits.index') }}" class="btn btn-default btn-block" id="loanVisitFilterReset">Reset</a>
-                    </div>
+    {{-- Ultimate POS Standard Collapsible Filters Component --}}
+    @component('components.filters', ['title' => __('report.filters'), 'closed' => true])
+        <form method="GET" action="{{ route('loan-management.collection-visits.index') }}" id="loanVisitFilterForm">
+            <div class="lm-pos-filter-grid">
+                {{-- Search Keyword --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Search Keyword', 'ស្វែងរក') }}</label>
+                    <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $lmText('Installment #, customer, phone, address...', 'លេខកិច្ចសន្យា ឈ្មោះ ទូរស័ព្ទ អាសយដ្ឋាន...') }}">
                 </div>
-            </form>
-        </div>
-    </div>
 
-    <div class="box box-solid lm-visit-table-card">
-        <div class="box-header with-border">
-            <h3 class="box-title">Visit Records</h3>
-        </div>
-        <div class="box-body table-responsive">
-            <table class="table table-bordered table-hover lm-visit-table">
+                {{-- Collector Filter --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Collector', 'បុគ្គលិកទារប្រាក់') }}</label>
+                    <select name="collector" class="form-control">
+                        <option value="">{{ $lmText('All Collectors', 'បុគ្គលិកទាំងអស់') }}</option>
+                        @foreach($collectors as $value => $label)
+                            <option value="{{ $value }}" {{ ($filters['collector'] ?? '') === (string) $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Result Filter --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Result Status', 'លទ្ធផល') }}</label>
+                    <select name="result" class="form-control">
+                        <option value="">{{ $lmText('All Results', 'លទ្ធផលទាំងអស់') }}</option>
+                        @foreach($results as $value => $label)
+                            <option value="{{ $value }}" {{ ($filters['result'] ?? '') === (string) $value ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Date Range --}}
+                <div class="lm-pos-filter-field">
+                    <label>{{ $lmText('Visit Date Range', 'ចន្លោះថ្ងៃចុះជួប') }}</label>
+                    <input type="text" name="date_range" id="visitDateRange" value="{{ $dateRangeDisplay }}" class="form-control" placeholder="{{ $lmText('Select date range', 'ជ្រើសរើសចន្លោះថ្ងៃ') }}" autocomplete="off">
+                    <input type="hidden" name="date_from" value="{{ $dateFrom }}">
+                    <input type="hidden" name="date_to" value="{{ $dateTo }}">
+                </div>
+
+                {{-- Action Buttons --}}
+                <div class="lm-pos-filter-actions">
+                    <button type="submit" class="lm-btn-pos-filter">
+                        <i class="fa fa-filter"></i> {{ $lmText('Apply', 'អនុវត្ត') }}
+                    </button>
+                    <a href="{{ route('loan-management.collection-visits.index') }}" class="lm-btn-pos-reset">
+                        <i class="fa fa-refresh"></i> {{ $lmText('Reset', 'សម្អាត') }}
+                    </a>
+                </div>
+            </div>
+        </form>
+    @endcomponent
+
+    {{-- Ultimate POS Standard Widget Component --}}
+    @component('components.widget', ['class' => 'box-primary', 'title' => $lmText('All Field Collection Visits', 'កំណត់ត្រាចុះជួបអតិថិជនទាំងអស់')])
+        <div class="table-responsive">
+            <table class="lm-table-dense table table-bordered table-striped table-hover" id="loanVisitsTable" style="width: 100%; margin-bottom: 0;">
                 <thead>
-                    <tr>
-                        <th>Visit Date</th>
-                        <th>Installment #</th>
-                        <th>Customer</th>
-                        <th>Collector</th>
-                        <th>Result</th>
-                        <th>Location</th>
-                        <th>Note</th>
-                        <th style="width:90px;">Action</th>
+                    <tr style="background: #f8fafc; color: #475569;">
+                        <th style="width: 130px;">{{ $lmText('Visit Date', 'កាលបរិច្ឆេទ') }}</th>
+                        <th>{{ $lmText('Installment #', 'លេខកិច្ចសន្យា') }}</th>
+                        <th>{{ $lmText('Customer', 'អតិថិជន') }}</th>
+                        <th>{{ $lmText('Collector', 'បុគ្គលិកទារប្រាក់') }}</th>
+                        <th style="text-align: center;">{{ $lmText('Result', 'លទ្ធផល') }}</th>
+                        <th>{{ $lmText('Location / Address', 'ទីតាំង / អាសយដ្ឋាន') }}</th>
+                        <th>{{ $lmText('Notes', 'កំណត់ចំណាំ') }}</th>
+                        <th style="width: 80px; text-align: center;" class="no-export">{{ $lmText('Action', 'សកម្មភាព') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -146,231 +444,220 @@
                                 : null;
                         @endphp
                         <tr>
-                            <td>{{ !empty($visit->visited_at) ? \Carbon\Carbon::parse($visit->visited_at)->format('d-m-Y H:i') : '-' }}</td>
-                            <td>
-                                @if(Route::has('loan-management.loans.view') && !empty($visit->loan_id))
-                                    <a href="{{ route('loan-management.loans.view', $visit->loan_id) }}">{{ $visit->loan_number ?? ('Installment #'.$visit->loan_id) }}</a>
-                                @else
-                                    {{ $visit->loan_number ?? '-' }}
+                            <td style="white-space: nowrap; font-size: 12px; color: #475569;">
+                                <strong>{{ !empty($visit->visited_at) ? \Carbon\Carbon::parse($visit->visited_at)->format('d-m-Y') : '-' }}</strong>
+                                @if(!empty($visit->visited_at))
+                                    <div style="font-size: 11px; color: #94a3b8;">{{ \Carbon\Carbon::parse($visit->visited_at)->format('H:i') }}</div>
                                 @endif
                             </td>
                             <td>
-                                <strong>{{ $visit->customer_name ?? '-' }}</strong><br>
-                                <small class="text-muted">{{ $visit->customer_phone ?? '' }}</small>
+                                @if(Route::has('loan-management.loans.view') && !empty($visit->loan_id))
+                                    <a href="{{ route('loan-management.loans.view', $visit->loan_id) }}" style="font-weight: 700; color: #0284c7; text-decoration: none;">
+                                        {{ $visit->loan_number ?? ('Installment #'.$visit->loan_id) }}
+                                    </a>
+                                @else
+                                    <strong>{{ $visit->loan_number ?? '-' }}</strong>
+                                @endif
                             </td>
-                            <td>{{ $visit->collector_name ?? '-' }}</td>
-                            <td><span class="label label-{{ $resultBadge($visit->result ?? '') }}">{{ ucwords(str_replace('_', ' ', $visit->result ?? 'pending')) }}</span></td>
+                            <td>
+                                <strong>{{ $visit->customer_name ?? '-' }}</strong>
+                                @if(!empty($visit->customer_phone))
+                                    <div style="font-size: 11.5px; color: #64748b;">
+                                        <i class="fa fa-phone text-muted" style="margin-right: 2px;"></i> {{ $visit->customer_phone }}
+                                    </div>
+                                @endif
+                            </td>
+                            <td>
+                                <span style="font-weight: 600; color: #334155;">{{ $visit->collector_name ?? '-' }}</span>
+                            </td>
+                            <td style="text-align: center;">
+                                <span class="label label-{{ $resultBadge($visit->result ?? '') }}" style="font-size: 10.5px; text-transform: uppercase;">
+                                    {{ ucwords(str_replace('_', ' ', $visit->result ?? 'pending')) }}
+                                </span>
+                            </td>
                             <td>
                                 {{ $visit->address_snapshot ?? '-' }}
                                 @if($mapUrl)
-                                    <br><a href="{{ $mapUrl }}" target="_blank" rel="noopener" class="lm-visit-map-link"><i class="fa fa-map-marker"></i> Map</a>
+                                    <div>
+                                        <a href="{{ $mapUrl }}" target="_blank" rel="noopener" style="font-size: 11px; font-weight: 700; color: #0284c7; text-decoration: none;">
+                                            <i class="fa fa-map-marker text-danger"></i> Google Maps
+                                        </a>
+                                    </div>
                                 @endif
                             </td>
-                            <td>{{ \Illuminate\Support\Str::limit($visit->note ?? '-', 90) }}</td>
-                            <td>
+                            <td style="font-size: 12px; color: #475569;">
+                                {{ \Illuminate\Support\Str::limit($visit->note ?? '-', 90) }}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">
                                 @if($mapUrl)
-                                    <a class="btn btn-xs btn-default" href="{{ $mapUrl }}" target="_blank" rel="noopener"><i class="fa fa-location-arrow"></i> Open</a>
+                                    <a class="btn btn-xs btn-default" href="{{ $mapUrl }}" target="_blank" rel="noopener" title="{{ $lmText('Open Map Location', 'បើកផែនទី') }}" style="border-radius: 4px;">
+                                        <i class="fa fa-location-arrow text-primary"></i> Map
+                                    </a>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-muted">No collection visits found.</td></tr>
                     @endforelse
                 </tbody>
             </table>
-
-            @if(method_exists($visits, 'links'))
-                <div class="text-center">{{ $visits->links() }}</div>
-            @endif
         </div>
-    </div>
-</section>
-@endsection
 
-@section('loan_css')
-    <style>
-        .lm-visit-summary-grid {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-        .lm-visit-summary-card {
-            display: flex;
-            align-items: center;
-            gap: 13px;
-            min-height: 108px;
-            padding: 18px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            background: #fff;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
-        }
-        .lm-visit-summary-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex: 0 0 46px;
-            width: 46px;
-            height: 46px;
-            border-radius: 8px;
-            color: #fff;
-            font-size: 20px;
-        }
-        .lm-visit-summary-copy span,
-        .lm-visit-summary-copy small {
-            display: block;
-            color: #64748b;
-            line-height: 1.25;
-        }
-        .lm-visit-summary-copy span {
-            font-size: 12px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        .lm-visit-summary-copy strong {
-            display: block;
-            margin: 6px 0 4px;
-            color: #111827;
-            font-size: 24px;
-            font-weight: 900;
-            line-height: 1.1;
-        }
-        .lm-visit-summary-card.tone-blue .lm-visit-summary-icon { background: #2563eb; }
-        .lm-visit-summary-card.tone-green .lm-visit-summary-icon { background: #16a34a; }
-        .lm-visit-summary-card.tone-orange .lm-visit-summary-icon { background: #ea580c; }
-        .lm-visit-summary-card.tone-violet .lm-visit-summary-icon { background: #7c3aed; }
-        .lm-visit-filter-panel .box-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        .lm-visit-filter-title,
-        .lm-visit-filter-toggle {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-        }
-        .lm-visit-filter-title {
-            border: 0;
-            padding: 0;
-            background: transparent;
-            color: #111827;
-            font-weight: 700;
-        }
-        .lm-visit-filter-toggle {
-            min-height: 30px;
-            padding: 0 10px;
-            border: 1px solid #d8e0ea;
-            border-radius: 6px;
-            background: #fff;
-            color: #475569;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        .lm-visit-filter-toggle:hover,
-        .lm-visit-filter-toggle:focus {
-            border-color: var(--lm-primary-200, #bfdbfe);
-            background: var(--lm-primary-50, #eff6ff);
-            color: var(--lm-primary, #2563eb);
-            outline: 0;
-        }
-        .lm-visit-filter-panel.is-collapsed #loanVisitFilterBody {
-            display: none;
-        }
-        .lm-visit-filter-actions {
-            padding-top: 25px;
-        }
-        .lm-visit-table-card {
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
-        }
-        .lm-visit-table > thead > tr > th {
-            background: #f8fafc;
-            color: #334155;
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-        .lm-visit-map-link {
-            font-size: 12px;
-            font-weight: 700;
-        }
-        @media (max-width: 1200px) {
-            .lm-visit-summary-grid {
-                grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-        }
-        @media (max-width: 767px) {
-            .lm-visit-summary-grid {
-                grid-template-columns: 1fr;
-            }
-            .lm-visit-summary-card {
-                min-height: 94px;
-                padding: 14px;
-            }
-            .lm-visit-filter-actions {
-                padding-top: 0;
-            }
-        }
-    </style>
+        @if(method_exists($visits, 'links') && $visits->hasPages())
+            <div style="margin-top: 10px;">
+                {{ $visits->links() }}
+            </div>
+        @endif
+    @endcomponent
+
+</div>
 @endsection
 
 @section('loan_js')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var panel = document.getElementById('loanVisitFilterPanel');
-            var title = document.getElementById('loanVisitFilterTitle');
-            var toggle = document.getElementById('loanVisitFilterToggle');
-            var toggleText = document.getElementById('loanVisitFilterToggleText');
-            var toggleIcon = document.getElementById('loanVisitFilterToggleIcon');
-            var form = document.getElementById('loanVisitFilterForm');
-            var reset = document.getElementById('loanVisitFilterReset');
-            var storageKey = 'lm_collection_visit_filters_collapsed_v1';
+<script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 
-            if (!panel || !toggle || !toggleText || !toggleIcon) {
-                return;
-            }
+<script>
+$(document).ready(function(){
+    // Date Range Picker initialization
+    var $dateRange = $('#visitDateRange');
+    var $filterForm = $('#loanVisitFilterForm');
+    var displayDateFormat = window.moment_date_format || 'MM-DD-YYYY';
+    var dateRangeSettings = window.dateRangeSettings ? $.extend(true, {}, window.dateRangeSettings) : {};
 
-            function setCollapsed(collapsed) {
-                panel.classList.toggle('is-collapsed', collapsed);
-                toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-                if (title) {
-                    title.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (window.moment && $.fn.daterangepicker && $dateRange.length) {
+        var startDate = @json($dateFrom) ? moment(@json($dateFrom)) : moment().subtract(29, 'days');
+        var endDate = @json($dateTo) ? moment(@json($dateTo)) : moment();
+        var fyStart = (typeof financial_year !== 'undefined' && financial_year.start && moment(financial_year.start).isValid()) ? moment(financial_year.start) : moment().startOf('year');
+        var fyEnd = (typeof financial_year !== 'undefined' && financial_year.end && moment(financial_year.end).isValid()) ? moment(financial_year.end) : moment().endOf('year');
+
+        $dateRange.daterangepicker($.extend(true, {}, dateRangeSettings, {
+            autoUpdateInput: false,
+            showDropdowns: true,
+            linkedCalendars: false,
+            startDate: startDate,
+            endDate: endDate,
+            parentEl: 'body',
+            opens: 'right',
+            drops: 'auto',
+            ranges: {
+                'Today': [moment(), moment()],
+                'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                'Last 7 Days': [moment().subtract(6, 'days'), moment()],
+                'Last 30 Days': [moment().subtract(29, 'days'), moment()],
+                'This Month': [moment().startOf('month'), moment().endOf('month')],
+                'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                'This Year': [moment().startOf('year'), moment().endOf('year')],
+                'Last Year': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+                'Current financial year': [fyStart.clone(), fyEnd.clone()],
+                'Last financial year': [fyStart.clone().subtract(1, 'year'), fyEnd.clone().subtract(1, 'year')]
+            },
+            locale: $.extend(true, {}, dateRangeSettings.locale || {}, {
+                format: displayDateFormat,
+                separator: ' - ',
+                applyLabel: @json($lmText('Apply', 'អនុវត្ត')),
+                cancelLabel: @json($lmText('Clear', 'សម្អាត')),
+                customRangeLabel: @json($lmText('Custom Range', 'ជ្រើសរើសផ្ទាល់')),
+                toLabel: '~'
+            })
+        }));
+
+        $dateRange
+            .on('apply.daterangepicker', function (event, picker) {
+                $(this).val(picker.startDate.format(displayDateFormat) + ' - ' + picker.endDate.format(displayDateFormat));
+                $filterForm.find('[name="date_from"]').val(picker.startDate.format('YYYY-MM-DD'));
+                $filterForm.find('[name="date_to"]').val(picker.endDate.format('YYYY-MM-DD'));
+                $filterForm.submit();
+            })
+            .on('cancel.daterangepicker', function () {
+                $(this).val('');
+                $filterForm.find('[name="date_from"], [name="date_to"]').val('');
+                $filterForm.submit();
+            });
+    }
+
+    // Initialize DataTables with Ultimate POS standard toolbar
+    if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#loanVisitsTable')) {
+        var tableButtons = [];
+        if ($.fn.dataTable.Buttons) {
+            tableButtons = [
+                {
+                    extend: 'copy',
+                    text: 'Copy',
+                    className: 'btn btn-default btn-sm',
+                    exportOptions: { columns: ':visible:not(.no-export)' }
+                },
+                {
+                    extend: 'csv',
+                    text: '<i class="fa fa-file-text-o"></i> Export CSV',
+                    className: 'btn btn-default btn-sm',
+                    exportOptions: { columns: ':visible:not(.no-export)' }
+                },
+                {
+                    extend: 'excel',
+                    text: '<i class="fa fa-file-excel-o"></i> Export Excel',
+                    className: 'btn btn-default btn-sm',
+                    exportOptions: { columns: ':visible:not(.no-export)' }
+                },
+                {
+                    extend: 'print',
+                    text: '<i class="fa fa-print"></i> Print',
+                    className: 'btn btn-default btn-sm',
+                    exportOptions: { columns: ':visible:not(.no-export)', stripHtml: true }
+                },
+                {
+                    extend: 'colvis',
+                    text: '<i class="fa fa-columns"></i> Column visibility',
+                    className: 'btn btn-default btn-sm'
+                },
+                {
+                    extend: 'pdf',
+                    text: '<i class="fa fa-file-pdf-o"></i> Export PDF <i class="fa fa-caret-down" style="margin-left:2px;"></i>',
+                    className: 'btn btn-default btn-sm',
+                    orientation: 'landscape',
+                    pageSize: 'A4',
+                    exportOptions: { columns: ':visible:not(.no-export)' }
                 }
-                toggleText.textContent = collapsed ? 'Expand' : 'Collapse';
-                toggleIcon.classList.toggle('fa-chevron-down', collapsed);
-                toggleIcon.classList.toggle('fa-chevron-up', !collapsed);
-                try { window.localStorage.setItem(storageKey, collapsed ? '1' : '0'); } catch (e) {}
-            }
+            ];
+        }
 
-            function togglePanel() {
-                setCollapsed(!panel.classList.contains('is-collapsed'));
-            }
-
-            try {
-                var savedState = window.localStorage.getItem(storageKey);
-                setCollapsed(savedState === null ? true : savedState === '1');
-            } catch (e) {
-                setCollapsed(true);
-            }
-
-            toggle.addEventListener('click', togglePanel);
-            if (title) {
-                title.addEventListener('click', togglePanel);
-            }
-            if (form) {
-                form.addEventListener('submit', function () { setCollapsed(true); });
-            }
-            if (reset) {
-                reset.addEventListener('click', function () {
-                    try { window.localStorage.setItem(storageKey, '1'); } catch (e) {}
-                });
-            }
+        $('#loanVisitsTable').DataTable({
+            dom: '<"lm-dt-top"<"lm-dt-length"l><"lm-dt-buttons"B><"lm-dt-search"f>>rt<"lm-dt-bottom"<"lm-dt-info"i><"lm-dt-pagination"p>>',
+            buttons: tableButtons,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, "{{ $lmText('All', 'ទាំងអស់') }}"]],
+            order: [[0, 'desc']],
+            autoWidth: false,
+            language: {
+                search: '',
+                searchPlaceholder: 'Search ...',
+                lengthMenu: 'Show _MENU_ entries',
+                emptyTable: '{{ $lmText("No collection visits found.", "មិនមានកំណត់ត្រាចុះជួបអតិថិជនទេ។") }}',
+                info: '{{ $lmText("Showing _START_ to _END_ of _TOTAL_ entries", "បង្ហាញពី _START_ ដល់ _END_ នៃ _TOTAL_ ធាតុ") }}',
+                infoEmpty: '{{ $lmText("Showing 0 to 0 of 0 entries", "បង្ហាញ 0 នៃ 0 ធាតុ") }}',
+                infoFiltered: '({{ $lmText("filtered from _MAX_ total entries", "ចម្រាញ់ចេញពី _MAX_ ធាតុសរុប") }})',
+                paginate: {
+                    first: '{{ $lmText("First", "ដំបូង") }}',
+                    last: '{{ $lmText("Last", "ចុងក្រោយ") }}',
+                    next: '{{ $lmText("Next", "បន្ទាប់") }}',
+                    previous: '{{ $lmText("Previous", "មុន") }}'
+                }
+            },
+            columnDefs: [
+                { targets: [7], orderable: false, className: 'no-export' },
+                { targets: [4, 7], className: 'text-center' }
+            ]
         });
-    </script>
+    }
+});
+</script>
 @endsection

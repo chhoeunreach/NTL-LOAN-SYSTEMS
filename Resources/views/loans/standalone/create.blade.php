@@ -1446,19 +1446,15 @@
     $('#payment_amount_input, #principal_amount_input, #interest_rate_input, #duration_months_input, #interest_type_select').on('input change', recalcSummary);
 
     // Customer search
-    $('#customerSearchInput').on('input', function(){
-        var q = $(this).val().trim();
+    function performStandaloneCustomerSearch(q) {
         clearTimeout(searchTimer);
-        if (q.length < 2) {
-            $('.lm-customer-search-results').hide();
-            return;
-        }
         searchTimer = setTimeout(function(){
             $.get(urls.searchCustomers, {q: q}, function(res){
                 var $box = $('.lm-customer-search-results');
                 $box.empty();
-                if (res.data && res.data.length) {
-                    res.data.forEach(function(c){
+                var items = (res && (res.results || res.data)) || [];
+                if (items && items.length) {
+                    items.forEach(function(c){
                         var primaryName = (c.khmer_name || c.name || '');
                         var secondaryName = (c.name && c.name !== primaryName) ? c.name : '';
                         $box.append(
@@ -1474,7 +1470,12 @@
                     $box.hide();
                 }
             });
-        }, 300);
+        }, 150);
+    }
+
+    $(document).on('focus click input', '#customerSearchInput', function(){
+        var q = $(this).val().trim();
+        performStandaloneCustomerSearch(q);
     });
 
     $(document).on('click', '.lm-cs-item', function(){

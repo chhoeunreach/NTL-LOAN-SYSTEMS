@@ -122,6 +122,29 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Standalone Live Duplicate Customer Alert Banner -->
+            <div id="fullpageCustomerDuplicateAlert" style="display: none; margin-top: 10px; margin-bottom: 12px; padding: 10px 14px; background: #fffbeb; border: 1.5px solid #fcd34d; border-radius: 8px; box-shadow: 0 2px 6px rgba(245, 158, 11, 0.12);">
+                <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 200px;">
+                        <i class="fa fa-exclamation-triangle" style="color: #d97706; font-size: 16px; margin-top: 2px;"></i>
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: #92400e;" id="fullpageCustomerDuplicateTitle">
+                                {{ $lmText('Existing Customer Found!', 'បានរកឃើញអតិថិជនមានស្រាប់!') }}
+                            </div>
+                            <div style="font-size: 11px; color: #b45309; margin-top: 2px;" id="fullpageCustomerDuplicateDesc"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-left: auto;">
+                        <button type="button" class="btn btn-warning btn-xs" id="fullpageBtnLinkDuplicateCustomer" style="font-weight: 600; border-radius: 6px; padding: 4px 10px; background: #f59e0b; border-color: #d97706; color: #fff; display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fa fa-link"></i> <span>{{ $lmText('Link This Customer', 'ភ្ជាប់អតិថិជននេះ') }}</span>
+                        </button>
+                        <button type="button" class="btn btn-default btn-xs" id="fullpageBtnDismissDuplicateAlert" style="border-radius: 6px; padding: 4px 8px;" title="Dismiss">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- KYC Documents & Extra Attachments -->

@@ -33,43 +33,201 @@
 @section('loan_css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
 <style>
-    .yls-wrap { color: #1f2937; }
-    .content-header.yls-wrap { padding: 10px 15px 4px; }
-    .content.yls-wrap { padding-top: 8px; padding-bottom: 8px; }
-    .yls-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 8px; }
-    .yls-title { margin: 0; font-size: 20px; font-weight: 700; }
-    .yls-subtitle { margin: 2px 0 0; color: #64748b; font-size: 12px; display: none; }
-    .yls-card-grid { display: grid; grid-template-columns: repeat(6, minmax(150px, 1fr)); gap: 8px; margin-bottom: 8px; }
-    .yls-card { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 6px 8px; display: flex; gap: 8px; align-items: center; min-height: 48px; box-shadow: 0 3px 10px rgba(15, 23, 42, .05); }
-    .yls-card-icon { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; font-size: 17px; flex: 0 0 32px; }
-    .yls-card small { display: block; color: #64748b; font-weight: 600; margin-bottom: 2px; font-size: 11px; line-height: 1.2; }
-    .yls-card strong { font-size: 14px; line-height: 1.2; word-break: break-word; }
-    .yls-tone-teal { color: #0f9696; background: #ecfeff; border: 1px solid #bae6fd; }
+    /* =========================================================
+       ULTIMATE POS STANDARD STYLE FOR PERIODIC SUMMARY
+       ========================================================= */
+    .yls-wrap {
+        font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #1f2937;
+    }
+
+    /* KPI Summary Cards Grid */
+    .yls-card-grid {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+    .yls-card {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #ffffff;
+        padding: 12px 14px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        min-height: 54px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, .03);
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .yls-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
+    }
+    .yls-card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 9px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        flex: 0 0 40px;
+    }
+    .yls-card small {
+        display: block;
+        color: #64748b;
+        font-weight: 700;
+        margin-bottom: 2px;
+        font-size: 11px;
+        line-height: 1.2;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+    }
+    .yls-card strong {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1.2;
+        word-break: break-word;
+    }
+    .yls-tone-teal { color: #0f766e; background: #f0fdfa; border: 1px solid #ccfbf1; }
     .yls-tone-blue { color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; }
-    .yls-tone-green { color: #16803d; background: #f0fdf4; border: 1px solid #bbf7d0; }
-    .yls-tone-orange { color: #ea580c; background: #fff7ed; border: 1px solid #fed7aa; }
-    .yls-tone-purple { color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; }
+    .yls-tone-green { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .yls-tone-orange { color: #d97706; background: #fffbeb; border: 1px solid #fde68a; }
+    .yls-tone-purple { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
     .yls-tone-red { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
-    .yls-filter-box,
-    .yls-table-box { border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; padding: 6px; margin-bottom: 6px; box-shadow: 0 4px 14px rgba(15, 23, 42, .05); }
-    .yls-table-box .table-responsive { overflow-x: auto; }
-    .yls-filter-row { display: grid; grid-template-columns: minmax(230px, 280px) minmax(190px, 260px) minmax(180px, 1fr) auto; gap: 6px; align-items: end; }
-    .yls-filter-row label { margin-bottom: 3px; font-size: 11px; color: #475569; }
-    .yls-filter-row .form-control { height: 28px; padding: 4px 8px; font-size: 12px; }
-    .yls-filter-row .btn,
-    .yls-header .btn { padding: 4px 9px; font-size: 12px; line-height: 1.4; }
-    .yls-filter-row .btn { width: auto; min-width: 68px; justify-self: start; white-space: nowrap; }
-    .yls-filter-actions { display: flex; align-items: center; gap: 6px; justify-self: start; }
-    .yls-table { width: 100%; min-width: 1280px; margin-bottom: 0; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
-    .yls-table thead th { text-align: center; vertical-align: middle !important; white-space: normal; font-size: 10px; line-height: 1.15; border-color: #dbe3ef !important; padding: 4px 4px !important; font-weight: 700; }
+
+    /* Filters Component Styling */
+    .lm-pos-filter-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1.5fr auto;
+        gap: 12px 14px;
+        align-items: end;
+        padding: 6px 0;
+    }
+    @media (max-width: 1200px) {
+        .yls-card-grid { grid-template-columns: repeat(3, minmax(140px, 1fr)); }
+        .lm-pos-filter-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .yls-card-grid { grid-template-columns: 1fr; }
+        .lm-pos-filter-grid { grid-template-columns: 1fr; }
+    }
+    .lm-pos-filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .lm-pos-filter-field label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+        line-height: 1.2;
+    }
+    .lm-pos-filter-field .form-control {
+        height: 38px;
+        padding: 6px 12px;
+        font-size: 13px;
+        color: #1e293b;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        outline: none;
+        width: 100%;
+        box-shadow: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .lm-pos-filter-field .form-control:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+    .lm-pos-filter-field select.form-control {
+        cursor: pointer;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        padding-right: 28px;
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    .lm-pos-filter-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 2px;
+    }
+    .lm-btn-pos-filter {
+        height: 38px;
+        padding: 0 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #0284c7;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .lm-btn-pos-filter:hover { background: #0369a1; }
+    .lm-btn-pos-reset {
+        height: 38px;
+        padding: 0 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+    }
+    .lm-btn-pos-reset:hover { background: #e2e8f0; color: #1e293b; text-decoration: none; }
+
+    /* Summary Table Styling */
+    .yls-table {
+        width: 100%;
+        min-width: 1280px;
+        margin-bottom: 0;
+        table-layout: fixed;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .yls-table thead th {
+        text-align: center;
+        vertical-align: middle !important;
+        white-space: normal;
+        font-size: 11px;
+        line-height: 1.2;
+        border-color: #dbe3ef !important;
+        padding: 6px 4px !important;
+        font-weight: 700;
+    }
     .yls-table tbody td,
-    .yls-table tfoot th { vertical-align: middle !important; white-space: nowrap; font-size: 10px; padding: 4px 4px !important; border-color: #e6edf5 !important; }
+    .yls-table tfoot th {
+        vertical-align: middle !important;
+        white-space: nowrap;
+        font-size: 11px;
+        padding: 6px 6px !important;
+        border-color: #e6edf5 !important;
+    }
     .yls-table th:first-child,
-    .yls-table td:first-child { width: 38px; }
+    .yls-table td:first-child { width: 42px; }
     .yls-table th:nth-child(2),
-    .yls-table td:nth-child(2) { width: 76px; }
-    .yls-table thead tr:first-child th { color: #fff; height: 28px; border-bottom: 0 !important; box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .35); }
-    .yls-table thead tr:nth-child(2) th { height: 28px; }
+    .yls-table td:nth-child(2) { width: 84px; }
+    .yls-table thead tr:first-child th {
+        color: #fff;
+        height: 32px;
+        border-bottom: 0 !important;
+        box-shadow: inset 0 -2px 0 rgba(255, 255, 255, .35);
+    }
+    .yls-table thead tr:nth-child(2) th { height: 30px; }
     .yls-group-label { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
     .yls-group-loans { background: #0f766e; color: #fff; }
     .yls-group-payments { background: #15803d; color: #fff; }
@@ -87,29 +245,37 @@
     .yls-table thead tr:nth-child(2) th:nth-child(n+15):nth-child(-n+20),
     .yls-table tbody td:nth-child(n+17):nth-child(-n+22),
     .yls-table tfoot th:nth-child(n+16):nth-child(-n+21) { background: #fef2f2; }
-    .yls-table tbody tr:hover td { filter: brightness(.98); }
+    .yls-table tbody tr:hover td { filter: brightness(.97); }
     .yls-total-row th { background: #e2e8f0 !important; color: #0f172a; font-weight: 800; }
-    .yls-generated { color: #94a3b8; font-size: 11px; padding: 6px 2px 0; text-align: right; }
-    @media (max-width: 1200px) { .yls-card-grid { grid-template-columns: repeat(3, minmax(140px, 1fr)); } .yls-filter-row { grid-template-columns: repeat(2, minmax(150px, 1fr)); } }
-    @media (max-width: 768px) { .yls-header { align-items: flex-start; flex-direction: column; } .yls-card-grid, .yls-filter-row { grid-template-columns: 1fr; } }
+    .yls-generated { color: #94a3b8; font-size: 11px; padding: 8px 4px 0; text-align: right; }
 </style>
 @endsection
 
 @section('content_body')
-<section class="content-header yls-wrap">
-    <div class="yls-header">
-        <div>
-            <h1 class="yls-title">{{ $reportTitle }}</h1>
-            <p class="yls-subtitle">{{ $bi('Installment, schedule, collection, deposit, and overdue totals.', 'សរុបកម្ចី កាលវិភាគ ការប្រមូលប្រាក់ ប្រាក់កក់ និងហួសកំណត់') }}</p>
-        </div>
-        <a class="btn btn-success"
-           href="{{ $isMonthly ? route('loan-management.reports.monthly-loan-summary', array_merge(request()->query(), ['export' => 'csv'])) : route('loan-management.reports.daily-loan-summary', array_merge(request()->query(), ['export' => 'csv'])) }}">
-            <i class="fa fa-file-excel-o"></i> {{ $bi('Export Excel', 'នាំចេញ Excel') }}
-        </a>
-    </div>
-</section>
+<div class="yls-wrap">
 
-<section class="content yls-wrap">
+    {{-- Content Header --}}
+    <section class="content-header" style="padding: 0 0 16px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">
+                {{ $reportTitle }}
+                <small style="font-size: 13px; color: #64748b; font-weight: 400; margin-left: 8px;">
+                    {{ $bi('Installment, schedule, collection, deposit, and overdue totals', 'សរុបកម្ចី កាលវិភាគ ការប្រមូលប្រាក់ ប្រាក់កក់ និងហួសកំណត់') }}
+                </small>
+            </h1>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <a class="btn btn-success btn-sm" style="font-weight: 600; border-radius: 6px;"
+               href="{{ $isMonthly ? route('loan-management.reports.monthly-loan-summary', array_merge(request()->query(), ['export' => 'csv'])) : route('loan-management.reports.daily-loan-summary', array_merge(request()->query(), ['export' => 'csv'])) }}">
+                <i class="fa fa-file-excel-o"></i> {{ $bi('Export Excel', 'នាំចេញ Excel') }}
+            </a>
+            <button type="button" class="btn btn-default btn-sm" onclick="window.print()" style="font-weight: 600; border-radius: 6px;">
+                <i class="fa fa-print"></i> {{ $bi('Print', 'បោះពុម្ព') }}
+            </button>
+        </div>
+    </section>
+
+    {{-- KPI Cards --}}
     <div class="yls-card-grid">
         @foreach($cards as $card)
             <div class="yls-card">
@@ -124,16 +290,20 @@
         @endforeach
     </div>
 
-    <div class="yls-filter-box">
+    {{-- Ultimate POS Collapsible Filters Component --}}
+    @component('components.filters', ['title' => __('report.filters'), 'closed' => true])
         <form method="GET" action="{{ $isMonthly ? route('loan-management.reports.monthly-loan-summary') : route('loan-management.reports.daily-loan-summary') }}" id="ylsPeriodicFilterForm">
-            <div class="yls-filter-row">
-                <div class="form-group" style="margin:0;">
+            <div class="lm-pos-filter-grid">
+                {{-- Date Range --}}
+                <div class="lm-pos-filter-field">
                     <label>{{ $bi('Date Range', 'ចន្លោះថ្ងៃ') }}</label>
                     <input type="text" name="date_range" id="periodicLoanDateRange" class="form-control" value="{{ $dateRangeDisplay }}" placeholder="{{ $bi('Select date range', 'ជ្រើសរើសចន្លោះថ្ងៃ') }}" autocomplete="off">
                     <input type="hidden" name="date_from" value="{{ $dateFrom }}">
                     <input type="hidden" name="date_to" value="{{ $dateTo }}">
                 </div>
-                <div class="form-group" style="margin:0;">
+
+                {{-- Location --}}
+                <div class="lm-pos-filter-field">
                     <label>{{ $bi('Location', 'សាខា') }}</label>
                     <select name="location_id" class="form-control">
                         <option value="">{{ $bi('All Locations', 'សាខាទាំងអស់') }}</option>
@@ -142,19 +312,28 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="form-group" style="margin:0;">
+
+                {{-- Search --}}
+                <div class="lm-pos-filter-field">
                     <label>{{ $bi('Search', 'ស្វែងរក') }}</label>
                     <input type="text" name="search" class="form-control" value="{{ $filters['search'] ?? '' }}" placeholder="{{ $bi('Installment, customer, phone', 'កម្ចី អតិថិជន ទូរស័ព្ទ') }}">
                 </div>
-                <div class="yls-filter-actions">
-                    <button type="submit" class="btn btn-primary">{{ $bi('Filter', 'ចម្រោះ') }}</button>
-                    <a href="{{ $isMonthly ? route('loan-management.reports.monthly-loan-summary') : route('loan-management.reports.daily-loan-summary') }}" class="btn btn-default"><i class="fa fa-refresh"></i> {{ $bi('Reset', 'កំណត់ឡើងវិញ') }}</a>
+
+                {{-- Actions --}}
+                <div class="lm-pos-filter-actions">
+                    <button type="submit" class="lm-btn-pos-filter">
+                        <i class="fa fa-filter"></i> {{ $bi('Filter', 'ចម្រោះ') }}
+                    </button>
+                    <a href="{{ $isMonthly ? route('loan-management.reports.monthly-loan-summary') : route('loan-management.reports.daily-loan-summary') }}" class="lm-btn-pos-reset">
+                        <i class="fa fa-refresh"></i> {{ $bi('Reset', 'កំណត់ឡើងវិញ') }}
+                    </a>
                 </div>
             </div>
         </form>
-    </div>
+    @endcomponent
 
-    <div class="yls-table-box">
+    {{-- Ultimate POS Standard Widget Component --}}
+    @component('components.widget', ['class' => 'box-primary', 'title' => $reportTitle])
         <div class="table-responsive">
             <table class="table table-bordered table-hover yls-table">
                 <thead>
@@ -217,7 +396,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="22" class="text-center text-muted">{{ $bi('No data found for this date range.', 'រកមិនឃើញទិន្នន័យសម្រាប់ចន្លោះថ្ងៃនេះទេ។') }}</td>
+                            <td colspan="22" class="text-center text-muted" style="padding: 24px !important;">{{ $bi('No data found for this date range.', 'រកមិនឃើញទិន្នន័យសម្រាប់ចន្លោះថ្ងៃនេះទេ។') }}</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -251,8 +430,9 @@
         <div class="yls-generated">
             <i class="fa fa-clock-o"></i> {{ $bi('Generated', 'បានបង្កើត') }} {{ now()->format('Y-m-d H:i') }}
         </div>
-    </div>
-</section>
+    @endcomponent
+
+</div>
 @endsection
 
 @section('loan_js')

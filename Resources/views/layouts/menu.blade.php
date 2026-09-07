@@ -104,10 +104,10 @@
             <a href="#"><i class="fa fa-cog"></i> Settings <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
             <ul class="treeview-menu">
                 @if(auth()->user()->can('user.view') || auth()->user()->can('user.create'))
-                    <li><a href="{{ $lmUrl('users.index', [], '/users') }}"><i class="fa fa-user-plus"></i> Manage Users</a></li>
+                    <li><a href="{{ $lmUrl('loan-management.users.index', [], '/loan-management/users') }}"><i class="fa fa-user-plus"></i> Manage Users</a></li>
                 @endif
                 @if(auth()->user()->can('roles.view') || auth()->user()->can('roles.create'))
-                    <li><a href="{{ $lmUrl('roles.index', [], '/roles') }}"><i class="fa fa-shield"></i> Roles</a></li>
+                    <li><a href="{{ $lmUrl('loan-management.roles.index', [], '/loan-management/roles') }}"><i class="fa fa-shield"></i> Roles</a></li>
                 @endif
                 <li><a href="{{ $lmUrl('loan-management.locations.index', [], '/loan-management/locations') }}"><i class="fa fa-map-marker"></i> Locations</a></li>
                 <li><a href="{{ $lmUrl('loan-management.settings.business', [], '/loan-management/settings/business') }}"><i class="fa fa-paint-brush"></i> {{ $lmText('Business Settings', 'ការកំណត់អាជីវកម្ម') }}</a></li>

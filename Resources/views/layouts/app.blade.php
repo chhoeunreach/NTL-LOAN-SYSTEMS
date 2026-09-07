@@ -569,8 +569,16 @@
                 var $modal = $('#standaloneLoanModal');
                 var $body = $modal.find('#standaloneLoanModalBody');
 
+                if ($.fn.modal && $.fn.modal.Constructor) {
+                    $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+                    $.fn.modal.Constructor.prototype.enforceFocus = function() {};
+                }
+
                 if (modalFormLoaded) {
                     $modal.modal('show');
+                    if (typeof window.mobInitCustomerSearch === 'function') {
+                        window.mobInitCustomerSearch();
+                    }
                     return;
                 }
 
@@ -596,6 +604,9 @@
                         $body.html(result);
                         modalFormLoaded = true;
                         initStandaloneLoanModalEvents($body);
+                        if (typeof window.mobInitCustomerSearch === 'function') {
+                            window.mobInitCustomerSearch();
+                        }
                     },
                     error: function(xhr) {
                         $body.html(
@@ -655,42 +666,74 @@
                 if ($.fn.select2) {
                     $body.find('#modalCustomerSelect').select2({
                         ajax: {
-                            url: '/contacts/customers',
+                            url: modalUrls.searchCustomers,
                             dataType: 'json',
-                            delay: 250,
+                            delay: 200,
                             data: function(params) {
-                                return { q: params.term, page: params.page };
+                                return { q: params.term || '', term: params.term || '', page: params.page || 1 };
                             },
                             processResults: function(data) {
-                                return { results: data };
-                            }
+                                var items = (data && (data.results || data.data)) || [];
+                                return { results: items };
+                            },
+                            cache: true
                         },
                         templateResult: function(data) {
-                            if (!data.id) return data.text;
-                            var html = '';
-                            if (data.supplier_business_name) {
-                                html += '<strong>' + data.supplier_business_name + '</strong><br>';
+                            if (!data.id && !data.text) return data.text;
+                            var khmer = data.khmer_name || '';
+                            var name = data.name || '';
+                            var phone = data.phone || data.mobile || '';
+                            var idcard = data.id_card_number || '';
+                            var code = data.customer_code || '';
+                            var photo = data.photo_url || '';
+
+                            var html = '<div style="display:flex; align-items:center; gap:10px; padding:4px 0;">';
+                            if (photo) {
+                                html += '<img src="' + photo + '" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:1px solid #cbd5e1; flex-shrink:0;">';
+                            } else {
+                                html += '<div style="width:34px; height:34px; border-radius:50%; background:#e0f2fe; color:#0284c7; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;"><i class="fa fa-user"></i></div>';
                             }
-                            html += data.text;
-                            if (data.mobile) {
-                                html += '<br><small style="color:#6b7280;">' + data.mobile + '</small>';
+                            html += '<div style="flex:1; min-width:0; line-height:1.3;">';
+                            html += '<div style="font-weight:700; color:#0f172a; font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + (khmer || name || data.text) + (khmer && name && khmer !== name ? ' <span style="font-weight:400; color:#64748b; font-size:12px;">(' + name + ')</span>' : '') + '</div>';
+                            var details = [];
+                            if (phone) details.push('<i class="fa fa-phone" style="color:#64748b;"></i> ' + phone);
+                            if (idcard) details.push('<i class="fa fa-id-card-o" style="color:#64748b;"></i> ' + idcard);
+                            if (code) details.push('<span class="label label-default" style="font-size:10px; font-weight:600;">' + code + '</span>');
+                            if (details.length) {
+                                html += '<div style="font-size:11px; color:#475569; margin-top:2px;">' + details.join(' &bull; ') + '</div>';
                             }
-                            return html;
+                            html += '</div></div>';
+                            return $(html);
                         },
                         templateSelection: function(data) {
-                            return data.text || data.id;
-                        },
-                        minimumInputLength: 1,
-                        language: {
-                            inputTooShort: function(args) {
-                                return 'Please enter ' + args.minimum + ' or more characters';
-                            },
-                            noResults: function() {
-                                return 'No customer found';
+                            if (!data) return '';
+                            if (data.khmer_name) {
+                                return data.khmer_name + (data.name && data.name !== data.khmer_name ? ' (' + data.name + ')' : '') + (data.phone ? ' - ' + data.phone : '');
                             }
+                            return data.text || data.name || data.id || '';
                         },
                         escapeMarkup: function(markup) { return markup; },
-                        dropdownParent: $body.closest('.modal-content')
+                        minimumInputLength: 0,
+                        language: {
+                            noResults: function() { return 'No existing customer found. Click Quick Add to fill KYC!'; }
+                        },
+                        dropdownParent: $body.closest('.modal-content').length ? $body.closest('.modal-content') : $('#standaloneLoanModal')
+                    });
+
+                    $body.find('#modalCustomerSelect').off('select2:open').on('select2:open', function() {
+                        var $sel = $(this);
+                        var s2Data = $sel.data('select2');
+                        setTimeout(function() {
+                            var searchField = document.querySelector('.select2-container--open .select2-search__field') ||
+                                              document.querySelector('.select2-search--dropdown .select2-search__field');
+                            if (searchField) {
+                                searchField.focus();
+                                searchField.setAttribute('placeholder', 'Type Name, Phone, or ID to search...');
+                                if (s2Data && s2Data.results && !searchField.value) {
+                                    s2Data.trigger('query', { term: '' });
+                                }
+                            }
+                        }, 30);
                     });
                 }
 
@@ -739,17 +782,94 @@
 
                 $body.on('select2:select', '#modalCustomerSelect', function(e) {
                     var data = e.params.data;
+                    var khmer = data.khmer_name || data.name || '';
+                    var english = data.name || '';
                     $body.find('#modalCustomerId').val(data.id || '');
-                    $body.find('#modalCustomerName').val(data.text || data.name || '');
-                    $body.find('#modalCustomerPhone').val(data.mobile || data.phone || '');
+                    $body.find('#modalCustomerKhmerName').val(khmer);
+                    $body.find('#modalCustomerEnglishName').val(english);
+                    $body.find('#modalCustomerName').val(khmer || english || data.text || '');
+                    $body.find('#modalCustomerPhone').val(data.phone || data.mobile || '');
                     $body.find('#modalAlternatePhone').val(data.alternate_phone || data.alternate_number || '');
                     $body.find('#modalAlternatePhoneGroup').toggle(!!String(data.alternate_phone || data.alternate_number || '').trim());
-                    $body.find('#modalCustomerAddress').val(data.shipping_address || data.address || '');
+                    $body.find('#modalCustomerAddress').val(data.address || data.shipping_address || '');
                     $body.find('#modalCustomerIdCard').val(data.id_card_number || '');
+                    
+                    if (data.photo_url) {
+                        $body.find('#mobCustomerPhotoPreview').html('<img src="' + data.photo_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;"><button type="button" class="lm-kyc-remove" onclick="mobRemoveCustomerProfile()" title="Remove photo"><i class="fa fa-times"></i></button>');
+                    }
+                    
                     modalSelectAddressFromCustomer($body, data);
-                    var name = data.text || data.name || '';
-                    var initials = name.split(' ').map(function(w){ return w.charAt(0); }).join('').substring(0,2).toUpperCase();
-                    $body.find('#modalCustomerAvatar').html(initials || '<i class="fa fa-user"></i>');
+                    
+                    var card = document.getElementById('mobCustomerInfoCard');
+                    if (card) {
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.borderColor = '#10b981';
+                        card.style.boxShadow = '0 0 16px rgba(16, 185, 129, 0.25)';
+                        setTimeout(function() {
+                            card.style.borderColor = '';
+                            card.style.boxShadow = '';
+                        }, 2200);
+                    }
+                });
+
+                // Quick Add Customer Button Handler (Focus directly on Customer KYC & Identity Form)
+                $body.on('click', '#modalBtnQuickAddCustomer', function(e) {
+                    e.preventDefault();
+                    $body.find('#modalCustomerId').val('');
+                    if (typeof window.mobQuickAddNewCustomer === 'function') {
+                        window.mobQuickAddNewCustomer();
+                        return;
+                    }
+
+                    var searchedText = ($body.find('#modalCustomerSearchInput').val() || '').trim();
+                    if (!searchedText) {
+                        var $searchField = $('.select2-container--open .select2-search__field, #modalCustomerSelect + .select2 .select2-search__field');
+                        if ($searchField.length && $searchField.val()) {
+                            searchedText = $searchField.val().trim();
+                        }
+                    }
+
+                    if ($body.find('#modalCustomerSelect').data('select2')) {
+                        $body.find('#modalCustomerSelect').val(null).trigger('change.select2');
+                    }
+
+                    if (searchedText) {
+                        if (/^[0-9\s+-]+$/.test(searchedText)) {
+                            if (!$body.find('#modalCustomerPhone').val()) {
+                                $body.find('#modalCustomerPhone').val(searchedText);
+                            }
+                        } else {
+                            if (!$body.find('#modalCustomerKhmerName').val()) {
+                                $body.find('#modalCustomerKhmerName').val(searchedText);
+                                $body.find('#modalCustomerEnglishName').val(searchedText);
+                                $body.find('#modalCustomerName').val(searchedText);
+                            }
+                        }
+                    }
+
+                    var card = document.getElementById('mobCustomerInfoCard');
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        card.style.transition = 'all 0.3s ease';
+                        card.style.borderColor = '#2563eb';
+                        card.style.boxShadow = '0 0 20px rgba(37, 99, 235, 0.35)';
+                        setTimeout(function() {
+                            card.style.borderColor = '';
+                            card.style.boxShadow = '';
+                        }, 2500);
+                    }
+
+                    setTimeout(function() {
+                        var input = document.getElementById('modalCustomerKhmerName');
+                        if (input) {
+                            input.focus();
+                            if (input.select) input.select();
+                        }
+                    }, 250);
+
+                    if (window.toastr) {
+                        toastr.info('Please fill in Customer KYC details below.', 'New Customer KYC');
+                    }
                 });
 
                 $(document).on('contact.created', function(e, contact) {
@@ -757,6 +877,8 @@
                         var $opt = new Option(contact.name, contact.id, true, true);
                         $body.find('#modalCustomerSelect').append($opt).trigger('change');
                         $body.find('#modalCustomerId').val(contact.id);
+                        $body.find('#modalCustomerKhmerName').val(contact.name || '');
+                        $body.find('#modalCustomerEnglishName').val(contact.name || '');
                         $body.find('#modalCustomerName').val(contact.name || '');
                         $body.find('#modalCustomerPhone').val(contact.mobile || '');
                         $body.find('#modalAlternatePhone').val(contact.alternate_phone || contact.alternate_number || '');
@@ -764,15 +886,14 @@
                         $body.find('#modalCustomerAddress').val(contact.shipping_address || '');
                         $body.find('#modalCustomerIdCard').val(contact.id_card_number || '');
                         modalClearAddressSelects($body);
-                        var name = contact.name || '';
-                        var initials = name.split(' ').map(function(w){ return w.charAt(0); }).join('').substring(0,2).toUpperCase();
-                        $body.find('#modalCustomerAvatar').html(initials || '<i class="fa fa-user"></i>');
                     }
                 });
 
                 $body.on('click', '#modalClearCustomer', function() {
                     $body.find('#modalCustomerSelect').val(null).trigger('change');
                     $body.find('#modalCustomerId').val('');
+                    $body.find('#modalCustomerKhmerName').val('');
+                    $body.find('#modalCustomerEnglishName').val('');
                     $body.find('#modalCustomerName').val('');
                     $body.find('#modalCustomerPhone').val('');
                     $body.find('#modalAlternatePhone').val('');
@@ -780,7 +901,13 @@
                     $body.find('#modalCustomerAddress').val('');
                     $body.find('#modalCustomerIdCard').val('');
                     modalClearAddressSelects($body);
-                    $body.find('#modalCustomerAvatar').html('<i class="fa fa-user"></i>');
+                    $body.find('#mobCustomerPhotoPreview').html('<i class="fa fa-user"></i>');
+                    if (typeof mobCustomerProfileData !== 'undefined') {
+                        mobCustomerProfileData = '';
+                    }
+                    if (typeof mobRemoveIdCard === 'function') {
+                        mobRemoveIdCard();
+                    }
                 });
 
                 // Quick add contact form handler (pos.js not loaded in LM)
@@ -1301,9 +1428,36 @@
                 });
             });
 
-            $('#quickPayModal').on('hidden.bs.modal', function() {
-                quickPayLoaded = {};
+            // Prevent Bootstrap from stealing focus away from Select2 search input fields in modals
+            if ($.fn.modal && $.fn.modal.Constructor) {
+                $.fn.modal.Constructor.prototype.enforceFocus = function () {};
+            }
+
+            // Ensure all modals always appear in front of the backdrop overlay and never get trapped in nested stacking contexts
+            $(document).on('show.bs.modal', '.modal', function () {
+                var $modal = $(this);
+                if (!$modal.parent().is('body')) {
+                    $modal.appendTo('body');
+                }
+                var modalCount = $('.modal:visible').length;
+                var zIndex = 1050 + (10 * modalCount);
+                $modal.css('z-index', zIndex);
+                setTimeout(function() {
+                    $('.modal-backdrop').not('.modal-stack').first().css('z-index', zIndex - 1).addClass('modal-stack');
+                }, 0);
             });
+
+            $(document).on('hidden.bs.modal', '.modal', function () {
+                if ($('.modal:visible').length > 0) {
+                    $('body').addClass('modal-open');
+                }
+            });
+
+            // Expose helpers globally for standalone modal
+            window.modalSelectAddressFromCustomer = modalSelectAddressFromCustomer;
+            window.modalClearAddressSelects = modalClearAddressSelects;
+            window.modalLoadAddressOptions = modalLoadAddressOptions;
+            window.modalInitAddressSelects = modalInitAddressSelects;
 
         })(jQuery);
     </script>

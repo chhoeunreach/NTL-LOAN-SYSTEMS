@@ -63,21 +63,26 @@
     }
 @endphp
 <style>
-    #lmTgFab{position:fixed;right:18px;top:50%;width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,#6dc9f7,#2894e0);color:#fff;border:0;box-shadow:0 6px 20px rgba(41,148,224,.5);font-size:25px;cursor:pointer;z-index:4998;display:flex;align-items:center;justify-content:center;transform:translateY(-50%);transition:transform .15s ease}
-    #lmTgFab:hover{transform:translateY(-50%) scale(1.07)}
-    #lmTgFab:active{transform:translateY(-50%) scale(.96)}
-    #lmTgFab .lm-tg-fab-icon{width:31px;height:31px;display:block;fill:currentColor;color:#fff}
-    #lmTgFab .lm-tg-fab-dot{position:absolute;top:2px;right:2px;width:13px;height:13px;background:#94a3b8;border:2px solid #fff;border-radius:50%}
+    #lmTgFab{position:fixed;right:22px;bottom:22px;top:auto;width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#6dc9f7,#2894e0);color:#fff;border:0;box-shadow:0 6px 20px rgba(41,148,224,.45);font-size:24px;cursor:pointer;z-index:1030;display:flex;align-items:center;justify-content:center;transform:scale(1);transition:transform .18s cubic-bezier(.34, 1.56, .64, 1), box-shadow .18s ease}
+    #lmTgFab:hover{transform:scale(1.08);box-shadow:0 8px 24px rgba(41,148,224,.6)}
+    #lmTgFab:active{transform:scale(.94)}
+    #lmTgFab .lm-tg-fab-icon{width:28px;height:28px;display:block;fill:currentColor;color:#fff}
+    #lmTgFab .lm-tg-fab-dot{position:absolute;top:2px;right:2px;width:12px;height:12px;background:#94a3b8;border:2px solid #fff;border-radius:50%}
     #lmTgFab.linked .lm-tg-fab-dot{background:#22c55e}
-    #lmTgFab.open{display:none}
+    #lmTgFab.open{display:none !important}
 
-    #lmTgDrawerOverlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:4999;opacity:0;pointer-events:none;transition:opacity .18s ease}
-    #lmTgDrawerOverlay.open{opacity:1;pointer-events:auto}
+    /* Hide sticky floating button when any modal is open */
+    body.modal-open #lmTgFab {
+        display: none !important;
+    }
 
-    #lmTgDrawer{position:fixed;top:50%;left:50%;width:min(940px,94vw);height:min(660px,86vh);background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.3);z-index:5000;border-radius:14px;overflow:hidden;display:flex;flex-direction:row;opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.96);transition:opacity .18s ease,transform .18s ease;font-family:"Khmer OS Battambang","Noto Sans Khmer","Segoe UI",Arial,sans-serif}
-    #lmTgDrawer.open{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
-    .lm-send-invoice-confirm-modal{z-index:6100!important}
-    .lm-send-invoice-confirm-backdrop{z-index:6090!important}
+    #lmTgDrawerOverlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1040;opacity:0;transition:opacity .18s ease}
+    #lmTgDrawerOverlay.open{display:block;opacity:1}
+
+    #lmTgDrawer{display:none;position:fixed;top:50%;left:50%;width:min(940px,94vw);height:min(660px,86vh);background:#fff;box-shadow:0 20px 60px rgba(0,0,0,.3);z-index:1050;border-radius:14px;overflow:hidden;flex-direction:row;opacity:0;transform:translate(-50%,-50%) scale(.96);transition:opacity .18s ease,transform .18s ease;font-family:"Khmer OS Battambang","Noto Sans Khmer","Segoe UI",Arial,sans-serif}
+    #lmTgDrawer.open{display:flex;opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .lm-send-invoice-confirm-modal{z-index:1090!important}
+    .lm-send-invoice-confirm-backdrop{z-index:1085!important}
 
     .lm-tg-sidebar{width:300px;flex:0 0 300px;border-right:1px solid #e5e7eb;background:#f7f9fb;display:flex;flex-direction:column;min-height:0}
     .lm-tg-sidebar-head{padding:14px 14px 10px;flex:0 0 auto}
@@ -141,8 +146,8 @@
     .lm-tg-tools button.recording{background:#fee2e2;color:#b91c1c;border-color:#fecaca}
 
     @media (max-width:760px){
-        #lmTgFab{right:10px;left:auto;top:50%;bottom:auto;width:48px;height:48px;font-size:20px;box-shadow:0 8px 24px rgba(41,148,224,.34);z-index:998}
-        #lmTgFab .lm-tg-fab-icon{width:25px;height:25px}
+        #lmTgFab{right:14px;left:auto;top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));width:48px;height:48px;font-size:20px;box-shadow:0 6px 18px rgba(41,148,224,.4);z-index:1030}
+        #lmTgFab .lm-tg-fab-icon{width:24px;height:24px}
         #lmTgFab .lm-tg-fab-dot{width:11px;height:11px;top:1px;right:1px}
         #lmTgDrawer{top:auto;left:8px;right:8px;bottom:calc(76px + env(safe-area-inset-bottom,0px));width:auto;height:min(76vh,620px);border-radius:14px;transform:translateY(14px) scale(.98)}
         #lmTgDrawer.open{transform:translateY(0) scale(1)}
@@ -166,8 +171,8 @@
         .lm-tg-composer button{width:34px;height:34px;font-size:12px}
     }
     @media (max-width:380px){
-        #lmTgFab{right:8px;width:44px;height:44px}
-        #lmTgFab .lm-tg-fab-icon{width:23px;height:23px}
+        #lmTgFab{right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));width:44px;height:44px}
+        #lmTgFab .lm-tg-fab-icon{width:22px;height:22px}
         #lmTgDrawer{left:6px;right:6px;bottom:calc(70px + env(safe-area-inset-bottom,0px));height:min(74vh,560px)}
         .lm-tg-sidebar{width:82px;flex-basis:82px}
     }
@@ -558,6 +563,15 @@
 
     $('#lmTgFab').on('click', openDrawer);
     $('#lmTgDrawerCloseX, #lmTgDrawerOverlay').on('click', closeDrawer);
+
+    // Auto-close Telegram drawer whenever any Bootstrap modal opens
+    $(document).on('show.bs.modal', function(e){
+        if (!$(e.target).hasClass('lm-send-invoice-confirm-modal')) {
+            if ($('#lmTgDrawer').hasClass('open')) {
+                closeDrawer();
+            }
+        }
+    });
 
     $('#lmTgSearchInput').on('input', function(){
         var q = $(this).val();

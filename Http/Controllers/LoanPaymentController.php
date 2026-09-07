@@ -16,6 +16,18 @@ class LoanPaymentController extends Controller
     {
         abort_if(! Schema::connection($this->connection)->hasTable('loan_payments'), 404);
 
+        $dateRange = trim((string) $request->input('date_range', ''));
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+
+        if ($dateRange !== '' && str_contains($dateRange, ' - ')) {
+            [$fromPart, $toPart] = explode(' - ', $dateRange, 2);
+            try {
+                $dateFrom = \Carbon\Carbon::parse(trim($fromPart))->format('Y-m-d');
+                $dateTo = \Carbon\Carbon::parse(trim($toPart))->format('Y-m-d');
+            } catch (\Throwable $e) {}
+        }
+
         $filters = $request->only([
             'search',
             'loan_number',
@@ -23,10 +35,12 @@ class LoanPaymentController extends Controller
             'payment_type',
             'method',
             'status',
-            'date_from',
-            'date_to',
             'location_id',
+            'user_id',
         ]);
+        $filters['date_from'] = $dateFrom;
+        $filters['date_to'] = $dateTo;
+        $filters['date_range'] = $dateRange;
 
         $query = $this->basePaymentQuery();
         $this->applyFilters($query, $filters);
@@ -44,11 +58,38 @@ class LoanPaymentController extends Controller
             'payoff_count' => $this->hasColumn('loan_payments', 'payment_type') ? (int) (clone $summaryQuery)->where('p.payment_type', 'payoff')->count() : 0,
         ];
 
+        $perPage = (int) $request->input('per_page', 250);
+        if ($perPage <= 0 || $perPage > 1000) {
+            $perPage = 250;
+        }
+
         $payments = $query
             ->orderByDesc('p.'.$this->paymentDateColumn())
             ->orderByDesc('p.id')
-            ->paginate(25)
+            ->paginate($perPage)
             ->appends($request->query());
+
+        $users = [];
+        try {
+            $users = DB::table('users')
+                ->selectRaw("id, TRIM(CONCAT(COALESCE(first_name,''), ' ', COALESCE(last_name,''))) as name")
+                ->orderBy('first_name')
+                ->pluck('name', 'id')
+                ->all();
+        } catch (\Throwable $e) {}
+
+        $customers = [];
+        try {
+            if (Schema::connection($this->connection)->hasTable('loans')) {
+                $customers = DB::connection($this->connection)->table('loans')
+                    ->whereNotNull('customer_name_snapshot')
+                    ->where('customer_name_snapshot', '!=', '')
+                    ->distinct()
+                    ->orderBy('customer_name_snapshot')
+                    ->pluck('customer_name_snapshot', 'customer_name_snapshot')
+                    ->all();
+            }
+        } catch (\Throwable $e) {}
 
         return view('loanmanagement::payments.index', [
             'payments' => $payments,
@@ -57,6 +98,8 @@ class LoanPaymentController extends Controller
             'methods' => $this->paymentMethodOptions(),
             'statuses' => $this->distinctOptions('loan_payments', 'status'),
             'locations' => $this->locationOptions(),
+            'users' => $users,
+            'customers' => $customers,
             'dateColumn' => $this->paymentDateColumn(),
             'amountColumn' => $this->paymentAmountColumn(),
         ]);
@@ -82,11 +125,19 @@ class LoanPaymentController extends Controller
         $type = strtolower(trim((string) $type));
 
         return [
-            'loan' => 'info',
-            'payoff' => 'success',
-            'pay_off' => 'success',
-            'monthly' => 'primary',
-        ][$type] ?? 'default';
+            'loan' => 'lm-type-deposit',
+            'down_payment' => 'lm-type-deposit',
+            'downpayment' => 'lm-type-deposit',
+            'deposit' => 'lm-type-deposit',
+            'initial' => 'lm-type-deposit',
+            'payoff' => 'lm-type-payoff',
+            'pay_off' => 'lm-type-payoff',
+            'advance' => 'lm-type-advance',
+            'prepayment' => 'lm-type-advance',
+            'penalty' => 'lm-type-penalty',
+            'late_fee' => 'lm-type-penalty',
+            'monthly' => 'lm-type-monthly',
+        ][$type] ?? 'lm-type-monthly';
     }
 
     public function edit(int $payment)
@@ -387,6 +438,23 @@ class LoanPaymentController extends Controller
         }
         if (! empty($filters['status']) && $this->hasColumn('loan_payments', 'status')) {
             $query->where('p.status', $filters['status']);
+        }
+        if (! empty($filters['user_id'])) {
+            $userId = (int) $filters['user_id'];
+            $query->where(function ($q) use ($userId) {
+                $hasCondition = false;
+                if ($this->hasColumn('loan_payments', 'received_by_id')) {
+                    $q->where('p.received_by_id', $userId);
+                    $hasCondition = true;
+                }
+                if ($this->hasColumn('loan_payments', 'created_by')) {
+                    $hasCondition ? $q->orWhere('p.created_by', $userId) : $q->where('p.created_by', $userId);
+                    $hasCondition = true;
+                }
+                if ($this->hasColumn('loans', 'assigned_collector_id')) {
+                    $hasCondition ? $q->orWhere('l.assigned_collector_id', $userId) : $q->where('l.assigned_collector_id', $userId);
+                }
+            });
         }
         if (! empty($filters['location_id'])) {
             $locationId = (int) $filters['location_id'];
