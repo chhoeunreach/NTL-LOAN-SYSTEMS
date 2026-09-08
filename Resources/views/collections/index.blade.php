@@ -232,6 +232,73 @@
         padding: 8px 10px;
         vertical-align: middle !important;
     }
+    /* Executive KPI Cards */
+    .lm-col-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    @media (max-width: 1200px) {
+        .lm-col-summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .lm-col-summary-grid { grid-template-columns: 1fr; }
+    }
+    .lm-col-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .lm-col-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    }
+    .lm-col-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        flex-shrink: 0;
+    }
+    .lm-col-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .lm-col-copy small {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #64748b;
+    }
+    .lm-col-copy strong {
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }
+    .lm-col-copy span {
+        font-size: 11.5px;
+        color: #94a3b8;
+    }
+    .lm-col-blue .lm-col-icon { background: #eff6ff; color: #2563eb; }
+    .lm-col-red .lm-col-icon { background: #fef2f2; color: #dc2626; }
+    .lm-col-amber .lm-col-icon { background: #fffbeb; color: #d97706; }
+    .lm-col-green .lm-col-icon { background: #f0fdf4; color: #16a34a; }
+    .lm-col-purple .lm-col-icon { background: #faf5ff; color: #9333ea; }
 </style>
 @endsection
 
@@ -246,6 +313,58 @@
             @endif
         </h1>
     </section>
+
+    {{-- 4 Executive KPI Cards --}}
+    @if(!empty($metrics))
+    <div class="lm-col-summary-grid">
+        <div class="lm-col-card lm-col-blue">
+            <div class="lm-col-icon"><i class="fa fa-users"></i></div>
+            <div class="lm-col-copy">
+                <small>{{ $lmText('Total in Queue', 'គណនីក្នុងជួរនេះ') }}</small>
+                <strong>{{ number_format((int)($metrics['total_accounts'] ?? 0)) }}</strong>
+                <span>{{ $lmText('Matching case records', 'ទិន្នន័យកិច្ចសន្យាត្រូវលក្ខខណ្ឌ') }}</span>
+            </div>
+        </div>
+
+        <div class="lm-col-card lm-col-red">
+            <div class="lm-col-icon"><i class="fa fa-shield"></i></div>
+            <div class="lm-col-copy">
+                <small>{{ $lmText('Balance at Risk', 'សមតុល្យហានិភ័យ') }}</small>
+                <strong>${{ number_format((float)($metrics['total_balance'] ?? 0), 2) }}</strong>
+                <span>{{ $lmText('Outstanding receivables', 'ប្រាក់នៅសល់មិនទាន់ប្រមូល') }}</span>
+            </div>
+        </div>
+
+        <div class="lm-col-card lm-col-amber">
+            <div class="lm-col-icon"><i class="fa fa-clock-o"></i></div>
+            <div class="lm-col-copy">
+                <small>{{ $lmText('Overdue Aging (Avg)', 'មធ្យមភាគថ្ងៃហួស') }}</small>
+                <strong>{{ $metrics['avg_dpd'] ?? 0 }} {{ $lmText('Days', 'ថ្ងៃ') }}</strong>
+                <span>{{ $lmText('Max', 'អតិបរមា') }}: {{ $metrics['max_dpd'] ?? 0 }} {{ $lmText('days past due', 'ថ្ងៃហួសកាលកំណត់') }}</span>
+            </div>
+        </div>
+
+        @if(!empty($metrics['ptp_amount']) && $metrics['ptp_amount'] > 0)
+        <div class="lm-col-card lm-col-green">
+            <div class="lm-col-icon"><i class="fa fa-handshake-o"></i></div>
+            <div class="lm-col-copy">
+                <small>{{ $lmText('PTP Commitments', 'សន្យាបង់ប្រាក់សរុប') }}</small>
+                <strong>${{ number_format((float)($metrics['ptp_amount'] ?? 0), 2) }}</strong>
+                <span>{{ $lmText('Promised settlement value', 'ទឹកប្រាក់អតិថិជនសន្យាសង') }}</span>
+            </div>
+        </div>
+        @else
+        <div class="lm-col-card lm-col-purple">
+            <div class="lm-col-icon"><i class="fa fa-exclamation-triangle"></i></div>
+            <div class="lm-col-copy">
+                <small>{{ $lmText('High Risk Cases', 'ករណីហានិភ័យខ្ពស់') }}</small>
+                <strong>{{ number_format((int)($metrics['high_risk_count'] ?? 0)) }}</strong>
+                <span>{{ $lmText('Priority follow-up required', 'ត្រូវការតាមដានជាបន្ទាន់') }}</span>
+            </div>
+        </div>
+        @endif
+    </div>
+    @endif
 
     @include('loanmanagement::collections.partials.filters')
     @include('loanmanagement::collections.partials.loan_table')

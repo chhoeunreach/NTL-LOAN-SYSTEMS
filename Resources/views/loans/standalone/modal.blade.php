@@ -1802,26 +1802,6 @@ function mobInitCustomerSearch() {
             mobPerformCustomerSearch(val.trim());
         }, 100);
     });
-}
-
-window.mobInitCustomerSearch = mobInitCustomerSearch;
-window.mobPerformCustomerSearch = mobPerformCustomerSearch;
-
-// Document delegation to ensure writing to search always works in modal
-jQuery(document).on('focus click', '#modalCustomerSearchInput', function() {
-    var val = jQuery(this).val().trim();
-    mobPerformCustomerSearch(val);
-});
-
-jQuery(document).on('input', '#modalCustomerSearchInput', function() {
-    var val = jQuery(this).val();
-    jQuery('#modalBtnClearSearchText').toggle(!!val.length);
-    clearTimeout(mobCustomerSearchTimer);
-    mobCustomerSearchTimer = setTimeout(function() {
-        mobPerformCustomerSearch(val.trim());
-    }, 100);
-});
-
     // Keyboard navigation (ArrowDown, ArrowUp, Enter, Escape)
     $input.off('keydown').on('keydown', function(e) {
         var $rows = $dropdown.find('.lm-cs-row');

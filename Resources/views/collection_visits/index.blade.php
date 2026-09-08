@@ -276,11 +276,17 @@
         align-items: center;
         gap: 14px;
         box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-        transition: transform .15s ease, box-shadow .15s ease;
+        text-decoration: none !important;
+        cursor: pointer;
+        transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
     }
     .lm-visit-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
+    }
+    .lm-visit-card.is-active {
+        border-color: #0284c7;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
     }
     .lm-visit-card-icon {
         width: 44px;
@@ -319,6 +325,148 @@
     @media (max-width: 600px) {
         .lm-visit-summary-grid { grid-template-columns: 1fr; }
     }
+
+    /* =========================================================
+       MOBILE CARD GRID VIEW
+       ========================================================= */
+    .lm-mobile-cards {
+        display: none;
+    }
+    @media (max-width: 768px) {
+        .lm-desktop-table {
+            display: none !important;
+        }
+        .lm-mobile-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            padding: 4px 0;
+        }
+    }
+    @media (max-width: 400px) {
+        .lm-mobile-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .lm-mcard {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .lm-mcard:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+    .lm-mcard::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #0284c7, #7c3aed);
+        border-radius: 12px 12px 0 0;
+    }
+
+    .lm-mcard-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-top: 4px;
+    }
+    .lm-mcard-date {
+        font-size: 12px;
+        font-weight: 700;
+        color: #475569;
+    }
+    .lm-mcard-date small {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 400;
+        color: #94a3b8;
+    }
+    .lm-mcard-badge {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        font-weight: 700;
+    }
+
+    .lm-mcard-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .lm-mcard-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 12.5px;
+        color: #334155;
+        line-height: 1.4;
+    }
+    .lm-mcard-row i {
+        width: 16px;
+        text-align: center;
+        color: #94a3b8;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+    .lm-mcard-row strong {
+        color: #0f172a;
+    }
+    .lm-mcard-row a {
+        color: #0284c7;
+        font-weight: 700;
+        text-decoration: none;
+    }
+
+    .lm-mcard-notes {
+        margin-top: 4px;
+        padding-top: 8px;
+        border-top: 1px dashed #e2e8f0;
+        font-size: 11.5px;
+        color: #64748b;
+        line-height: 1.45;
+    }
+
+    .lm-mcard-footer {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .lm-mcard-footer .btn {
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+    }
+
+    .lm-mobile-empty {
+        text-align: center;
+        padding: 32px 16px;
+        color: #94a3b8;
+        font-size: 13px;
+    }
+    .lm-mobile-empty i {
+        display: block;
+        font-size: 32px;
+        margin-bottom: 8px;
+        color: #cbd5e1;
+    }
 </style>
 @endsection
 
@@ -336,35 +484,51 @@
     </section>
 
     {{-- 4 KPI Metric Cards --}}
+    @php
+        $activeResult = $filters['result'] ?? '';
+        $isTodayActive = ($filters['date_from'] ?? '') === \Carbon\Carbon::today()->toDateString() && ($filters['date_to'] ?? '') === \Carbon\Carbon::today()->toDateString();
+        $isAllActive = empty($activeResult) && !$isTodayActive && empty($filters['search']) && empty($filters['collector']);
+    @endphp
     <div class="lm-visit-summary-grid">
-        <div class="lm-visit-card lm-visit-blue">
+        <a href="{{ route('loan-management.collection-visits.index') }}" 
+           class="lm-visit-card lm-visit-blue {{ $isAllActive ? 'is-active' : '' }}"
+           title="{{ $lmText('View all field visits', 'មើលការចុះជួបទាំងអស់') }}">
             <div class="lm-visit-card-icon"><i class="fa fa-street-view"></i></div>
             <div class="lm-visit-card-content">
                 <small>{{ $lmText('Total Visits', 'ការចុះជួបសរុប') }}</small>
                 <strong>{{ number_format($summary['total'] ?? 0) }}</strong>
             </div>
-        </div>
-        <div class="lm-visit-card lm-visit-green">
+        </a>
+
+        <a href="{{ route('loan-management.collection-visits.index', ['date_from' => \Carbon\Carbon::today()->toDateString(), 'date_to' => \Carbon\Carbon::today()->toDateString()]) }}" 
+           class="lm-visit-card lm-visit-green {{ $isTodayActive ? 'is-active' : '' }}"
+           title="{{ $lmText('View visits scheduled for today', 'មើលការចុះជួបថ្ងៃនេះ') }}">
             <div class="lm-visit-card-icon"><i class="fa fa-calendar-check-o"></i></div>
             <div class="lm-visit-card-content">
                 <small>{{ $lmText('Today', 'ថ្ងៃនេះ') }}</small>
                 <strong>{{ number_format($summary['today'] ?? 0) }}</strong>
             </div>
-        </div>
-        <div class="lm-visit-card lm-visit-amber">
+        </a>
+
+        <a href="{{ route('loan-management.collection-visits.index', ['result' => 'pending']) }}" 
+           class="lm-visit-card lm-visit-amber {{ $activeResult === 'pending' ? 'is-active' : '' }}"
+           title="{{ $lmText('View pending or open visits', 'មើលការចុះជួបរង់ចាំ') }}">
             <div class="lm-visit-card-icon"><i class="fa fa-clock-o"></i></div>
             <div class="lm-visit-card-content">
                 <small>{{ $lmText('Pending / Scheduled', 'រង់ចាំ / គ្រោងទុក') }}</small>
                 <strong>{{ number_format($summary['pending'] ?? 0) }}</strong>
             </div>
-        </div>
-        <div class="lm-visit-card lm-visit-purple">
+        </a>
+
+        <a href="{{ route('loan-management.collection-visits.index', ['result' => 'visited']) }}" 
+           class="lm-visit-card lm-visit-purple {{ in_array($activeResult, ['visited', 'completed']) ? 'is-active' : '' }}"
+           title="{{ $lmText('View completed visits', 'មើលការចុះជួបដែលបានបញ្ចប់') }}">
             <div class="lm-visit-card-icon"><i class="fa fa-check-circle"></i></div>
             <div class="lm-visit-card-content">
                 <small>{{ $lmText('Completed', 'បានបញ្ចប់') }}</small>
                 <strong>{{ number_format($summary['completed'] ?? 0) }}</strong>
             </div>
-        </div>
+        </a>
     </div>
 
     {{-- Ultimate POS Standard Collapsible Filters Component --}}
@@ -422,7 +586,8 @@
 
     {{-- Ultimate POS Standard Widget Component --}}
     @component('components.widget', ['class' => 'box-primary', 'title' => $lmText('All Field Collection Visits', 'កំណត់ត្រាចុះជួបអតិថិជនទាំងអស់')])
-        <div class="table-responsive">
+        {{-- DESKTOP: Table View --}}
+        <div class="table-responsive lm-desktop-table">
             <table class="lm-table-dense table table-bordered table-striped table-hover" id="loanVisitsTable" style="width: 100%; margin-bottom: 0;">
                 <thead>
                     <tr style="background: #f8fafc; color: #475569;">
@@ -502,6 +667,91 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        {{-- MOBILE: Card Grid View --}}
+        <div class="lm-mobile-cards">
+            @forelse($visits as $visit)
+                @php
+                    $mapUrl = !empty($visit->latitude) && !empty($visit->longitude)
+                        ? 'https://www.google.com/maps?q='.$visit->latitude.','.$visit->longitude
+                        : null;
+                @endphp
+                <div class="lm-mcard">
+                    <div class="lm-mcard-header">
+                        <div class="lm-mcard-date">
+                            {{ !empty($visit->visited_at) ? \Carbon\Carbon::parse($visit->visited_at)->format('d-m-Y') : '-' }}
+                            @if(!empty($visit->visited_at))
+                                <small>{{ \Carbon\Carbon::parse($visit->visited_at)->format('H:i') }}</small>
+                            @endif
+                        </div>
+                        <span class="label label-{{ $resultBadge($visit->result ?? '') }} lm-mcard-badge">
+                            {{ ucwords(str_replace('_', ' ', $visit->result ?? 'pending')) }}
+                        </span>
+                    </div>
+
+                    <div class="lm-mcard-body">
+                        {{-- Installment # --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-file-text-o"></i>
+                            <span>
+                                @if(Route::has('loan-management.loans.view') && !empty($visit->loan_id))
+                                    <a href="{{ route('loan-management.loans.view', $visit->loan_id) }}">{{ $visit->loan_number ?? ('Installment #'.$visit->loan_id) }}</a>
+                                @else
+                                    <strong>{{ $visit->loan_number ?? '-' }}</strong>
+                                @endif
+                            </span>
+                        </div>
+
+                        {{-- Customer --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-user"></i>
+                            <span>
+                                <strong>{{ $visit->customer_name ?? '-' }}</strong>
+                                @if(!empty($visit->customer_phone))
+                                    <br><span style="font-size: 11px; color: #64748b;"><i class="fa fa-phone"></i> {{ $visit->customer_phone }}</span>
+                                @endif
+                            </span>
+                        </div>
+
+                        {{-- Collector --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-id-badge"></i>
+                            <span>{{ $visit->collector_name ?? '-' }}</span>
+                        </div>
+
+                        {{-- Location --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-map-marker"></i>
+                            <span>
+                                {{ \Illuminate\Support\Str::limit($visit->address_snapshot ?? '-', 60) }}
+                                @if($mapUrl)
+                                    <br><a href="{{ $mapUrl }}" target="_blank" rel="noopener" style="font-size: 11px;"><i class="fa fa-external-link"></i> {{ $lmText('Open Map', 'បើកផែនទី') }}</a>
+                                @endif
+                            </span>
+                        </div>
+                    </div>
+
+                    @if(!empty($visit->note))
+                        <div class="lm-mcard-notes">
+                            <i class="fa fa-sticky-note-o" style="margin-right: 3px;"></i> {{ \Illuminate\Support\Str::limit($visit->note, 120) }}
+                        </div>
+                    @endif
+
+                    @if($mapUrl)
+                        <div class="lm-mcard-footer">
+                            <a class="btn btn-xs btn-default" href="{{ $mapUrl }}" target="_blank" rel="noopener">
+                                <i class="fa fa-location-arrow text-primary"></i> {{ $lmText('Map', 'ផែនទី') }}
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            @empty
+                <div class="lm-mobile-empty">
+                    <i class="fa fa-street-view"></i>
+                    {{ $lmText('No collection visits found.', 'មិនមានកំណត់ត្រាចុះជួបអតិថិជនទេ។') }}
+                </div>
+            @endforelse
         </div>
 
         @if(method_exists($visits, 'links') && $visits->hasPages())

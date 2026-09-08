@@ -49,6 +49,7 @@
                     ['label' => $lmText('Closed Accounts', 'គណនីបិទរួច'), 'route' => 'loan-management.operations.page', 'params' => ['page' => 'closed-accounts'], 'can' => 'loan_management.view'],
                 ]],
                 ['label' => $lmText('Installment Schedule', 'កាលវិភាគកម្ចី'), 'icon' => 'fa fa-calendar', 'route' => 'loan-management.schedules.index', 'can' => 'loan_management.view', 'tone' => 'slate'],
+                ['label' => $lmText('Installment Calendar', 'ប្រតិទិនបង់ប្រាក់'), 'icon' => 'fa fa-calendar-check-o', 'route' => 'loan-management.schedules.calendar', 'can' => 'loan_management.view', 'tone' => 'teal'],
                 ['label' => $lmText('Installment Products', 'ទំនិញបង់រំលស់'), 'icon' => 'fa fa-cubes', 'route' => 'loan-management.products.index', 'can' => 'loan_management.view', 'tone' => 'blue'],
             ],
         ],
@@ -81,7 +82,6 @@
             'items' => [
                 ['label' => $lmText('Cash & Bank', 'សាច់ប្រាក់ និងធនាគារ'), 'icon' => 'fa fa-bank', 'route' => 'loan-management.payments.index', 'params' => ['payment_type' => 'loan'], 'can' => 'loan_management.view', 'tone' => 'cyan'],
                 ['label' => $lmText('Income', 'ចំណូល'), 'icon' => 'fa fa-level-up', 'route' => 'loan-management.payments.index', 'params' => ['payment_type' => 'monthly'], 'can' => 'loan_management.view', 'tone' => 'cyan'],
-                ['label' => $lmText('Expenses', 'ចំណាយ'), 'icon' => 'fa fa-level-down', 'route' => 'loan-management.reports.payments', 'can' => 'loan_management.view', 'tone' => 'orange'],
             ],
         ],
         [
@@ -94,7 +94,7 @@
                     ['label' => $lmText('Yearly Installment Summary', 'សង្ខេបកម្ចីប្រចាំឆ្នាំ'), 'route' => 'loan-management.reports.yearly-loan-summary', 'can' => 'loan_management.reports.view|loan_management.view'],
                 ]],
                 ['label' => $lmText('Collection Reports', 'របាយការណ៍ប្រមូលប្រាក់'), 'icon' => 'fa fa-bar-chart', 'route' => 'loan-management.collection.reports', 'can' => 'loan_management.reports.view|loan_management.view', 'tone' => 'blue'],
-                ['label' => $lmText('Financial Reports', 'របាយការណ៍ហិរញ្ញវត្ថុ'), 'icon' => 'fa fa-file-excel-o', 'route' => 'loan-management.reports.payments', 'can' => 'loan_management.reports.view|loan_management.view', 'tone' => 'blue'],
+                ['label' => $lmText('Payment Channels & Methods', 'របាយការណ៍បណ្តាញបង់ប្រាក់'), 'icon' => 'fa fa-credit-card', 'route' => 'loan-management.reports.payments', 'can' => 'loan_management.reports.view|loan_management.view', 'tone' => 'blue'],
             ],
         ],
         [

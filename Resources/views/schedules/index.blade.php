@@ -77,6 +77,10 @@
             <p class="ls-subtitle">{{ $t('Track installment due dates, balances, overdue days, and collection actions.', 'តាមដានថ្ងៃត្រូវបង់ សមតុល្យ ថ្ងៃហួសកំណត់ និងសកម្មភាពប្រមូលប្រាក់។') }}</p>
         </div>
         <div class="ls-header-actions">
+            <div class="btn-group" style="margin-right: 6px;">
+                <button type="button" class="btn btn-primary btn-sm active" style="font-weight: 600;"><i class="fa fa-list"></i> {{ $t('Table View', 'ទម្រង់តារាង') }}</button>
+                <a href="{{ route('loan-management.schedules.calendar') }}" class="btn btn-default btn-sm" style="font-weight: 600;"><i class="fa fa-calendar"></i> {{ $t('Calendar View', 'ទម្រង់ប្រតិទិន') }}</a>
+            </div>
             <a href="{{ route('loan-management.loans') }}" class="btn btn-default btn-sm"><i class="fa fa-list"></i> {{ $t('All Installments', 'កម្ចីទាំងអស់') }}</a>
             <a href="{{ route('loan-management.loans.create') }}" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> {{ $t('New Installment', 'កម្ចីថ្មី') }}</a>
         </div>

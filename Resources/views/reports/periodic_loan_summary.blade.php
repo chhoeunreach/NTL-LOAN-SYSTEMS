@@ -32,6 +32,7 @@
 
 @section('loan_css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap.min.css">
 <style>
     /* =========================================================
        ULTIMATE POS STANDARD STYLE FOR PERIODIC SUMMARY
@@ -44,35 +45,43 @@
     /* KPI Summary Cards Grid */
     .yls-card-grid {
         display: grid;
-        grid-template-columns: repeat(6, minmax(140px, 1fr));
-        gap: 12px;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
         margin-bottom: 20px;
+    }
+    @media (max-width: 1400px) {
+        .yls-card-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .yls-card-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+        .yls-card-grid { grid-template-columns: 1fr; }
     }
     .yls-card {
         border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border-radius: 12px;
         background: #ffffff;
-        padding: 12px 14px;
+        padding: 14px 16px;
         display: flex;
-        gap: 12px;
+        gap: 14px;
         align-items: center;
-        min-height: 54px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, .03);
+        box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
         transition: transform .15s ease, box-shadow .15s ease;
     }
     .yls-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
+        box-shadow: 0 6px 16px rgba(15, 23, 42, .08);
     }
     .yls-card-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 9px;
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 17px;
-        flex: 0 0 40px;
+        font-size: 19px;
+        flex: 0 0 46px;
     }
     .yls-card small {
         display: block;
@@ -85,10 +94,11 @@
         letter-spacing: .3px;
     }
     .yls-card strong {
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 800;
         color: #0f172a;
         line-height: 1.2;
+        font-variant-numeric: tabular-nums;
         word-break: break-word;
     }
     .yls-tone-teal { color: #0f766e; background: #f0fdfa; border: 1px solid #ccfbf1; }
@@ -97,6 +107,96 @@
     .yls-tone-orange { color: #d97706; background: #fffbeb; border: 1px solid #fde68a; }
     .yls-tone-purple { color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
     .yls-tone-red { color: #dc2626; background: #fef2f2; border: 1px solid #fecaca; }
+
+    /* Ultimate POS DataTables Toolbar Layout */
+    .lm-dt-top {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-length label {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        margin: 0 !important;
+        font-weight: 500 !important;
+        font-size: 13px !important;
+        color: #475569 !important;
+    }
+    .lm-dt-length select {
+        height: 34px !important;
+        padding: 2px 28px 2px 10px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 13px !important;
+        color: #1e293b !important;
+        background-color: #fff !important;
+        outline: none !important;
+    }
+    .lm-dt-buttons {
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 4px !important;
+        flex-wrap: wrap !important;
+    }
+    .lm-dt-buttons .btn {
+        border-radius: 6px !important;
+        padding: 6px 12px !important;
+        font-size: 12.5px !important;
+        font-weight: 600 !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    }
+    .lm-dt-buttons .btn:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+    }
+    .lm-dt-search input {
+        height: 34px !important;
+        min-width: 220px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 12px !important;
+        font-size: 13px !important;
+        outline: none !important;
+    }
+    .lm-dt-bottom {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 12px !important;
+        padding: 12px 16px !important;
+        background: #ffffff !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    .lm-dt-info {
+        font-size: 13px !important;
+        color: #64748b !important;
+        padding: 0 !important;
+    }
+    .lm-dt-pagination .pagination {
+        margin: 0 !important;
+    }
+    .lm-dt-pagination .pagination > li > a {
+        border-radius: 4px !important;
+        margin: 0 2px !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    .lm-dt-pagination .pagination > .active > a {
+        background-color: #0284c7 !important;
+        border-color: #0284c7 !important;
+        color: #ffffff !important;
+    }
 
     /* Filters Component Styling */
     .lm-pos-filter-grid {
@@ -276,14 +376,28 @@
     </section>
 
     {{-- KPI Cards --}}
+    @php
+        $cardTitleMap = [
+            'Periods' => $bi('Active Periods', 'រយៈពេលសកម្ម'),
+            'Loans' => $bi('Installments', 'កិច្ចសន្យាកម្ចី'),
+            'Principal' => $bi('Principal Capital', 'ប្រាក់ដើមសរុប'),
+            'Collected' => $bi('Total Collected', 'ប្រមូលបានសរុប'),
+            'Balance' => $bi('Outstanding Debt', 'សមតុល្យនៅសល់'),
+            'Overdue' => $bi('Overdue Accounts', 'គណនីហួសកំណត់'),
+        ];
+    @endphp
     <div class="yls-card-grid">
         @foreach($cards as $card)
+            @php
+                $lbl = $card['label'] ?? '';
+                $displayLabel = $cardTitleMap[$lbl] ?? $lbl;
+            @endphp
             <div class="yls-card">
                 <div class="yls-card-icon yls-tone-{{ $card['tone'] ?? 'blue' }}">
                     <i class="{{ $card['icon'] ?? 'fa fa-bar-chart' }}"></i>
                 </div>
                 <div>
-                    <small>{{ $card['label'] ?? '' }}</small>
+                    <small>{{ $displayLabel }}</small>
                     <strong>{{ ($card['type'] ?? '') === 'money' ? $money($card['value'] ?? 0) : $number($card['value'] ?? 0) }}</strong>
                 </div>
             </div>
@@ -335,7 +449,7 @@
     {{-- Ultimate POS Standard Widget Component --}}
     @component('components.widget', ['class' => 'box-primary', 'title' => $reportTitle])
         <div class="table-responsive">
-            <table class="table table-bordered table-hover yls-table">
+            <table class="table table-bordered table-hover yls-table" id="periodicLoanSummaryTable">
                 <thead>
                     <tr>
                         <th rowspan="2">{{ $bi('No.', 'ល.រ') }}</th>
@@ -395,9 +509,6 @@
                             <td class="text-right">{{ $rowMoney($row['bad_balance_total'] ?? 0) }}</td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="22" class="text-center text-muted" style="padding: 24px !important;">{{ $bi('No data found for this date range.', 'រកមិនឃើញទិន្នន័យសម្រាប់ចន្លោះថ្ងៃនេះទេ។') }}</td>
-                        </tr>
                     @endforelse
                 </tbody>
                 <tfoot>
@@ -438,6 +549,14 @@
 @section('loan_js')
 <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/min/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1/daterangepicker.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 <script>
     (function ($) {
         var $form = $('#ylsPeriodicFilterForm');
@@ -515,6 +634,79 @@
                     $form.find('[name="date_from"]').val(parts[0]);
                     $form.find('[name="date_to"]').val(parts[1]);
                 }
+            });
+        }
+
+        // Initialize Ultimate POS Standard DataTables
+        if ($.fn.DataTable && !$.fn.DataTable.isDataTable('#periodicLoanSummaryTable')) {
+            var tableButtons = [];
+            if ($.fn.dataTable.Buttons) {
+                tableButtons = [
+                    {
+                        extend: 'copy',
+                        text: '<i class="fa fa-copy"></i> ' + @json($bi('Copy', 'ចម្លង')),
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible' }
+                    },
+                    {
+                        extend: 'csv',
+                        text: '<i class="fa fa-file-text-o"></i> ' + @json($bi('Export CSV', 'នាំចេញ CSV')),
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible' }
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<i class="fa fa-file-excel-o"></i> ' + @json($bi('Export Excel', 'នាំចេញ Excel')),
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible' }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fa fa-print"></i> ' + @json($bi('Print', 'បោះពុម្ព')),
+                        className: 'btn btn-default btn-sm',
+                        exportOptions: { columns: ':visible', stripHtml: true }
+                    },
+                    {
+                        extend: 'colvis',
+                        text: '<i class="fa fa-columns"></i> ' + @json($bi('Column Visibility', 'បង្ហាញជួរឈរ')),
+                        className: 'btn btn-default btn-sm'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fa fa-file-pdf-o"></i> ' + @json($bi('Export PDF', 'នាំចេញ PDF')),
+                        className: 'btn btn-default btn-sm',
+                        orientation: 'landscape',
+                        pageSize: 'A3',
+                        exportOptions: { columns: ':visible' }
+                    }
+                ];
+            }
+
+            $('#periodicLoanSummaryTable').DataTable({
+                dom: '<"lm-dt-top"<"lm-dt-length"l><"lm-dt-buttons"B><"lm-dt-search"f>>rt<"lm-dt-bottom"<"lm-dt-info"i><"lm-dt-pagination"p>>',
+                buttons: tableButtons,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, 250, -1], [10, 25, 50, 100, 250, @json($bi('All', 'ទាំងអស់'))]],
+                order: [],
+                autoWidth: false,
+                language: {
+                    search: '',
+                    searchPlaceholder: @json($bi('Search in summary...', 'ស្វែងរកក្នុងតារាង...')),
+                    lengthMenu: @json($bi('Show _MENU_ entries', 'បង្ហាញ _MENU_ ធាតុ')),
+                    emptyTable: @json($bi('No data found for this date range.', 'រកមិនឃើញទិន្នន័យសម្រាប់ចន្លោះថ្ងៃនេះទេ។')),
+                    info: @json($bi('Showing _START_ to _END_ of _TOTAL_ entries', 'បង្ហាញពី _START_ ដល់ _END_ នៃ _TOTAL_ ធាតុ')),
+                    infoEmpty: @json($bi('Showing 0 to 0 of 0 entries', 'បង្ហាញ 0 នៃ 0 ធាតុ')),
+                    infoFiltered: @json($bi('(filtered from _MAX_ total entries)', '(ចម្រាញ់ចេញពី _MAX_ ធាតុសរុប)')),
+                    paginate: {
+                        first: @json($bi('First', 'ដំបូង')),
+                        last: @json($bi('Last', 'ចុងក្រោយ')),
+                        next: @json($bi('Next', 'បន្ទាប់')),
+                        previous: @json($bi('Previous', 'មុន'))
+                    }
+                },
+                columnDefs: [
+                    { targets: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21], className: 'text-right' }
+                ]
             });
         }
     })(jQuery);

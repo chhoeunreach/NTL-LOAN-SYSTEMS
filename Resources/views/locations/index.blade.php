@@ -54,6 +54,147 @@
             font-size: 12px;
         }
         .loan-asset-gallery-date { display: block; color: #777; font-size: 11px; }
+
+        /* =========================================================
+           MOBILE CARD GRID VIEW
+           ========================================================= */
+        .lm-mobile-cards {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            .lm-desktop-table {
+                display: none !important;
+            }
+            .lm-mobile-cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 12px;
+                padding: 4px 0;
+            }
+        }
+        @media (max-width: 400px) {
+            .lm-mobile-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .lm-mcard {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .lm-mcard:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+        }
+        .lm-mcard::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0284c7, #7c3aed);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .lm-mcard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-top: 4px;
+        }
+        .lm-mcard-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+        }
+        .lm-mcard-title small {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            color: #94a3b8;
+        }
+
+        .lm-mcard-body {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .lm-mcard-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 12.5px;
+            color: #334155;
+            line-height: 1.4;
+        }
+        .lm-mcard-row i {
+            width: 16px;
+            text-align: center;
+            color: #94a3b8;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        .lm-mcard-row strong {
+            color: #0f172a;
+        }
+
+        .lm-mcard-assets {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #e2e8f0;
+        }
+        .lm-mcard-assets img {
+            max-height: 36px;
+            max-width: 72px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 2px;
+            background: #fff;
+        }
+
+        .lm-mcard-footer {
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .lm-mcard-footer .btn,
+        .lm-mcard-footer .tw-dw-btn {
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+        }
+
+        .lm-mobile-empty {
+            text-align: center;
+            padding: 32px 16px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        .lm-mobile-empty i {
+            display: block;
+            font-size: 32px;
+            margin-bottom: 8px;
+            color: #cbd5e1;
+        }
     </style>
 @endsection
 
@@ -154,7 +295,8 @@
             </div>
         @endslot
 
-        <div class="table-responsive">
+        {{-- DESKTOP: Table View --}}
+        <div class="table-responsive lm-desktop-table">
             <table class="table table-bordered table-striped" id="loan_location_table">
                 <thead>
                     <tr>
@@ -255,6 +397,133 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        {{-- MOBILE: Card Grid View --}}
+        <div class="lm-mobile-cards">
+            @forelse($locations as $location)
+                @php
+                    $invoicePrefixExample = rtrim(trim((string) ($location->loan_invoice_prefix ?? '')), '-/');
+                    $invoicePrefixExample = $invoicePrefixExample !== '' ? $invoicePrefixExample : 'LN';
+                @endphp
+                <div class="lm-mcard">
+                    <div class="lm-mcard-header">
+                        <div class="lm-mcard-title">
+                            {{ $location->name ?? '-' }}
+                            @if(! empty($location->main_location_id))
+                                <small>POS Location #{{ $location->main_location_id }}</small>
+                            @endif
+                        </div>
+                        <span class="label label-{{ ($location->status ?? 'active') === 'active' ? 'success' : 'default' }}" style="font-size: 10px; padding: 3px 8px; border-radius: 20px;">
+                            {{ ucfirst($location->status ?? 'active') }}
+                        </span>
+                    </div>
+
+                    <div class="lm-mcard-body">
+                        {{-- Location ID --}}
+                        @if(!empty($location->location_code))
+                            <div class="lm-mcard-row">
+                                <i class="fa fa-hashtag"></i>
+                                <span><strong>{{ $location->location_code }}</strong></span>
+                            </div>
+                        @endif
+
+                        {{-- Address --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-map-marker"></i>
+                            <span>{{ \Illuminate\Support\Str::limit($location->address ?? '-', 80) }}</span>
+                        </div>
+
+                        {{-- Phone --}}
+                        @if(!empty($location->phone))
+                            <div class="lm-mcard-row">
+                                <i class="fa fa-phone"></i>
+                                <span>{{ $location->phone }}</span>
+                            </div>
+                        @endif
+
+                        {{-- Telegram --}}
+                        @if(!empty($location->telegram_number))
+                            <div class="lm-mcard-row">
+                                <i class="fa fa-paper-plane"></i>
+                                <span>{{ $location->telegram_number }}</span>
+                            </div>
+                        @endif
+
+                        {{-- Invoice Prefix --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-file-text-o"></i>
+                            <span>
+                                {{ $location->loan_invoice_prefix ?? '-' }}
+                                <br><small style="color: #94a3b8;">{{ $invoicePrefixExample }}-{{ date('Ymd') }}-000001</small>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Assets thumbnails --}}
+                    @if(!empty($location->logo_asset_url) || !empty($location->payment_qr_asset_url) || !empty($location->telegram_qr_asset_url))
+                        <div class="lm-mcard-assets">
+                            @if(!empty($location->logo_asset_url))
+                                <img src="{{ $location->logo_asset_url }}" alt="Logo" onerror="this.style.display='none';">
+                            @endif
+                            @if(!empty($location->payment_qr_asset_url))
+                                <img src="{{ $location->payment_qr_asset_url }}" alt="Payment QR" onerror="this.style.display='none';">
+                            @endif
+                            @if(!empty($location->telegram_qr_asset_url))
+                                <img src="{{ $location->telegram_qr_asset_url }}" alt="Telegram QR" onerror="this.style.display='none';">
+                            @endif
+                        </div>
+                    @endif
+
+                    {{-- Action Buttons --}}
+                    <div class="lm-mcard-footer">
+                        <button type="button"
+                            class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-primary loan-location-edit-btn"
+                            data-toggle="modal"
+                            data-target="#loan_location_edit_modal"
+                            data-id="{{ $location->id }}"
+                            data-name="{{ $location->name ?? '' }}"
+                            data-location_code="{{ $location->location_code ?? '' }}"
+                            data-loan_invoice_prefix="{{ $location->loan_invoice_prefix ?? '' }}"
+                            data-phone="{{ $location->phone ?? '' }}"
+                            data-telegram_number="{{ $location->telegram_number ?? '' }}"
+                            data-status="{{ $location->status ?? 'active' }}"
+                            data-address="{{ $location->address ?? '' }}">
+                            <i class="glyphicon glyphicon-edit"></i> Edit
+                        </button>
+                        <button type="button"
+                            class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-info loan-location-assets-btn"
+                            data-toggle="modal"
+                            data-target="#loan_location_assets_modal"
+                            data-id="{{ $location->id }}"
+                            data-name="{{ $location->name ?? '' }}"
+                            data-logo_path="{{ $location->logo_path ?? '' }}"
+                            data-logo_url="{{ $location->logo_asset_url ?? '' }}"
+                            data-payment_qr_path="{{ $location->payment_qr_path ?? '' }}"
+                            data-payment_qr_url="{{ $location->payment_qr_asset_url ?? '' }}"
+                            data-telegram_qr_path="{{ $location->telegram_qr_path ?? '' }}"
+                            data-telegram_qr_url="{{ $location->telegram_qr_asset_url ?? '' }}"
+                            data-telegram_payment_chat_id="{{ $location->telegram_payment_chat_id ?? '' }}"
+                            data-telegram_installment_chat_id="{{ $location->telegram_installment_chat_id ?? '' }}"
+                            data-telegram_notify_payment="{{ ! empty($location->telegram_notify_payment) ? 1 : 0 }}"
+                            data-telegram_notify_installment="{{ ! empty($location->telegram_notify_installment) ? 1 : 0 }}">
+                            <i class="fa fa-image"></i> Assets
+                        </button>
+                        <form method="POST" action="{{ route('loan-management.locations.destroy', $location->id) }}" onsubmit="return confirm('Delete this location?');" style="display:inline-block;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="tw-dw-btn tw-dw-btn-xs tw-dw-btn-outline tw-dw-btn-error">
+                                <i class="fa fa-trash"></i> Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @empty
+                <div class="lm-mobile-empty">
+                    <i class="fa fa-map-marker"></i>
+                    No locations found.
+                </div>
+            @endforelse
         </div>
     @endcomponent
 

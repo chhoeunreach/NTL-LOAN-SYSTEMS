@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
         <li class="treeview installment-section section-reports ${treeOpenClass([links.reportsPayments, links.reportsSummary, links.reportsAba])}" data-section="reports">
             <a href="#"><i class="fa fa-bar-chart"></i> <span>Reports</span><i class="fa fa-angle-left pull-right"></i></a>
             <ul class="treeview-menu" ${treeMenuStyle([links.reportsPayments, links.reportsSummary, links.reportsAba])}>
-                <li class="${activeClass(links.reportsPayments)}"><a href="${links.reportsPayments}"><i class="fa fa-line-chart"></i> Payments Report</a></li>
+                <li class="${activeClass(links.reportsPayments)}"><a href="${links.reportsPayments}"><i class="fa fa-credit-card"></i> Payment Channels & Methods</a></li>
                 <li class="${activeClass(links.reportsSummary)}"><a href="${links.reportsSummary}"><i class="fa fa-list"></i> Installment Summary Report</a></li>
                 <li class="${activeClass(links.reportsAba)}"><a href="${links.reportsAba}"><i class="fa fa-qrcode"></i> ABA Transactions Report</a></li>
             </ul>

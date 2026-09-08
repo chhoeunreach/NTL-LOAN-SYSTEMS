@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Exports\ArrayExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Modules\LoanManagement\Services\BusinessSettingsService;
+use Yajra\DataTables\Facades\DataTables;
 
 class DashboardController extends Controller
 {
@@ -511,11 +512,94 @@ class DashboardController extends Controller
         ]);
     }
 
-    public function overdue()
+    public function overdue(Request $request)
     {
         $this->allow('loan_management.overdue.view');
 
-        return view('loanmanagement::overdue.index');
+        $tab = $request->input('tab', 'late_loans');
+        $paymentStatus = ($tab === 'today_due') ? 'due_today' : 'overdue';
+
+        $summary = $this->buildInstallmentReportSummary([]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            $filters = array_merge($this->installmentReportFilters($request), [
+                'payment_status' => $paymentStatus,
+            ]);
+
+            $query = $this->installmentReportQuery();
+            $this->applyInstallmentReportFilters($query, $filters);
+
+            $isKhmer = $this->loanReportIsKhmer();
+            $bi = fn ($en, $km) => $isKhmer ? $km : $en;
+
+            return DataTables::of($query)
+                ->filter(function ($q) use ($request) {
+                    $search = trim((string) data_get($request->all(), 'search.value', ''));
+                    if ($search === '') {
+                        return;
+                    }
+                    $like = '%'.$search.'%';
+                    $q->where(function ($w) use ($like) {
+                        $w->where('l.loan_number', 'like', $like)
+                            ->orWhere('l.source_invoice_no', 'like', $like)
+                            ->orWhere('l.customer_name_snapshot', 'like', $like)
+                            ->orWhere('l.customer_phone_snapshot', 'like', $like)
+                            ->orWhere('l.collector_name_snapshot', 'like', $like)
+                            ->orWhere('l.note', 'like', $like);
+                    });
+                })
+                ->editColumn('loan_number', function ($row) {
+                    $url = route('loan-management.loans.view', $row->id);
+                    return '<a href="'.$url.'" class="ir-loan-link"><i class="fa fa-file-text-o" style="margin-right:4px; opacity:0.75;"></i>'.e($row->loan_number).'</a>';
+                })
+                ->editColumn('loan_date', function ($row) {
+                    return $row->loan_date ? '<span class="text-nowrap">'.\Carbon\Carbon::parse($row->loan_date)->format('d M Y').'</span>' : '-';
+                })
+                ->editColumn('invoice_no', fn ($row) => $row->invoice_no ? '<span class="badge" style="background:#f1f5f9; color:#475569; font-weight:600; border:1px solid #e2e8f0;">'.e($row->invoice_no).'</span>' : '-')
+                ->editColumn('customer_name', function ($row) {
+                    $name = e($row->customer_name ?: '-');
+                    $phone = e($row->customer_phone ?: '');
+                    $html = '<div class="ir-customer-cell"><strong class="ir-customer-name">'.$name.'</strong>';
+                    if ($phone !== '' && $phone !== '-') {
+                        $html .= '<span class="ir-customer-phone"><i class="fa fa-phone" style="font-size:10px; margin-right:3px;"></i>'.$phone.'</span>';
+                    }
+                    $html .= '</div>';
+                    return $html;
+                })
+                ->editColumn('total_amount', fn ($row) => '<strong style="color:#0f172a;">$'.number_format((float) ($row->total_amount ?? 0), 2).'</strong>')
+                ->editColumn('paid_amount', function ($row) {
+                    $paid = (float) ($row->paid_amount ?? 0);
+                    $total = (float) ($row->total_amount ?? 0);
+                    $pct = $total > 0 ? min(100, round(($paid / $total) * 100)) : 0;
+                    return '<div class="ir-money-progress"><div class="ir-money-val" style="color:#16a34a; font-weight:600;">$'.number_format($paid, 2).'</div><div class="ir-mini-bar" title="'.$pct.'% paid"><div class="ir-mini-fill" style="width:'.$pct.'%"></div></div></div>';
+                })
+                ->editColumn('balance_amount', function ($row) {
+                    $bal = (float) ($row->balance_amount ?? 0);
+                    return '<strong style="color:#dc2626; font-weight:700;">$'.number_format($bal, 2).'</strong>';
+                })
+                ->editColumn('next_due_date', function ($row) {
+                    if (! $row->next_due_date) return '-';
+                    $due = \Carbon\Carbon::parse($row->next_due_date);
+                    $formatted = $due->format('d M Y');
+                    if ((int) $row->is_overdue === 1) {
+                        return '<span class="ir-due-overdue text-nowrap"><i class="fa fa-clock-o" style="color:#dc2626; margin-right:3px;"></i><strong style="color:#dc2626;">'.$formatted.'</strong></span>';
+                    }
+                    if ($due->isToday()) {
+                        return '<span class="ir-due-today text-nowrap"><i class="fa fa-bell-o" style="color:#d97706; margin-right:3px;"></i><strong style="color:#d97706;">'.$formatted.'</strong></span>';
+                    }
+                    return '<span class="text-nowrap">'.$formatted.'</span>';
+                })
+                ->editColumn('collector_name', fn ($row) => e($row->collector_name ?: '-'))
+                ->rawColumns(['loan_number', 'loan_date', 'invoice_no', 'customer_name', 'total_amount', 'paid_amount', 'balance_amount', 'next_due_date'])
+                ->with('summary', $summary)
+                ->make(true);
+        }
+
+        return view('loanmanagement::overdue.index', [
+            'summary' => $summary,
+            'tab' => $tab,
+            'isKhmer' => $this->loanReportIsKhmer(),
+        ]);
     }
 
     public function yearlyLoanSummary(Request $request)
@@ -614,9 +698,23 @@ class DashboardController extends Controller
         $this->allow('loan_management.view');
 
         $filters = $this->installmentReportFilters($request);
-        $emptySummary = ['count' => 0, 'principal' => 0, 'paid' => 0, 'balance' => 0, 'overdue' => 0];
+        $emptySummary = [
+            'count' => 0,
+            'active_count' => 0,
+            'completed_count' => 0,
+            'principal' => 0,
+            'paid' => 0,
+            'balance' => 0,
+            'overdue' => 0,
+            'overdue_balance' => 0,
+            'due_today' => 0,
+        ];
 
         if (! Schema::connection('mysql_loan')->hasTable('loans')) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return DataTables::of(collect())->with('summary', $emptySummary)->make(true);
+            }
+
             return view('loanmanagement::reports.installment_index', [
                 'filters' => $filters,
                 'rows' => collect(),
@@ -628,28 +726,134 @@ class DashboardController extends Controller
             ]);
         }
 
-        $query = $this->installmentReportQuery();
-        $this->applyInstallmentReportFilters($query, $filters);
+        $summary = $this->buildInstallmentReportSummary($filters);
 
-        $summaryQuery = clone $query;
-        $amountExpressions = $this->installmentReportAmountExpressions();
-        $overdueExpression = $this->installmentScheduleExists('DATE(s.due_date) < CURDATE() AND '.$this->installmentScheduleOpenCondition('s'), $this->installmentScheduleBaseWhere());
-        $summary = [
-            'count' => (int) (clone $summaryQuery)->count(),
-            'principal' => (float) (clone $summaryQuery)->sum(DB::raw($amountExpressions['principal'])),
-            'paid' => (float) (clone $summaryQuery)->sum(DB::raw($amountExpressions['paid'])),
-            'balance' => (float) (clone $summaryQuery)->sum(DB::raw($amountExpressions['balance'])),
-            'overdue' => (int) (clone $summaryQuery)->whereRaw($overdueExpression.' = 1')->count(),
-        ];
+        if ($request->ajax() || $request->wantsJson()) {
+            $query = $this->installmentReportQuery();
+            $this->applyInstallmentReportFilters($query, $filters);
 
-        $rows = $query
-            ->orderByDesc('loan_date')
-            ->orderByDesc('id')
-            ->get();
+            $isKhmer = $this->loanReportIsKhmer();
+            $bi = fn ($en, $km) => $isKhmer ? $km : $en;
+
+            return DataTables::of($query)
+                ->filter(function ($q) use ($request) {
+                    $search = trim((string) data_get($request->all(), 'search.value', ''));
+                    if ($search === '') {
+                        return;
+                    }
+                    $like = '%'.$search.'%';
+                    $q->where(function ($w) use ($like) {
+                        $w->where('l.loan_number', 'like', $like)
+                            ->orWhere('l.source_invoice_no', 'like', $like)
+                            ->orWhere('l.customer_name_snapshot', 'like', $like)
+                            ->orWhere('l.customer_phone_snapshot', 'like', $like)
+                            ->orWhere('l.collector_name_snapshot', 'like', $like)
+                            ->orWhere('l.note', 'like', $like);
+                    });
+                })
+                ->editColumn('loan_number', function ($row) {
+                    $url = route('loan-management.loans.view', $row->id);
+                    return '<a href="'.$url.'" class="ir-loan-link"><i class="fa fa-file-text-o" style="margin-right:4px; opacity:0.75;"></i>'.e($row->loan_number).'</a>';
+                })
+                ->editColumn('loan_date', function ($row) {
+                    return $row->loan_date ? '<span class="text-nowrap">'.\Carbon\Carbon::parse($row->loan_date)->format('d M Y').'</span>' : '-';
+                })
+                ->editColumn('invoice_no', fn ($row) => $row->invoice_no ? '<span class="badge" style="background:#f1f5f9; color:#475569; font-weight:600; border:1px solid #e2e8f0;">'.e($row->invoice_no).'</span>' : '-')
+                ->editColumn('customer_name', function ($row) {
+                    $name = e($row->customer_name ?: '-');
+                    $phone = e($row->customer_phone ?: '');
+                    $html = '<div class="ir-customer-cell"><strong class="ir-customer-name">'.$name.'</strong>';
+                    if ($phone !== '' && $phone !== '-') {
+                        $html .= '<span class="ir-customer-phone"><i class="fa fa-phone" style="font-size:10px; margin-right:3px;"></i>'.$phone.'</span>';
+                    }
+                    $html .= '</div>';
+                    return $html;
+                })
+                ->editColumn('customer_phone', fn ($row) => e($row->customer_phone ?: '-'))
+                ->editColumn('location_name', fn ($row) => $row->location_name ? '<span class="badge" style="background:#f8fafc; color:#334155; border:1px solid #e2e8f0; font-weight:600;">'.e($row->location_name).'</span>' : '-')
+                ->editColumn('status', function ($row) use ($bi) {
+                    $st = strtolower(trim((string) $row->status));
+                    if ($st === 'active') {
+                        return '<span class="ir-badge ir-badge-active"><span class="ir-dot-live"></span>'.$bi('Active', 'ដំណើរការ').'</span>';
+                    }
+                    if (in_array($st, ['completed', 'settled'], true)) {
+                        return '<span class="ir-badge ir-badge-completed"><i class="fa fa-check"></i> '.$bi('Completed', 'បញ្ចប់').'</span>';
+                    }
+                    if ($st === 'closed') {
+                        return '<span class="ir-badge ir-badge-closed">'.$bi('Closed', 'បានបិទ').'</span>';
+                    }
+                    if (in_array($st, ['defaulted', 'cancelled', 'rejected'], true)) {
+                        return '<span class="ir-badge ir-badge-danger">'.e(ucwords(str_replace('_', ' ', $st))).'</span>';
+                    }
+                    return '<span class="ir-badge ir-badge-default">'.e(ucwords(str_replace('_', ' ', (string) $row->status))).'</span>';
+                })
+                ->editColumn('payment_status', function ($row) use ($bi) {
+                    $ps = strtolower(trim((string) $row->payment_status));
+                    if ($ps === 'paid') {
+                        return '<span class="ir-badge ir-badge-paid"><i class="fa fa-check-circle"></i> '.$bi('Paid', 'បានបង់').'</span>';
+                    }
+                    if ($ps === 'partial') {
+                        return '<span class="ir-badge ir-badge-partial"><i class="fa fa-adjust"></i> '.$bi('Partial', 'បង់ខ្លះ').'</span>';
+                    }
+                    if ($ps === 'overdue') {
+                        return '<span class="ir-badge ir-badge-overdue"><i class="fa fa-clock-o"></i> '.$bi('Overdue', 'ហួសកំណត់').'</span>';
+                    }
+                    return $row->payment_status ? '<span class="ir-badge ir-badge-default">'.e(ucwords(str_replace('_', ' ', (string) $row->payment_status))).'</span>' : '-';
+                })
+                ->editColumn('total_amount', fn ($row) => '<strong style="color:#0f172a;">$'.number_format((float) ($row->total_amount ?? 0), 2).'</strong>')
+                ->editColumn('principal_amount', fn ($row) => '$'.number_format((float) ($row->principal_amount ?? 0), 2))
+                ->editColumn('paid_amount', function ($row) {
+                    $paid = (float) ($row->paid_amount ?? 0);
+                    $total = (float) ($row->total_amount ?? 0);
+                    $pct = $total > 0 ? min(100, round(($paid / $total) * 100)) : 0;
+                    return '<div class="ir-money-progress"><div class="ir-money-val" style="color:#16a34a; font-weight:600;">$'.number_format($paid, 2).'</div><div class="ir-mini-bar" title="'.$pct.'% paid"><div class="ir-mini-fill" style="width:'.$pct.'%"></div></div></div>';
+                })
+                ->editColumn('balance_amount', function ($row) {
+                    $bal = (float) ($row->balance_amount ?? 0);
+                    if ($bal <= 0) {
+                        return '<span class="text-muted" style="font-size:12px;">$0.00</span>';
+                    }
+                    return '<strong style="color:#dc2626; font-weight:700;">$'.number_format($bal, 2).'</strong>';
+                })
+                ->editColumn('term_count', fn ($row) => '<span style="font-weight:600;">'.number_format((float) ($row->term_count ?? 0), 0).' <small class="text-muted">M</small></span>')
+                ->addColumn('schedules', function ($row) {
+                    $paid = (float) ($row->paid_schedule_count ?? 0);
+                    $total = (float) ($row->schedule_count ?? 0);
+                    return '<span class="ir-schedule-pill"><i class="fa fa-calendar-check-o text-success" style="font-size:11px;"></i> '.number_format($paid, 0).' / '.number_format($total, 0).'</span>';
+                })
+                ->editColumn('next_due_date', function ($row) {
+                    if (! $row->next_due_date) {
+                        return '-';
+                    }
+                    $due = \Carbon\Carbon::parse($row->next_due_date);
+                    $formatted = $due->format('d M Y');
+                    if ((int) $row->is_overdue === 1) {
+                        return '<span class="ir-due-overdue text-nowrap"><i class="fa fa-clock-o" style="color:#dc2626; margin-right:3px;"></i><strong style="color:#dc2626;">'.$formatted.'</strong></span>';
+                    }
+                    if ($due->isToday()) {
+                        return '<span class="ir-due-today text-nowrap"><i class="fa fa-bell-o" style="color:#d97706; margin-right:3px;"></i><strong style="color:#d97706;">'.$formatted.'</strong></span>';
+                    }
+                    return '<span class="text-nowrap">'.$formatted.'</span>';
+                })
+                ->editColumn('last_payment_at', function ($row) {
+                    return $row->last_payment_at ? '<span class="text-nowrap">'.\Carbon\Carbon::parse($row->last_payment_at)->format('d M Y').'</span>' : '-';
+                })
+                ->editColumn('collector_name', fn ($row) => e($row->collector_name ?: '-'))
+                ->addColumn('risk', function ($row) use ($bi) {
+                    if ((int) $row->is_overdue === 1) {
+                        return '<span class="ir-badge ir-badge-overdue-risk"><i class="fa fa-warning"></i> '.$bi('Overdue', 'ហួសកំណត់').'</span>';
+                    }
+                    return '<span class="ir-badge ir-badge-normal-risk"><i class="fa fa-check-circle"></i> '.$bi('Normal', 'ធម្មតា').'</span>';
+                })
+                ->editColumn('note', fn ($row) => e($row->note ?: '-'))
+                ->rawColumns(['loan_number', 'loan_date', 'invoice_no', 'customer_name', 'location_name', 'status', 'payment_status', 'total_amount', 'paid_amount', 'balance_amount', 'term_count', 'schedules', 'next_due_date', 'last_payment_at', 'risk'])
+                ->with('summary', $summary)
+                ->make(true);
+        }
 
         return view('loanmanagement::reports.installment_index', [
             'filters' => $filters,
-            'rows' => $rows,
+            'rows' => collect(),
             'summary' => $summary,
             'locations' => $this->loanReportLocationOptions(),
             'statusOptions' => $this->installmentStatusOptions(),
@@ -735,6 +939,451 @@ class DashboardController extends Controller
             'loanStatusOptions' => $this->installmentStatusOptions(),
             'isKhmer' => $this->loanReportIsKhmer(),
             'perPage' => $perPage,
+        ]);
+    }
+
+    public function installmentCalendar(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $year = (int) $request->input('year', now()->year);
+        $month = (int) $request->input('month', now()->month);
+        if ($month < 1 || $month > 12) {
+            $month = (int) now()->month;
+        }
+        if ($year < 2000 || $year > 2099) {
+            $year = (int) now()->year;
+        }
+
+        $currentMonth = \Carbon\Carbon::createFromDate($year, $month, 1)->startOfDay();
+        $startOfMonth = $currentMonth->copy()->startOfMonth()->toDateString();
+        $endOfMonth = $currentMonth->copy()->endOfMonth()->toDateString();
+
+        $prevMonthDate = $currentMonth->copy()->subMonth();
+        $nextMonthDate = $currentMonth->copy()->addMonth();
+
+        $filters = [
+            'year' => $year,
+            'month' => $month,
+            'location_id' => $request->input('location_id'),
+            'status' => $request->input('status'),
+            'search' => $request->input('search'),
+        ];
+
+        $locations = $this->loanReportLocationOptions();
+        $isKhmer = $this->loanReportIsKhmer();
+
+        if (! Schema::connection('mysql_loan')->hasTable('loan_payment_schedules')
+            || ! Schema::connection('mysql_loan')->hasTable('loans')) {
+            return view('loanmanagement::schedules.calendar', [
+                'currentMonth' => $currentMonth,
+                'prevMonth' => ['year' => $prevMonthDate->year, 'month' => $prevMonthDate->month],
+                'nextMonth' => ['year' => $nextMonthDate->year, 'month' => $nextMonthDate->month],
+                'filters' => $filters,
+                'kpi' => [
+                    'total_customers' => 0,
+                    'total_schedules' => 0,
+                    'total_due' => 0,
+                    'total_paid' => 0,
+                    'total_balance' => 0,
+                    'overdue_count' => 0,
+                    'open_count' => 0,
+                    'paid_count' => 0,
+                ],
+                'calendarDays' => [],
+                'locations' => $locations,
+                'isKhmer' => $isKhmer,
+            ]);
+        }
+
+        $query = $this->loanScheduleQuery()
+            ->whereBetween('s.due_date', [$startOfMonth, $endOfMonth]);
+
+        // Apply filters
+        $this->applyLoanScheduleFilters($query, [
+            'location_id' => $filters['location_id'],
+            'status' => $filters['status'],
+            'search' => $filters['search'],
+        ]);
+
+        $dailyStats = (clone $query)
+            ->selectRaw('
+                DATE(s.due_date) as due_date,
+                COUNT(DISTINCT l.id) as loan_count,
+                COUNT(s.id) as schedule_count,
+                SUM(CASE WHEN s.balance_amount > 0 THEN 1 ELSE 0 END) as open_count,
+                SUM(CASE WHEN s.balance_amount <= 0 THEN 1 ELSE 0 END) as paid_count,
+                SUM(CASE WHEN s.balance_amount > 0 AND DATE(s.due_date) < CURDATE() THEN 1 ELSE 0 END) as overdue_count,
+                SUM(s.amount_due) as total_due,
+                SUM(s.paid_amount) as total_paid,
+                SUM(s.balance_amount) as total_balance
+            ')
+            ->groupBy(DB::raw('DATE(s.due_date)'))
+            ->get()
+            ->keyBy('due_date');
+
+        // Overall Monthly KPI
+        $kpiQuery = clone $query;
+        $totalDue = (float) (clone $kpiQuery)->sum('s.amount_due');
+        $totalPaid = (float) (clone $kpiQuery)->sum('s.paid_amount');
+        $totalBalance = (float) (clone $kpiQuery)->sum('s.balance_amount');
+
+        // Load all customer schedules for the month to display customers directly on each day
+        $monthCustomers = (clone $query)
+            ->selectRaw('
+                DATE(s.due_date) as due_date,
+                s.id as schedule_id,
+                s.loan_id,
+                s.installment_no,
+                s.amount_due,
+                s.paid_amount,
+                s.balance_amount,
+                l.loan_number,
+                l.customer_name_snapshot as customer_name,
+                l.customer_phone_snapshot as customer_phone
+            ')
+            ->orderBy('s.due_date')
+            ->orderBy('s.id')
+            ->get()
+            ->groupBy('due_date');
+
+        // Query accumulated prior unpaid installments from last month (due_date < startOfMonth) for these borrowers
+        $allMonthLoanIds = $monthCustomers->flatten(1)->pluck('loan_id')->unique()->filter()->values()->all();
+        $priorUnpaidMap = collect();
+        if (! empty($allMonthLoanIds)) {
+            $priorUnpaidMap = DB::connection('mysql_loan')->table('loan_payment_schedules as s')
+                ->whereIn('s.loan_id', $allMonthLoanIds)
+                ->where('s.due_date', '<', $startOfMonth)
+                ->where('s.balance_amount', '>', 0)
+                ->selectRaw('
+                    s.loan_id,
+                    COUNT(s.id) as prior_unpaid_count,
+                    SUM(s.balance_amount) as prior_balance,
+                    SUM(s.amount_due) as prior_due
+                ')
+                ->groupBy('s.loan_id')
+                ->get()
+                ->keyBy('loan_id');
+        }
+
+        $priorUnpaidBalance = (float) $priorUnpaidMap->sum('prior_balance');
+        $priorUnpaidCount = (int) $priorUnpaidMap->sum('prior_unpaid_count');
+        $priorUnpaidCustomers = (int) $priorUnpaidMap->count();
+        $grandTotalDue = $totalDue + $priorUnpaidBalance;
+
+        $kpi = [
+            'total_customers' => (int) (clone $kpiQuery)->distinct('l.id')->count('l.id'),
+            'total_schedules' => (int) (clone $kpiQuery)->count(),
+            'total_due' => $totalDue,
+            'total_paid' => $totalPaid,
+            'total_balance' => $totalBalance,
+            'open_count' => (int) (clone $kpiQuery)->whereRaw('s.balance_amount > 0')->count(),
+            'paid_count' => (int) (clone $kpiQuery)->whereRaw('s.balance_amount <= 0')->count(),
+            'overdue_count' => (int) (clone $kpiQuery)->whereRaw('s.balance_amount > 0 AND DATE(s.due_date) < CURDATE()')->count(),
+            'collection_rate' => $totalDue > 0 ? round(($totalPaid / $totalDue) * 100, 1) : 0,
+            // Last month + this month accumulated metrics:
+            'prior_unpaid_balance' => $priorUnpaidBalance,
+            'prior_unpaid_count' => $priorUnpaidCount,
+            'prior_unpaid_customers' => $priorUnpaidCustomers,
+            'grand_total_due' => $grandTotalDue,
+            'grand_total_balance' => $totalBalance + $priorUnpaidBalance,
+            'grand_collection_rate' => $grandTotalDue > 0 ? round(($totalPaid / $grandTotalDue) * 100, 1) : 0,
+        ];
+
+        if ($request->input('export') === 'csv') {
+            return $this->downloadInstallmentCalendarMonthCsv($query, $currentMonth, $filters, $priorUnpaidMap);
+        }
+
+        // Build calendar matrix (Sundays to Saturdays)
+        $daysInMonth = $currentMonth->daysInMonth;
+        $firstDayOfWeek = $currentMonth->copy()->startOfMonth()->dayOfWeek; // 0 = Sunday, 6 = Saturday
+        $todayDate = now()->toDateString();
+
+        $calendarDays = [];
+
+        // Leading blank/prev month days
+        $prevMonthDaysCount = $firstDayOfWeek;
+        $prevMonthLastDay = $currentMonth->copy()->subMonth()->daysInMonth;
+        for ($i = $prevMonthDaysCount - 1; $i >= 0; $i--) {
+            $dayNum = $prevMonthLastDay - $i;
+            $d = $currentMonth->copy()->subMonth()->day($dayNum)->toDateString();
+            $calendarDays[] = [
+                'date' => $d,
+                'day' => $dayNum,
+                'is_current_month' => false,
+                'is_today' => ($d === $todayDate),
+                'is_past' => ($d < $todayDate),
+                'stats' => null,
+                'customers_preview' => [],
+                'total_customers_count' => 0,
+                'more_customers_count' => 0,
+            ];
+        }
+
+        // Current month days
+        for ($day = 1; $day <= $daysInMonth; $day++) {
+            $d = $currentMonth->copy()->day($day)->toDateString();
+            $stats = $dailyStats->get($d);
+            $dayCustomers = $monthCustomers->get($d, collect());
+
+            $previewCustomers = $dayCustomers->take(4)->map(function ($row) use ($todayDate, $d, $priorUnpaidMap) {
+                $balance = (float) ($row->balance_amount ?? 0);
+                $status = 'open';
+                if ($balance <= 0) {
+                    $status = 'paid';
+                } elseif ($d < $todayDate) {
+                    $status = 'overdue';
+                } elseif ($d === $todayDate) {
+                    $status = 'due_today';
+                }
+
+                $prior = $priorUnpaidMap->get($row->loan_id);
+                $priorBalance = $prior ? (float) $prior->prior_balance : 0.0;
+                $priorCount = $prior ? (int) $prior->prior_unpaid_count : 0;
+                $amountDue = (float) ($row->amount_due ?? 0);
+
+                return [
+                    'id' => $row->schedule_id,
+                    'loan_id' => $row->loan_id,
+                    'customer_name' => $row->customer_name ?: 'Customer',
+                    'customer_phone' => $row->customer_phone ?: '',
+                    'loan_number' => $row->loan_number ?: '-',
+                    'installment_no' => $row->installment_no,
+                    'amount_due' => $amountDue,
+                    'paid_amount' => (float) ($row->paid_amount ?? 0),
+                    'balance_amount' => $balance,
+                    'status' => $status,
+                    'prior_balance' => $priorBalance,
+                    'prior_count' => $priorCount,
+                    'total_payable' => $amountDue + $priorBalance,
+                    'has_prior_unpaid' => ($priorBalance > 0),
+                    'detail_url' => route('loan-management.loans.view', ['loan' => $row->loan_id, '_lm_modal' => 1]),
+                    'payment_url' => route('loan-management.loans.payment.create', ['loan' => $row->loan_id, 'return_to' => url()->full()]),
+                ];
+            })->all();
+
+            $calendarDays[] = [
+                'date' => $d,
+                'day' => $day,
+                'is_current_month' => true,
+                'is_today' => ($d === $todayDate),
+                'is_past' => ($d < $todayDate),
+                'stats' => $stats ? [
+                    'loan_count' => (int) $stats->loan_count,
+                    'schedule_count' => (int) $stats->schedule_count,
+                    'open_count' => (int) $stats->open_count,
+                    'paid_count' => (int) $stats->paid_count,
+                    'overdue_count' => (int) $stats->overdue_count,
+                    'total_due' => (float) $stats->total_due,
+                    'total_paid' => (float) $stats->total_paid,
+                    'total_balance' => (float) $stats->total_balance,
+                ] : null,
+                'customers_preview' => $previewCustomers,
+                'total_customers_count' => $dayCustomers->count(),
+                'more_customers_count' => max(0, $dayCustomers->count() - 4),
+            ];
+        }
+
+        // Trailing days to complete the 7-column grid
+        $totalCells = count($calendarDays);
+        $remainingCells = (7 - ($totalCells % 7)) % 7;
+        for ($i = 1; $i <= $remainingCells; $i++) {
+            $d = $currentMonth->copy()->addMonth()->day($i)->toDateString();
+            $calendarDays[] = [
+                'date' => $d,
+                'day' => $i,
+                'is_current_month' => false,
+                'is_today' => ($d === $todayDate),
+                'is_past' => ($d < $todayDate),
+                'stats' => null,
+                'customers_preview' => [],
+                'total_customers_count' => 0,
+                'more_customers_count' => 0,
+            ];
+        }
+
+        return view('loanmanagement::schedules.calendar', [
+            'currentMonth' => $currentMonth,
+            'prevMonth' => ['year' => $prevMonthDate->year, 'month' => $prevMonthDate->month],
+            'nextMonth' => ['year' => $nextMonthDate->year, 'month' => $nextMonthDate->month],
+            'filters' => $filters,
+            'kpi' => $kpi,
+            'calendarDays' => $calendarDays,
+            'locations' => $locations,
+            'isKhmer' => $isKhmer,
+        ]);
+    }
+
+    public function installmentCalendarDayDetails(Request $request)
+    {
+        $this->allow('loan_management.view');
+
+        $date = (string) $request->input('date');
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            return response()->json(['success' => false, 'message' => 'Invalid date format.'], 422);
+        }
+
+        $query = $this->loanScheduleQuery()
+            ->whereDate('s.due_date', $date);
+
+        if ($request->filled('location_id')) {
+            $this->applyLoanScheduleFilters($query, ['location_id' => $request->input('location_id')]);
+        }
+
+        $todayDate = now()->toDateString();
+        $rawRows = $query->orderBy('s.id')->get();
+
+        // Query prior unpaid for the borrowers scheduled on this day
+        $dayLoanIds = $rawRows->pluck('loan_id')->unique()->filter()->values()->all();
+        $priorMap = collect();
+        if (! empty($dayLoanIds)) {
+            $priorMap = DB::connection('mysql_loan')->table('loan_payment_schedules as s')
+                ->whereIn('s.loan_id', $dayLoanIds)
+                ->where('s.due_date', '<', $date)
+                ->where('s.balance_amount', '>', 0)
+                ->selectRaw('
+                    s.loan_id,
+                    COUNT(s.id) as prior_count,
+                    SUM(s.balance_amount) as prior_balance,
+                    SUM(s.amount_due) as prior_due
+                ')
+                ->groupBy('s.loan_id')
+                ->get()
+                ->keyBy('loan_id');
+        }
+
+        $rows = $rawRows->map(function ($row) use ($todayDate, $date, $priorMap) {
+            $balance = (float) ($row->balance_amount ?? 0);
+            $amountDue = (float) ($row->amount_due ?? 0);
+            $paid = (float) ($row->paid_amount ?? 0);
+
+            $status = 'upcoming';
+            if ($balance <= 0) {
+                $status = 'paid';
+            } elseif ($date < $todayDate) {
+                $status = 'overdue';
+            } elseif ($date === $todayDate) {
+                $status = 'due_today';
+            }
+
+            $prior = $priorMap->get($row->loan_id);
+            $priorBalance = $prior ? (float) $prior->prior_balance : 0.0;
+            $priorCount = $prior ? (int) $prior->prior_count : 0;
+            $totalPayable = $amountDue + $priorBalance;
+
+            return [
+                'id' => $row->id,
+                'loan_id' => $row->loan_id,
+                'installment_no' => $row->installment_no,
+                'customer_name' => $row->customer_name ?: '-',
+                'customer_phone' => $row->customer_phone ?: '-',
+                'loan_number' => $row->loan_number ?: '-',
+                'invoice_no' => $row->invoice_no ?: '-',
+                'location_name' => $row->location_name ?: '-',
+                'collector_name' => $row->collector_name ?: '-',
+                'amount_due' => $amountDue,
+                'paid_amount' => $paid,
+                'balance_amount' => $balance,
+                'prior_balance' => $priorBalance,
+                'prior_count' => $priorCount,
+                'total_payable' => $totalPayable,
+                'has_prior_unpaid' => ($priorBalance > 0),
+                'due_date' => $row->due_date,
+                'status' => $status,
+                'overdue_days' => (int) ($row->overdue_days ?? 0),
+                'payment_url' => route('loan-management.loans.payment.create', ['loan' => $row->loan_id, 'return_to' => url()->full()]),
+                'detail_url' => route('loan-management.loans.view', ['loan' => $row->loan_id, '_lm_modal' => 1]),
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'formatted_date' => \Carbon\Carbon::parse($date)->format('d M Y'),
+            'count' => $rows->count(),
+            'total_due' => (float) $rows->sum('amount_due'),
+            'total_paid' => (float) $rows->sum('paid_amount'),
+            'total_balance' => (float) $rows->sum('balance_amount'),
+            'total_prior_balance' => (float) $rows->sum('prior_balance'),
+            'grand_total_payable' => (float) $rows->sum('total_payable'),
+            'prior_unpaid_count' => $rows->where('has_prior_unpaid', true)->count(),
+            'overdue_count' => $rows->where('status', 'overdue')->count(),
+            'due_today_count' => $rows->where('status', 'due_today')->count(),
+            'upcoming_count' => $rows->where('status', 'upcoming')->count(),
+            'paid_count' => $rows->where('status', 'paid')->count(),
+            'rows' => $rows,
+        ]);
+    }
+
+    protected function downloadInstallmentCalendarMonthCsv($query, $currentMonth, array $filters, $priorUnpaidMap = null)
+    {
+        $rows = (clone $query)->orderBy('s.due_date', 'asc')->orderBy('s.id', 'asc')->get();
+
+        $columns = [
+            $this->loanReportText('Due Date', 'ថ្ងៃត្រូវបង់'),
+            $this->loanReportText('Customer Name', 'ឈ្មោះអតិថិជន'),
+            $this->loanReportText('Phone Number', 'លេខទូរស័ព្ទ'),
+            $this->loanReportText('Loan Number', 'លេខកម្ចី'),
+            $this->loanReportText('Invoice No', 'វិក្កយបត្រ'),
+            $this->loanReportText('Installment #', 'វគ្គទី'),
+            $this->loanReportText('This Month Due', 'ត្រូវបង់ខែនេះ'),
+            $this->loanReportText('Prior Unpaid Months', 'ខែជំពាក់ពីមុន'),
+            $this->loanReportText('Prior Unpaid Arrears', 'ជំពាក់សល់ពីខែមុន'),
+            $this->loanReportText('Total Payable (Prior + This Month)', 'សរុបត្រូវទូទាត់'),
+            $this->loanReportText('Paid Amount', 'ចំនួនបានបង់'),
+            $this->loanReportText('Balance', 'សមតុល្យនៅសល់'),
+            $this->loanReportText('Status', 'ស្ថានភាព'),
+            $this->loanReportText('Overdue Days', 'ចំនួនថ្ងៃហួស'),
+            $this->loanReportText('Location', 'សាខា'),
+            $this->loanReportText('Collector', 'បុគ្គលិកប្រមូល'),
+        ];
+
+        $lines = [$columns];
+        $todayDate = now()->toDateString();
+
+        foreach ($rows as $row) {
+            $balance = (float) ($row->balance_amount ?? 0);
+            $amountDue = (float) ($row->amount_due ?? 0);
+            $status = $balance <= 0 ? 'Paid' : (($row->due_date < $todayDate) ? 'Overdue' : 'Open');
+
+            $prior = $priorUnpaidMap ? $priorUnpaidMap->get($row->loan_id) : null;
+            $priorBalance = $prior ? (float) $prior->prior_balance : 0.0;
+            $priorCount = $prior ? (int) $prior->prior_unpaid_count : 0;
+            $totalPayable = $amountDue + $priorBalance;
+
+            $lines[] = [
+                $row->due_date,
+                $row->customer_name ?: '-',
+                $row->customer_phone ?: '-',
+                $row->loan_number ?: '-',
+                $row->invoice_no ?: '-',
+                $row->installment_no,
+                number_format($amountDue, 2, '.', ''),
+                $priorCount > 0 ? $priorCount : '0',
+                number_format($priorBalance, 2, '.', ''),
+                number_format($totalPayable, 2, '.', ''),
+                number_format((float) ($row->paid_amount ?? 0), 2, '.', ''),
+                number_format($balance, 2, '.', ''),
+                $status,
+                (int) ($row->overdue_days ?? 0),
+                $row->location_name ?: '-',
+                $row->collector_name ?: '-',
+            ];
+        }
+
+        $handle = fopen('php://temp', 'r+');
+        foreach ($lines as $line) {
+            fputcsv($handle, $line);
+        }
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        $filename = 'installment-calendar-'.$currentMonth->format('Y-m').'.csv';
+
+        return Response::make($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
@@ -1433,12 +2082,17 @@ class DashboardController extends Controller
             [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
         }
 
+        $searchValue = $request->input('report_search', $request->input('search', ''));
+        if (is_array($searchValue)) {
+            $searchValue = $searchValue['value'] ?? '';
+        }
+
         return [
-            'search' => trim((string) $request->input('search', '')),
-            'location_id' => trim((string) $request->input('location_id', '')),
-            'status' => trim((string) $request->input('status', '')),
-            'payment_status' => trim((string) $request->input('payment_status', '')),
-            'collector' => trim((string) $request->input('collector', '')),
+            'search' => trim((string) $searchValue),
+            'location_id' => is_array($request->input('location_id')) ? '' : trim((string) $request->input('location_id', '')),
+            'status' => is_array($request->input('status')) ? '' : trim((string) $request->input('status', '')),
+            'payment_status' => is_array($request->input('payment_status')) ? '' : trim((string) $request->input('payment_status', '')),
+            'collector' => is_array($request->input('collector')) ? '' : trim((string) $request->input('collector', '')),
             'date_from' => $dateFrom,
             'date_to' => $dateTo,
         ];
@@ -1486,6 +2140,73 @@ class DashboardController extends Controller
             ->when(in_array('deleted_at', $columns, true), fn ($query) => $query->whereNull('l.deleted_at'));
     }
 
+    protected function buildInstallmentReportSummary(array $filters): array
+    {
+        $emptySummary = ['count' => 0, 'active_count' => 0, 'completed_count' => 0, 'principal' => 0, 'paid' => 0, 'balance' => 0, 'overdue' => 0];
+        if (! Schema::connection('mysql_loan')->hasTable('loans')) {
+            return $emptySummary;
+        }
+
+        $columns = Schema::connection('mysql_loan')->getColumnListing('loans');
+        $amountExpressions = $this->installmentReportAmountExpressions();
+
+        $baseQuery = DB::connection('mysql_loan')->table('loans as l');
+        if (in_array('deleted_at', $columns, true)) {
+            $baseQuery->whereNull('l.deleted_at');
+        }
+
+        $this->applyInstallmentReportFilters($baseQuery, $filters);
+
+        $statusCol = in_array('status', $columns, true) ? 'LOWER(COALESCE(l.status, ""))' : '""';
+        $totals = (clone $baseQuery)->selectRaw("
+            COUNT(*) as count,
+            SUM(CASE WHEN {$statusCol} = 'active' THEN 1 ELSE 0 END) as active_count,
+            SUM(CASE WHEN {$statusCol} IN ('completed', 'closed') OR COALESCE({$amountExpressions['balance']}, 0) <= 0 THEN 1 ELSE 0 END) as completed_count,
+            COALESCE(SUM({$amountExpressions['principal']}), 0) as principal,
+            COALESCE(SUM({$amountExpressions['paid']}), 0) as paid,
+            COALESCE(SUM({$amountExpressions['balance']}), 0) as balance,
+            COALESCE(SUM({$amountExpressions['interest']}), 0) as interest
+        ")->first();
+
+        $overdueExpression = $this->installmentScheduleExists(
+            'DATE(s.due_date) < CURDATE() AND '.$this->installmentScheduleOpenCondition('s'),
+            $this->installmentScheduleBaseWhere()
+        );
+
+        $overdueStats = (clone $baseQuery)
+            ->whereRaw($overdueExpression.' = 1')
+            ->selectRaw("
+                COUNT(*) as count,
+                COALESCE(SUM({$amountExpressions['balance']}), 0) as overdue_balance
+            ")->first();
+
+        $dueTodayExpression = $this->installmentScheduleExists(
+            'DATE(s.due_date) = CURDATE() AND '.$this->installmentScheduleOpenCondition('s'),
+            $this->installmentScheduleBaseWhere()
+        );
+        $dueTodayCount = (int) (clone $baseQuery)
+            ->whereRaw($dueTodayExpression.' = 1')
+            ->count();
+
+        $paid = (float) ($totals->paid ?? 0);
+        $balance = (float) ($totals->balance ?? 0);
+        $collectionRate = ($paid + $balance) > 0 ? round(($paid / ($paid + $balance)) * 100, 1) : 0;
+
+        return [
+            'count' => (int) ($totals->count ?? 0),
+            'active_count' => (int) ($totals->active_count ?? 0),
+            'completed_count' => (int) ($totals->completed_count ?? 0),
+            'principal' => (float) ($totals->principal ?? 0),
+            'paid' => $paid,
+            'balance' => $balance,
+            'interest' => (float) ($totals->interest ?? 0),
+            'collection_rate' => $collectionRate,
+            'overdue' => (int) ($overdueStats->count ?? 0),
+            'overdue_balance' => (float) ($overdueStats->overdue_balance ?? 0),
+            'due_today' => $dueTodayCount,
+        ];
+    }
+
     protected function installmentReportAmountExpressions(): array
     {
         return [
@@ -1493,6 +2214,7 @@ class DashboardController extends Controller
             'paid' => $this->coalesceSql('loans', 'l', ['paid_amount', 'total_paid', 'down_payment'], '0'),
             'balance' => $this->coalesceSql('loans', 'l', ['balance_amount', 'amount_balance'], '0'),
             'total' => $this->coalesceSql('loans', 'l', ['total_amount', 'total_payable_amount', 'principal_amount'], '0'),
+            'interest' => $this->coalesceSql('loans', 'l', ['interest_amount', 'total_interest'], '0'),
         ];
     }
 
@@ -1507,29 +2229,30 @@ class DashboardController extends Controller
         if (! empty($filters['date_to'])) {
             $query->whereDate('l.'.$dateColumn, '<=', $filters['date_to']);
         }
-        if (! empty($filters['status']) && in_array('status', $columns, true)) {
-            $query->where('l.status', $filters['status']);
-        }
-        if (! empty($filters['payment_status'])) {
-            $this->applyInstallmentPaymentStatusFilter($query, $filters['payment_status'], $columns);
-        }
-        if (! empty($filters['collector'])) {
-            foreach (['collector_name_snapshot', 'assigned_collector_id'] as $column) {
-                if (in_array($column, $columns, true)) {
-                    $query->where('l.'.$column, 'like', '%'.$filters['collector'].'%');
-                    break;
-                }
+        if (! empty($filters['status'])) {
+            $status = strtolower((string) $filters['status']);
+            if ($status === 'completed') {
+                $query->whereIn(DB::raw('LOWER(COALESCE(l.status, ""))'), ['completed', 'closed']);
+            } else {
+                $query->where(DB::raw('LOWER(COALESCE(l.status, ""))'), $status);
             }
         }
+        if (! empty($filters['payment_status'])) {
+            $this->applyInstallmentPaymentStatusFilter($query, strtolower((string) $filters['payment_status']), $columns);
+        }
+        if (! empty($filters['collector'])) {
+            $query->where('l.collector_name_snapshot', 'like', '%'.$filters['collector'].'%');
+        }
         if (! empty($filters['location_id'])) {
-            $locationFilter = $this->parseYearlyLocationFilter((string) $filters['location_id']);
+            $locationFilter = $this->loanReportLocationFilter((int) $filters['location_id']);
             if (! empty($locationFilter)) {
                 $query->where(function ($where) use ($locationFilter, $columns) {
-                    if (! empty($locationFilter['loan_location_id']) && in_array('business_location_id', $columns, true)) {
-                        $where->orWhere('l.business_location_id', (int) $locationFilter['loan_location_id']);
-                    }
-                    if (! empty($locationFilter['main_location_id']) && in_array('main_location_id', $columns, true)) {
-                        $where->orWhere('l.main_location_id', (int) $locationFilter['main_location_id']);
+                    if (! empty($locationFilter['id'])) {
+                        foreach (['location_id', 'business_location_id', 'main_location_id'] as $column) {
+                            if (in_array($column, $columns, true)) {
+                                $where->orWhere('l.'.$column, (int) $locationFilter['id']);
+                            }
+                        }
                     }
                     if (! empty($locationFilter['legacy_id'])) {
                         if (in_array('business_location_id', $columns, true)) {
@@ -1564,7 +2287,7 @@ class DashboardController extends Controller
 
     protected function applyInstallmentPaymentStatusFilter($query, string $status, array $columns): void
     {
-        if (in_array('payment_status', $columns, true)) {
+        if (in_array('payment_status', $columns, true) && !in_array($status, ['paid', 'completed', 'partial', 'unpaid', 'has_balance', 'balance', 'overdue', 'due_today'])) {
             $query->where('l.payment_status', $status);
             return;
         }
@@ -1576,7 +2299,9 @@ class DashboardController extends Controller
             'paid', 'completed' => $query->whereRaw('('.$balanceExpr.') <= 0'),
             'partial' => $query->whereRaw('('.$paidExpr.') > 0 AND ('.$balanceExpr.') > 0'),
             'unpaid' => $query->whereRaw('('.$paidExpr.') <= 0 AND ('.$balanceExpr.') > 0'),
+            'has_balance', 'balance' => $query->whereRaw('('.$balanceExpr.') > 0'),
             'overdue' => $query->whereRaw($this->installmentScheduleExists('DATE(s.due_date) < CURDATE() AND '.$this->installmentScheduleOpenCondition('s'), $this->installmentScheduleBaseWhere()).' = 1'),
+            'due_today' => $query->whereRaw($this->installmentScheduleExists('DATE(s.due_date) = CURDATE() AND '.$this->installmentScheduleOpenCondition('s'), $this->installmentScheduleBaseWhere()).' = 1'),
             default => null,
         };
     }
@@ -1599,7 +2324,15 @@ class DashboardController extends Controller
 
     protected function installmentPaymentStatusOptions(): array
     {
-        return ['unpaid' => 'Unpaid', 'partial' => 'Partial', 'paid' => 'Paid', 'completed' => 'Completed', 'overdue' => 'Overdue'];
+        return [
+            'unpaid' => 'Unpaid',
+            'partial' => 'Partial',
+            'paid' => 'Paid',
+            'completed' => 'Completed',
+            'has_balance' => 'Has Balance',
+            'overdue' => 'Overdue',
+            'due_today' => 'Due Today',
+        ];
     }
 
     protected function installmentScheduleBaseWhere(): string

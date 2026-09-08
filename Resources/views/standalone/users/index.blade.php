@@ -317,6 +317,161 @@
         border-color: #0284c7 !important;
         color: #ffffff !important;
     }
+
+    /* =========================================================
+       MOBILE CARD GRID VIEW
+       ========================================================= */
+    .lm-mobile-cards {
+        display: none;
+    }
+    @media (max-width: 768px) {
+        .lm-desktop-table {
+            display: none !important;
+        }
+        .lm-mobile-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+            padding: 4px 0;
+        }
+    }
+    @media (max-width: 400px) {
+        .lm-mobile-cards {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .lm-mcard {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .lm-mcard:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+    .lm-mcard::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #0284c7, #7c3aed);
+        border-radius: 12px 12px 0 0;
+    }
+
+    .lm-mcard-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+        padding-top: 4px;
+    }
+    .lm-mcard-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        color: #2563eb;
+        font-weight: 800;
+        font-size: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid #bfdbfe;
+        flex-shrink: 0;
+    }
+    .lm-mcard-user-info {
+        flex: 1;
+        min-width: 0;
+    }
+    .lm-mcard-user-info strong {
+        display: block;
+        font-size: 14px;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .lm-mcard-user-info small {
+        display: block;
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .lm-mcard-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+    .lm-mcard-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 12.5px;
+        color: #334155;
+        line-height: 1.4;
+    }
+    .lm-mcard-row i {
+        width: 16px;
+        text-align: center;
+        color: #94a3b8;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .lm-mcard-badges {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #e2e8f0;
+    }
+    .lm-mcard-badges .label {
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 20px;
+        letter-spacing: 0.3px;
+    }
+
+    .lm-mcard-footer {
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid #f1f5f9;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+    .lm-mcard-footer .btn {
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+    }
+
+    .lm-mobile-empty {
+        text-align: center;
+        padding: 32px 16px;
+        color: #94a3b8;
+        font-size: 13px;
+    }
+    .lm-mobile-empty i {
+        display: block;
+        font-size: 32px;
+        margin-bottom: 8px;
+        color: #cbd5e1;
+    }
 </style>
 @endsection
 
@@ -467,7 +622,8 @@
 
     {{-- Ultimate POS Standard Widget Component --}}
     @component('components.widget', ['class' => 'box-primary', 'title' => $lmText('All System Users', 'បញ្ជីអ្នកប្រើប្រាស់ប្រព័ន្ធទាំងអស់')])
-        <div class="table-responsive">
+        {{-- DESKTOP: Table View --}}
+        <div class="table-responsive lm-desktop-table">
             <table class="lm-table-dense table table-bordered table-striped table-hover" id="usersTable" style="width: 100%; margin-bottom: 0;">
                 <thead>
                     <tr style="background: #f8fafc; color: #475569;">
@@ -544,6 +700,86 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+
+        {{-- MOBILE: Card Grid View --}}
+        <div class="lm-mobile-cards">
+            @forelse($users as $user)
+                @php
+                    $displayName = $user->name ?: trim(($user->first_name ?? '').' '.($user->last_name ?? ''));
+                    $initial = strtoupper(mb_substr($displayName ?: $user->username, 0, 1));
+                @endphp
+                <div class="lm-mcard">
+                    <div class="lm-mcard-header">
+                        <span class="lm-mcard-avatar">{{ $initial }}</span>
+                        <div class="lm-mcard-user-info">
+                            <strong>{{ $displayName ?: '-' }}</strong>
+                            <small>{{ '@' . $user->username }}</small>
+                        </div>
+                    </div>
+
+                    <div class="lm-mcard-body">
+                        {{-- Email --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-envelope-o"></i>
+                            <span>{{ $user->email ?: '-' }}</span>
+                        </div>
+
+                        {{-- Role --}}
+                        <div class="lm-mcard-row">
+                            <i class="fa fa-shield"></i>
+                            <span>
+                                <span class="label label-info" style="font-size: 10.5px;">
+                                    {{ $user->relationLoaded('roles') ? ($user->roles->pluck('name')->implode(', ') ?: '-') : '-' }}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Status Badges --}}
+                    <div class="lm-mcard-badges">
+                        <span class="label label-{{ !empty($user->allow_login) ? 'success' : 'default' }}">
+                            <i class="fa fa-sign-in"></i> {{ !empty($user->allow_login) ? 'Login Allowed' : 'Login Blocked' }}
+                        </span>
+                        <span class="label label-{{ ($user->status ?? 'active') === 'active' ? 'success' : 'danger' }}" style="text-transform: uppercase;">
+                            {{ ucfirst($user->status ?? 'active') }}
+                        </span>
+                    </div>
+
+                    {{-- Action Buttons --}}
+                    <div class="lm-mcard-footer">
+                        @can('user.update')
+                            <a href="{{ route('users.edit', $user->id) }}" class="btn btn-xs btn-primary">
+                                <i class="fa fa-pencil"></i> {{ $lmText('Edit', 'កែ') }}
+                            </a>
+                            @if(auth()->id() !== $user->id)
+                                <form method="POST" action="{{ route('users.toggle-status', $user->id) }}" style="display: inline;">
+                                    @csrf
+                                    <button class="btn btn-xs btn-warning" type="submit">
+                                        <i class="fa fa-power-off"></i>
+                                    </button>
+                                </form>
+                            @endif
+                        @endcan
+                        @can('user.delete')
+                            @if(auth()->id() !== $user->id)
+                                <form method="POST" action="{{ route('users.destroy', $user->id) }}" style="display: inline;" onsubmit="return confirm('{{ $lmText('Are you sure?', 'តើអ្នកប្រាកដ?') }}');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-xs btn-danger" type="submit">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </form>
+                            @endif
+                        @endcan
+                    </div>
+                </div>
+            @empty
+                <div class="lm-mobile-empty">
+                    <i class="fa fa-users"></i>
+                    {{ $lmText('No users found.', 'មិនមានអ្នកប្រើប្រាស់ទេ។') }}
+                </div>
+            @endforelse
         </div>
 
         @if($users->hasPages())

@@ -11,6 +11,14 @@ class LoanSidebarBadgeService
 
     public function overdueCount(): int
     {
+        try {
+            if ($this->hasTable('loans')) {
+                return (int) (app(LoanCollectionService::class)->pageMetrics('overdue-accounts')['total_accounts'] ?? 0);
+            }
+        } catch (\Throwable $e) {
+            // fallback
+        }
+
         if (! $this->hasTable('loan_payment_schedules')) {
             return 0;
         }

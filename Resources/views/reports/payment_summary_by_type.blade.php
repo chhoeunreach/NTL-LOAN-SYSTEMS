@@ -1,5 +1,5 @@
 @extends('loanmanagement::layouts.app')
-@section('title', $isKhmer ? 'របាយការណ៍ហិរញ្ញវត្ថុ៖ សង្ខេបការបង់ប្រាក់' : 'Financial Reports: Payment Summary')
+@section('title', $isKhmer ? 'របាយការណ៍បណ្តាញបង់ប្រាក់ និងវិធីសាស្ត្រទូទាត់' : 'Payment Channels & Methods Report')
 
 @php
     $t = fn ($en, $km) => $isKhmer ? $km : $en;

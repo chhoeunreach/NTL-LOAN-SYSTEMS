@@ -283,6 +283,8 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/tools/send-notification', [DashboardController::class, 'placeholder'])->defaults('page', 'Send Notification')->name('loan-management.tools.send-notification');
 
         Route::get('/schedules', [DashboardController::class, 'loanSchedules'])->name('loan-management.schedules.index');
+        Route::get('/schedules/calendar', [DashboardController::class, 'installmentCalendar'])->name('loan-management.schedules.calendar');
+        Route::get('/schedules/calendar-day-details', [DashboardController::class, 'installmentCalendarDayDetails'])->name('loan-management.schedules.calendar-day-details');
         Route::get('/monthly-payments', [DashboardController::class, 'placeholder'])->defaults('page', 'Monthly Payments')->name('loan-management.monthly-payments.index');
         Route::get('/overdue', [DashboardController::class, 'overdue'])->name('loan-management.overdue.index');
         Route::get('/collection-visits', [DashboardController::class, 'collectionVisits'])->name('loan-management.collection-visits.index');

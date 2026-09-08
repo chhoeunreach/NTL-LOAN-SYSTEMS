@@ -474,6 +474,7 @@ class LoanDashboardService
             'pending_visits' => $pendingVisits,
             'unread_chats' => $unreadChats,
             'active_collectors' => (int) ($summary['staff_online'] ?? 0),
+            'blacklist_customers' => (int) ($summary['blacklist_customers'] ?? 0),
         ], $collection);
     }
 
@@ -754,7 +755,7 @@ class LoanDashboardService
             ->orderBy('s.due_date')->limit(50)->get()->map(fn ($r) => (array) $r)->all();
     }
 
-    public function getOverdueCustomers($filters): array
+    public function getOverdueCustomers($filters, $limit = 250): array
     {
         if (! $this->tableExists('loans')) return [];
 
@@ -771,7 +772,7 @@ class LoanDashboardService
 
         return $query
             ->selectRaw('l.id, '.($this->columnExists('loans', 'loan_number') ? 'l.loan_number' : 'CAST(l.id as CHAR)').' as loan_number, '.$this->loanCustomerNameExpression('l').' as customer, '.$this->loanCustomerPhoneExpression('l').' as phone, '.$this->loanCustomerProfessionExpression('l').' as profession, '.$this->loanCustomerOccupationExpression('l').' as occupation, '.$this->loanCustomerWorkplaceExpression('l').' as workplace, '.($this->canJoinLoanCustomers() && $this->columnExists('loan_customers', 'customer_photo_file_id') ? 'c.customer_photo_file_id' : 'NULL').' as customer_photo_file_id, '.$dateToPayExpr.' as date_to_pay, '.$overdueDaysExpr.' as overdue_days, '.($this->columnExists('loans', 'paid_amount') ? 'COALESCE(l.paid_amount, 0)' : '0').' as total_paid, '.$dueNowExpr.' as total_not_yet_paid, '.$balanceExpr.' as pay_off_now, '.$dueNowExpr.' as overdue_amount, '.$this->loanCollectorExpression('l').' as collector, NULL as last_visit')
-            ->orderByDesc('overdue_days')->limit(50)->get()->map(function ($row) {
+            ->orderByDesc('overdue_days')->limit($limit)->get()->map(function ($row) {
                 $data = (array) $row;
                 $data['customer_photo_url'] = $this->customerPhotoUrl((int) ($row->customer_photo_file_id ?? 0));
 

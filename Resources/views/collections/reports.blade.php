@@ -44,9 +44,24 @@
         </a>
     </div>
 
+    @php
+        $targetRoutes = [
+            'due_today' => route('loan-management.operations.page', ['page' => 'due-today']),
+            'overdue_accounts' => route('loan-management.collection.page', ['page' => 'overdue-accounts']),
+            'skip_customers' => route('loan-management.collection.page', ['page' => 'skip-customers']),
+            'broken_ptp' => route('loan-management.collection.page', ['page' => 'broken-promise']),
+            'field_visits_today' => route('loan-management.collection-visits.index', ['date_from' => \Carbon\Carbon::today()->toDateString(), 'date_to' => \Carbon\Carbon::today()->toDateString()]),
+            'collection_amount_today' => route('loan-management.payments.index'),
+            'recovery_cases' => route('loan-management.collection.page', ['page' => 'recovery-management']),
+            'legal_cases' => route('loan-management.collection.page', ['page' => 'legal-cases']),
+            'high_risk_customers' => route('loan-management.collection.page', ['page' => 'high-risk-customers']),
+            'repossessions' => route('loan-management.collection.page', ['page' => 'repossessions']),
+        ];
+    @endphp
+
     <div class="lm-collection-summary-grid">
         @foreach($summaryCards as $key => $card)
-            <div class="lm-collection-summary-card tone-{{ $card['tone'] }}">
+            <a href="{{ $targetRoutes[$key] ?? '#' }}" class="lm-collection-summary-card tone-{{ $card['tone'] }}" style="text-decoration: none; cursor: pointer;">
                 <div class="lm-collection-summary-icon"><i class="{{ $card['icon'] }}"></i></div>
                 <div class="lm-collection-summary-copy">
                     <span>{{ $card['label'] }}</span>
@@ -59,7 +74,7 @@
                     </strong>
                     <small>{{ $card['hint'] }}</small>
                 </div>
-            </div>
+            </a>
         @endforeach
     </div>
 
@@ -141,6 +156,11 @@
             gap: 13px;
             min-height: 118px;
             padding: 16px;
+            transition: transform .15s ease, box-shadow .15s ease;
+        }
+        .lm-collection-summary-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 30px rgba(15, 23, 42, .1);
         }
         .lm-collection-summary-icon,
         .lm-collection-report-card-icon {

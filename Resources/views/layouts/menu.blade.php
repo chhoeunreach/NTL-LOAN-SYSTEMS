@@ -19,6 +19,17 @@
         <li><a href="{{ $lmUrl('loan-management.dashboard.index', [], '/loan-management/dashboard/main') }}"><i class="fa fa-dashboard"></i> Dashboard</a></li>
 
         <li class="treeview">
+            <a href="#"><i class="fa fa-money"></i> <span>{{ $lmText('Installments', 'កម្ចីរំលស់') }}</span> <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
+            <ul class="treeview-menu">
+                <li><a href="{{ $lmUrl('loan-management.loans', [], '/loan-management/loans') }}"><i class="fa fa-file-text-o"></i> {{ $lmText('All Installments', 'បញ្ជីកម្ចីទាំងអស់') }}</a></li>
+                <li><a href="{{ $lmUrl('loan-management.loans.create', [], '/loan-management/loans/create') }}"><i class="fa fa-plus-circle"></i> {{ $lmText('New Installment', 'កម្ចីថ្មី') }}</a></li>
+                <li><a href="{{ $lmUrl('loan-management.schedules.index', [], '/loan-management/schedules') }}"><i class="fa fa-calendar"></i> {{ $lmText('Installment Schedule', 'កាលវិភាគកម្ចី') }}</a></li>
+                <li><a href="{{ $lmUrl('loan-management.schedules.calendar', [], '/loan-management/schedules/calendar') }}"><i class="fa fa-calendar-check-o"></i> {{ $lmText('Installment Calendar', 'ប្រតិទិនបង់ប្រាក់រំលស់') }}</a></li>
+                <li><a href="{{ $lmUrl('loan-management.loans.calculator', [], '/loan-management/loans/calculator') }}"><i class="fa fa-calculator"></i> {{ $lmText('Calculator', 'ម៉ាស៊ីនគណនាកម្ចី') }}</a></li>
+            </ul>
+        </li>
+
+        <li class="treeview">
             <a href="#"><i class="fa fa-phone"></i> Collection Cases <span class="pull-right-container"><i class="fa fa-angle-left pull-right"></i></span></a>
             <ul class="treeview-menu">
                 <li><a href="{{ $lmUrl('loan-management.collection.page', ['page' => 'overdue-accounts'], '/loan-management/collection/overdue-accounts') }}"><i class="fa fa-exclamation-triangle"></i> Overdue Accounts @if($badgeOverdue > 0)<span class="label label-danger pull-right">{{ $badgeOverdue }}</span>@endif</a></li>

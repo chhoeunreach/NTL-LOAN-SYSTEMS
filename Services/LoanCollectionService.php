@@ -98,12 +98,62 @@ class LoanCollectionService
         $query = $this->applyFilters($query, $filters, 'l');
         $this->applyCollectionOrdering($query);
 
-        return $query->paginate(30)->appends(array_filter($filters));
+        $perPage = (int) request('per_page', 50);
+        if ($perPage <= 0 || $perPage > 1000) {
+            $perPage = 50;
+        }
+
+        return $query->paginate($perPage)->appends(request()->query());
     }
 
     public function reportRows(string $report, array $filters = [])
     {
         return $this->loansForPage($this->reportToPage($report), $filters);
+    }
+
+    public function pageMetrics(string $slug, array $filters = []): array
+    {
+        if (! Schema::connection($this->connection)->hasTable('loans')) {
+            return [
+                'total_accounts' => 0,
+                'total_balance' => 0.0,
+                'high_risk_count' => 0,
+                'ptp_amount' => 0.0,
+                'avg_dpd' => 0.0,
+                'max_dpd' => 0,
+            ];
+        }
+
+        $definition = $this->pageDefinition($slug);
+        $query = $this->loanQuery();
+        $this->applyPageDefinition($query, $slug, $definition);
+        $query = $this->applyFilters($query, $filters, 'l');
+
+        $totalCount = (int) (clone $query)->count();
+        $totalBalance = (float) (clone $query)->sum('l.balance_amount');
+
+        $highRiskCount = 0;
+        if ($this->hasLoanColumn('risk_level')) {
+            $highRiskCount = (int) (clone $query)->whereIn('l.risk_level', ['high_risk', 'critical', 'hard_skip', 'fraud_risk'])->count();
+        }
+
+        $totalPtpAmount = 0;
+        if ($this->hasLoanColumn('ptp_amount')) {
+            $totalPtpAmount = (float) (clone $query)->whereNotNull('l.ptp_date')->sum('l.ptp_amount');
+        }
+
+        $hasDpd = $this->hasLoanColumn('days_past_due');
+        $avgDpd = $hasDpd ? (float) (clone $query)->avg('l.days_past_due') : 0;
+        $maxDpd = $hasDpd ? (int) (clone $query)->max('l.days_past_due') : 0;
+
+        return [
+            'total_accounts' => $totalCount,
+            'total_balance' => $totalBalance,
+            'high_risk_count' => $highRiskCount,
+            'ptp_amount' => $totalPtpAmount,
+            'avg_dpd' => round((float) $avgDpd, 1),
+            'max_dpd' => (int) $maxDpd,
+        ];
     }
 
     public function options(): array
@@ -213,6 +263,13 @@ class LoanCollectionService
 
                 $this->orWhereDerivedCollectionPage($q, $slug);
             });
+
+            if (in_array($slug, ['overdue-accounts', 'delinquent-accounts', 'recovery-management', 'debt-collection'], true)) {
+                if ($this->hasLoanColumn('status')) {
+                    $query->whereNotIn('l.status', ['closed', 'completed', 'cancelled', 'paid']);
+                }
+                $query->whereRaw($this->loanBalanceExpression('l').' > 0');
+            }
 
             return;
         }
@@ -431,6 +488,11 @@ class LoanCollectionService
 
             $q->whereRaw('1 = 0');
         });
+
+        if ($this->hasLoanColumn('status')) {
+            $query->whereNotIn('l.status', ['closed', 'completed', 'cancelled', 'paid']);
+        }
+        $query->whereRaw($this->loanBalanceExpression('l').' > 0');
 
         return (int) $query->count();
     }
@@ -665,7 +727,7 @@ class LoanCollectionService
             return '0';
         }
 
-        return '(CASE WHEN ('.$this->scheduledDueThroughExpression($loanAlias, 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
+        return '(CASE WHEN '.$this->loanBalanceExpression($loanAlias).' > 0 AND ('.$this->scheduledDueThroughExpression($loanAlias, 'DATE_SUB(CURDATE(), INTERVAL 1 DAY)').' - '.$this->loanPaidExpression($loanAlias).') > 0 THEN 1 ELSE 0 END)';
     }
 
     protected function scheduledDueThroughExpression(string $loanAlias, string $dateExpression): string
@@ -771,7 +833,7 @@ class LoanCollectionService
         return min(100, $base + min(40, (int) floor($days / 5)));
     }
 
-    protected function reportToPage(string $report): string
+    public function reportToPage(string $report): string
     {
         return match ($report) {
             'skip-customers' => 'skip-customers',

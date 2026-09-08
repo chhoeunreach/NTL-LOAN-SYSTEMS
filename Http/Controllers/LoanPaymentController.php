@@ -569,7 +569,7 @@ class LoanPaymentController extends Controller
             'balance_amount' => $balance,
             'last_payment_amount' => $paid > 0 ? $this->lastPaymentAmount($loanId) : null,
             'last_payment_date' => $paid > 0 ? $this->lastPaymentDate($loanId) : null,
-            'status' => $balance <= 0 ? 'closed' : ($loan->status === 'closed' ? 'active' : ($loan->status ?? 'active')),
+            'status' => $balance <= 0 ? 'completed' : (in_array($loan->status, ['completed', 'closed'], true) ? 'active' : ($loan->status ?? 'active')),
             'updated_at' => now(),
         ]));
     }

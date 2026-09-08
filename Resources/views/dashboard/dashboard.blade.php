@@ -9,12 +9,13 @@
         ['key' => 'due_today', 'label' => $lmText('Due Today', 'ដល់ថ្ងៃបង់ថ្ងៃនេះ'), 'icon' => 'fa fa-calendar-check-o', 'tone' => 'blue', 'url' => route('loan-management.operations.page', ['page' => 'due-today'])],
         ['key' => 'overdue_accounts', 'label' => $lmText('Overdue Accounts', 'គណនីហួសកំណត់'), 'icon' => 'fa fa-exclamation-circle', 'tone' => 'red', 'url' => route('loan-management.collection.page', ['page' => 'overdue-accounts'])],
         ['key' => 'broken_ptp', 'label' => $lmText('Broken PTP', 'ខកខានសន្យា'), 'icon' => 'fa fa-chain-broken', 'tone' => 'amber', 'url' => route('loan-management.collection.page', ['page' => 'broken-promise'])],
-        ['key' => 'collection_amount_today', 'label' => $lmText('Collection Today', 'ចំនួនប្រមូលបានថ្ងៃនេះ'), 'icon' => 'fa fa-money', 'tone' => 'green', 'url' => route('loan-management.payments.index', ['date_from' => now()->toDateString(), 'date_to' => now()->toDateString()])],
+        ['key' => 'blacklist_customers', 'label' => $lmText('Blacklist Customers', 'អតិថិជនបញ្ជីខ្មៅ'), 'icon' => 'fa fa-user-times', 'tone' => 'red', 'url' => route('loan-management.blacklist.index')],
     ];
     $dashboardBadgeCounts = \Modules\LoanManagement\Helpers\LoanMenuHelper::badgeCounts();
     $dashboardUnreadChats = (int) ($dashboardBadgeCounts['unread_chat'] ?? 0);
     $dashboardPendingVisits = (int) ($dashboardBadgeCounts['pending_visits'] ?? 0);
     $dashboardOverdue = (int) ($quickCards['overdue_accounts'] ?? 0);
+    $dashboardBlacklist = (int) ($quickCards['blacklist_customers'] ?? 0);
     $dashboardDueToday = (int) ($quickCards['due_today'] ?? 0);
     $dashboardBrokenPtp = (int) ($quickCards['broken_ptp'] ?? 0);
     $dashboardHighRisk = (int) ($quickCards['high_risk_customers'] ?? 0);
@@ -50,8 +51,6 @@
             <div class="lm-dashboard-command__chips">
                 <span class="lm-dashboard-chip lm-dashboard-chip--{{ $dashboardHealthTone }}"><i class="fa fa-heartbeat"></i> {{ $dashboardHealthLabel }}</span>
                 <span class="lm-dashboard-chip"><i class="fa fa-calendar"></i> {{ now()->format('M d, Y') }}</span>
-                <a href="{{ route('loan-management.chat.index') }}" class="lm-dashboard-chip lm-dashboard-chip--link"><i class="fa fa-comments"></i> {{ number_format($dashboardUnreadChats) }} {{ $lmText('Unread', 'មិនទាន់អាន') }}</a>
-                <a href="{{ route('loan-management.collection.page', ['page' => 'overdue-accounts']) }}" class="lm-dashboard-chip lm-dashboard-chip--link lm-dashboard-chip--danger"><i class="fa fa-exclamation-circle"></i> {{ number_format($dashboardOverdue) }} {{ $lmText('Overdue', 'ហួសកំណត់') }}</a>
             </div>
         </div>
         <div class="lm-dashboard-command__actions">
@@ -297,11 +296,11 @@
             <div class="lm-dashboard-panel">
                 <div class="lm-dashboard-panel__header">
                     <div>
-                        <h3 class="lm-dashboard-panel__title">{{ $lmText('Overdue Customers', 'អតិថិជនហួសកំណត់') }}</h3>
+                        <h3 class="lm-dashboard-panel__title">{{ $lmText('Overdue Accounts', 'គណនីហួសកំណត់') }}</h3>
                         <p class="lm-dashboard-panel__hint">{{ $lmText('Need immediate follow-up today.', 'ត្រូវការតាមដានជាបន្ទាន់ថ្ងៃនេះ។') }}</p>
                     </div>
                     <div class="lm-dashboard-panel__actions">
-                        <span class="lm-dashboard-panel__badge lm-dashboard-panel__badge--danger" id="loanOverdueCountBadge"><i class="fa fa-exclamation-triangle"></i> {{ count($overdueCustomers ?? []) }} {{ $lmText('Overdue', 'ហួសកំណត់') }}</span>
+                        <span class="lm-dashboard-panel__badge lm-dashboard-panel__badge--danger" id="loanOverdueCountBadge"><i class="fa fa-exclamation-triangle"></i> {{ $dashboardOverdue ?? count($overdueCustomers ?? []) }} {{ $lmText('Overdue', 'ហួសកំណត់') }}</span>
                         <a href="{{ route('loan-management.collection.page', ['page' => 'overdue-accounts']) }}" class="btn btn-xs btn-default" title="{{ $lmText('View all overdue accounts in Collection', 'មើលគណនីហួសកំណត់ទាំងអស់ក្នុងការប្រមូលប្រាក់') }}">
                             <i class="fa fa-external-link"></i> {{ $lmText('View All', 'មើលទាំងអស់') }}
                         </a>
@@ -855,7 +854,7 @@
             $('[data-loan-table="recent_payments"]').html(html || '<tr><td colspan="5" class="text-center">' + (isKhmer ? 'មិនមានការទូទាត់ថ្មីៗត្រូវបានរកឃើញទេ។' : 'No recent payments found.') + '</td></tr>');
         }
 
-        function renderOverdueCustomers(rows) {
+        function renderOverdueCustomers(rows, totalCount) {
             var html = '';
             var mobileHtml = '';
             var list = rows || [];
@@ -881,7 +880,8 @@
             });
             $('[data-loan-table="overdue_customers"]').html(html || '<tr><td colspan="7" class="text-center">' + i18n.noOverdueCustomers + '</td></tr>');
             $('#loanOverdueCustomersMobile').html(mobileHtml || '<div class="lm-mobile-loan-empty">' + i18n.noOverdueCustomers + '</div>');
-            $('#loanOverdueCountBadge').html('<i class="fa fa-exclamation-triangle"></i> ' + list.length + ' ' + i18n.overdue);
+            var badgeTotal = (totalCount !== undefined && totalCount !== null) ? intValue(totalCount) : list.length;
+            $('#loanOverdueCountBadge').html('<i class="fa fa-exclamation-triangle"></i> ' + badgeTotal + ' ' + i18n.overdue);
             filterOverdueCustomers();
         }
 
@@ -1677,8 +1677,10 @@
                     }
 
                     var data = res && res.data ? res.data : {};
-                    updateCards(data.quick_cards || data.cards || {});
-                    renderOverdueCustomers(data.tables ? data.tables.overdue_customers : []);
+                    var cards = data.quick_cards || data.cards || {};
+                    updateCards(cards);
+                    var overdueTotal = cards.overdue_accounts !== undefined ? cards.overdue_accounts : (cards.overdue_loans !== undefined ? cards.overdue_loans : null);
+                    renderOverdueCustomers(data.tables ? data.tables.overdue_customers : [], overdueTotal);
                     renderFollowUps(data.tables ? data.tables.follow_up_customers : []);
                     renderCollectorPerformance(data.charts ? data.charts.collector_performance : []);
                     updateChartText(data.charts ? data.charts.loan_status : null);

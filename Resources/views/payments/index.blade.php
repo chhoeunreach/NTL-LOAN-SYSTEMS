@@ -21,6 +21,83 @@
         font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
+    /* Executive KPI Metric Cards for Payments */
+    .lm-pay-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+    @media (max-width: 1400px) {
+        .lm-pay-summary-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 900px) {
+        .lm-pay-summary-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+        .lm-pay-summary-grid { grid-template-columns: 1fr; }
+    }
+    .lm-pay-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        text-decoration: none !important;
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+    .lm-pay-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+    }
+    .lm-pay-card.is-active {
+        border-color: #0284c7;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    }
+    .lm-pay-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        flex-shrink: 0;
+    }
+    .lm-pay-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+    .lm-pay-copy small {
+        font-size: 11.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        color: #64748b;
+    }
+    .lm-pay-copy strong {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+    }
+    .lm-pay-copy span {
+        font-size: 11px;
+        color: #94a3b8;
+    }
+    .lm-pay-green .lm-pay-icon { background: #f0fdf4; color: #16a34a; }
+    .lm-pay-blue .lm-pay-icon { background: #eff6ff; color: #2563eb; }
+    .lm-pay-purple .lm-pay-icon { background: #faf5ff; color: #9333ea; }
+    .lm-pay-amber .lm-pay-icon { background: #fffbeb; color: #d97706; }
+    .lm-pay-slate .lm-pay-icon { background: #f8fafc; color: #475569; }
+
     /* Filters Component Styling */
     .lm-pos-filter-box {
         background: #fff;
@@ -440,6 +517,68 @@
     <!-- Main Content Section -->
     <section class="content no-print" style="padding-top: 10px;">
         
+        {{-- 5 Executive KPI Summary Cards --}}
+        @if(!empty($summary))
+            @php
+                $activeType = $filters['payment_type'] ?? '';
+                $avgTicket = ($summary['count'] ?? 0) > 0 ? ((float)$summary['amount'] / (float)$summary['count']) : 0;
+            @endphp
+            <div class="lm-pay-summary-grid">
+                <a href="{{ route('loan-management.payments.index', array_merge(request()->except('payment_type', 'page'))) }}" 
+                   class="lm-pay-card lm-pay-green {{ empty($activeType) ? 'is-active' : '' }}" 
+                   title="{{ $lmText('Click to view all payments', 'ចុចដើម្បីមើលការបង់ប្រាក់ទាំងអស់') }}">
+                    <div class="lm-pay-icon"><i class="fa fa-money"></i></div>
+                    <div class="lm-pay-copy">
+                        <small>{{ $lmText('Total Collected', 'ប្រមូលបានសរុប') }}</small>
+                        <strong>${{ number_format((float)($summary['amount'] ?? 0), 2) }}</strong>
+                        <span>{{ number_format((int)($summary['count'] ?? 0)) }} {{ $lmText('Receipts', 'បង្កាន់ដៃសរុប') }}</span>
+                    </div>
+                </a>
+
+                <a href="{{ route('loan-management.payments.index', array_merge(request()->except('page'), ['payment_type' => 'monthly'])) }}" 
+                   class="lm-pay-card lm-pay-blue {{ $activeType === 'monthly' ? 'is-active' : '' }}" 
+                   title="{{ $lmText('Filter by Monthly Installments', 'ចម្រាញ់ការបង់ប្រចាំខែ') }}">
+                    <div class="lm-pay-icon"><i class="fa fa-calendar-check-o"></i></div>
+                    <div class="lm-pay-copy">
+                        <small>{{ $lmText('Monthly Collections', 'បង់ប្រចាំខែ') }}</small>
+                        <strong>${{ number_format((float)($summary['monthly_amount'] ?? 0), 2) }}</strong>
+                        <span>{{ number_format((int)($summary['monthly_count'] ?? 0)) }} {{ $lmText('Installment records', 'កាលវិភាគបង់') }}</span>
+                    </div>
+                </a>
+
+                <a href="{{ route('loan-management.payments.index', array_merge(request()->except('page'), ['payment_type' => 'loan'])) }}" 
+                   class="lm-pay-card lm-pay-purple {{ $activeType === 'loan' ? 'is-active' : '' }}" 
+                   title="{{ $lmText('Filter by Loan Capital Recoveries', 'ចម្រាញ់ការបង់ប្រាក់ដើម') }}">
+                    <div class="lm-pay-icon"><i class="fa fa-credit-card"></i></div>
+                    <div class="lm-pay-copy">
+                        <small>{{ $lmText('Installment Capital', 'រំលស់ប្រាក់ដើម') }}</small>
+                        <strong>${{ number_format((float)($summary['loan_amount'] ?? 0), 2) }}</strong>
+                        <span>{{ number_format((int)($summary['loan_count'] ?? 0)) }} {{ $lmText('Contract payments', 'ការបង់កិច្ចសន្យា') }}</span>
+                    </div>
+                </a>
+
+                <a href="{{ route('loan-management.payments.index', array_merge(request()->except('page'), ['payment_type' => 'payoff'])) }}" 
+                   class="lm-pay-card lm-pay-amber {{ $activeType === 'payoff' ? 'is-active' : '' }}" 
+                   title="{{ $lmText('Filter by Pay-Off Settlements', 'ចម្រាញ់ការបង់ផ្តាច់') }}">
+                    <div class="lm-pay-icon"><i class="fa fa-check-circle"></i></div>
+                    <div class="lm-pay-copy">
+                        <small>{{ $lmText('Pay-Offs Completed', 'បង់ផ្តាច់កិច្ចសន្យា') }}</small>
+                        <strong>${{ number_format((float)($summary['payoff_amount'] ?? 0), 2) }}</strong>
+                        <span>{{ number_format((int)($summary['payoff_count'] ?? 0)) }} {{ $lmText('Full settlements', 'បង់ផ្តាច់រួចរាល់') }}</span>
+                    </div>
+                </a>
+
+                <div class="lm-pay-card lm-pay-slate">
+                    <div class="lm-pay-icon"><i class="fa fa-pie-chart"></i></div>
+                    <div class="lm-pay-copy">
+                        <small>{{ $lmText('Avg Receipt Size', 'មធ្យមភាគបង្កាន់ដៃ') }}</small>
+                        <strong>${{ number_format($avgTicket, 2) }}</strong>
+                        <span>{{ $lmText('Per transaction average', 'មធ្យមភាគក្នុង១ប្រតិបត្តិការ') }}</span>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- =========================================================
              1. FILTERS WIDGET (Ultimate POS Component Filters)
              ========================================================= -->

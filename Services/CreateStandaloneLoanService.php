@@ -831,14 +831,49 @@ class CreateStandaloneLoanService
             return;
         }
 
-        $profileImage = (string) ($data['customer_profile_image'] ?? '');
-        if ($profileImage !== '') {
-            $fileId = $this->storeDataUriFile($profileImage, $customerId, 'customer_photo', 'customer-profile-'.$loanId.'.jpg');
-            if ($fileId && Schema::connection('mysql_loan')->hasColumn('loan_customers', 'customer_photo_file_id')) {
+        $profileImage = $data['customer_profile_image'] ?? ($data['customer_photo'] ?? null);
+        $fileId = null;
+
+        if ($profileImage instanceof \Illuminate\Http\UploadedFile) {
+            $path = $profileImage->store('loan-customers/'.$customerId, 'public');
+            $fileId = (int) DB::connection('mysql_loan')->table('loan_files')->insertGetId($this->filterColumns('loan_files', [
+                'fileable_type' => \Modules\LoanManagement\Entities\LoanCustomer::class,
+                'fileable_id' => $customerId,
+                'category' => 'customer_photo',
+                'disk' => 'public',
+                'path' => $path,
+                'original_name' => $profileImage->getClientOriginalName(),
+                'mime_type' => $profileImage->getClientMimeType(),
+                'size_bytes' => $profileImage->getSize(),
+                'uploaded_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]));
+        } elseif (is_string($profileImage) && trim($profileImage) !== '') {
+            $fileId = $this->storeDataUriFile(trim($profileImage), $customerId, 'customer_photo', 'customer-profile-'.$loanId.'.jpg');
+        }
+
+        if ($fileId && $fileId > 0) {
+            if (Schema::connection('mysql_loan')->hasColumn('loan_customers', 'customer_photo_file_id')) {
                 DB::connection('mysql_loan')->table('loan_customers')->where('id', $customerId)->update([
                     'customer_photo_file_id' => $fileId,
                     'updated_at' => now(),
                 ]);
+            }
+            if (Schema::connection('mysql_loan')->hasColumn('loans', 'customer_photo_file_id')) {
+                DB::connection('mysql_loan')->table('loans')->where('id', $loanId)->update([
+                    'customer_photo_file_id' => $fileId,
+                    'updated_at' => now(),
+                ]);
+            }
+            if (Schema::connection('mysql_loan')->hasColumn('loans', 'customer_photo_snapshot')) {
+                $filePath = DB::connection('mysql_loan')->table('loan_files')->where('id', $fileId)->value('path');
+                if ($filePath) {
+                    DB::connection('mysql_loan')->table('loans')->where('id', $loanId)->update([
+                        'customer_photo_snapshot' => $filePath,
+                        'updated_at' => now(),
+                    ]);
+                }
             }
         }
 
@@ -914,7 +949,8 @@ class CreateStandaloneLoanService
             $mimeType = 'image/jpeg';
         }
 
-        $binary = base64_decode($dataUri, true);
+        $cleanBase64 = str_replace(' ', '+', trim($dataUri));
+        $binary = base64_decode($cleanBase64, true);
         if ($binary === false || $binary === '') {
             return null;
         }
