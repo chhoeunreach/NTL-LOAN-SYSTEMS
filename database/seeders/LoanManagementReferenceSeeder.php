@@ -3,24 +3,57 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\LoanManagement\Services\LoanSyncFromPosService;
 
 class LoanManagementReferenceSeeder extends Seeder
 {
+    /**
+     * The loan connection, resolved once so every method stays in sync with config.
+     *
+     * @var string
+     */
+    protected $connection;
+
+    public function __construct()
+    {
+        $this->connection = (string) config('loanmanagement.db_connection', 'mysql_loan');
+    }
+
     public function run(): void
     {
-        if (Schema::connection('mysql_loan')->hasTable('loan_business_locations')) {
+        if (Schema::connection($this->connection)->hasTable('loan_business_locations')) {
             $this->seedLoanBusinessLocations();
         }
 
-        if (Schema::connection('mysql_loan')->hasTable('loan_currencies')) {
+        if (Schema::connection($this->connection)->hasTable('loan_currencies')) {
             $this->seedLoanCurrencies();
         }
 
-        if (Schema::connection('mysql_loan')->hasTable('loan_payment_methods')) {
+        if (Schema::connection($this->connection)->hasTable('loan_payment_methods')) {
+            $this->ensurePaymentMethodColumns();
             $this->seedLoanPaymentMethods();
+        }
+    }
+
+    /**
+     * SettingsController orders payment methods by sort_order and stores a code,
+     * and both columns were only ever added lazily when that page loaded.
+     */
+    protected function ensurePaymentMethodColumns(): void
+    {
+        if (! Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'code')) {
+            Schema::connection($this->connection)->table('loan_payment_methods', function (Blueprint $table) {
+                $table->string('code', 60)->nullable()->after('id')->index();
+            });
+        }
+
+        if (! Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'sort_order')) {
+            Schema::connection($this->connection)->table('loan_payment_methods', function (Blueprint $table) {
+                $table->integer('sort_order')->default(0)->after('is_active');
+            });
         }
     }
 
@@ -30,14 +63,15 @@ class LoanManagementReferenceSeeder extends Seeder
             app(LoanSyncFromPosService::class)->syncBusinessLocations();
         }
 
-        $count = (int) DB::connection('mysql_loan')->table('loan_business_locations')->count();
+        $count = (int) DB::connection($this->connection)->table('loan_business_locations')->count();
         if ($count > 0) {
             $this->ensureLocationDefaults();
+
             return;
         }
 
         $now = now();
-        DB::connection('mysql_loan')->table('loan_business_locations')->insert($this->loanLocationColumns([
+        DB::connection($this->connection)->table('loan_business_locations')->insert($this->loanLocationColumns([
             'main_business_id' => null,
             'main_location_id' => null,
             'name' => 'Main Location',
@@ -56,7 +90,7 @@ class LoanManagementReferenceSeeder extends Seeder
 
     private function ensureLocationDefaults(): void
     {
-        $rows = DB::connection('mysql_loan')->table('loan_business_locations')->get();
+        $rows = DB::connection($this->connection)->table('loan_business_locations')->get();
 
         foreach ($rows as $row) {
             $updates = [];
@@ -74,32 +108,32 @@ class LoanManagementReferenceSeeder extends Seeder
             }
 
             if (! empty($updates)) {
-                DB::connection('mysql_loan')->table('loan_business_locations')->where('id', $row->id)->update($updates);
+                DB::connection($this->connection)->table('loan_business_locations')->where('id', $row->id)->update($updates);
             }
         }
     }
 
     private function loanLocationColumns(array $payload): array
     {
-        $columns = Schema::connection('mysql_loan')->getColumnListing('loan_business_locations');
+        $columns = Schema::connection($this->connection)->getColumnListing('loan_business_locations');
 
         return array_intersect_key($payload, array_flip($columns));
     }
 
     private function loanLocationHasColumn(string $column): bool
     {
-        return Schema::connection('mysql_loan')->hasColumn('loan_business_locations', $column);
+        return Schema::connection($this->connection)->hasColumn('loan_business_locations', $column);
     }
 
     private function seedLoanCurrencies(): void
     {
         $columns = [
-            'name' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'name'),
-            'exchange_rate' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'exchange_rate'),
-            'is_default' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'is_default'),
-            'is_active' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'is_active'),
-            'updated_at' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'updated_at'),
-            'created_at' => Schema::connection('mysql_loan')->hasColumn('loan_currencies', 'created_at'),
+            'name' => Schema::connection($this->connection)->hasColumn('loan_currencies', 'name'),
+            'exchange_rate' => Schema::connection($this->connection)->hasColumn('loan_currencies', 'exchange_rate'),
+            'is_default' => Schema::connection($this->connection)->hasColumn('loan_currencies', 'is_default'),
+            'is_active' => Schema::connection($this->connection)->hasColumn('loan_currencies', 'is_active'),
+            'updated_at' => Schema::connection($this->connection)->hasColumn('loan_currencies', 'updated_at'),
+            'created_at' => Schema::connection($this->connection)->hasColumn('loan_currencies', 'created_at'),
         ];
 
         $now = now();
@@ -122,7 +156,7 @@ class LoanManagementReferenceSeeder extends Seeder
                 $updateData['created_at'] = $now;
             }
 
-            DB::connection('mysql_loan')->table('loan_currencies')->updateOrInsert(
+            DB::connection($this->connection)->table('loan_currencies')->updateOrInsert(
                 ['code' => $code],
                 $updateData
             );
@@ -131,20 +165,22 @@ class LoanManagementReferenceSeeder extends Seeder
 
     private function seedLoanPaymentMethods(): void
     {
-        $hasIsActive = Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'is_active');
-        $hasUpdatedAt = Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'updated_at');
-        $hasCreatedAt = Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'created_at');
+        $hasIsActive = Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'is_active');
+        $hasUpdatedAt = Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'updated_at');
+        $hasCreatedAt = Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'created_at');
+        $hasCode = Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'code');
+        $hasSortOrder = Schema::connection($this->connection)->hasColumn('loan_payment_methods', 'sort_order');
         $now = now();
 
-        foreach (['Cash', 'ABA', 'ACLEDA', 'Wing', 'Bank Transfer', 'QR', 'Credit Adjustment'] as $index => $name) {
+        foreach ($this->paymentMethods() as $index => $name) {
             $updateData = [];
-            if (Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'code')) {
+            if ($hasCode) {
                 $updateData['code'] = strtolower(str_replace(' ', '_', $name));
             }
             if ($hasIsActive) {
                 $updateData['is_active'] = 1;
             }
-            if (Schema::connection('mysql_loan')->hasColumn('loan_payment_methods', 'sort_order')) {
+            if ($hasSortOrder) {
                 $updateData['sort_order'] = $index + 1;
             }
             if ($hasUpdatedAt) {
@@ -154,10 +190,15 @@ class LoanManagementReferenceSeeder extends Seeder
                 $updateData['created_at'] = $now;
             }
 
-            DB::connection('mysql_loan')->table('loan_payment_methods')->updateOrInsert(
+            DB::connection($this->connection)->table('loan_payment_methods')->updateOrInsert(
                 ['name' => $name],
                 $updateData
             );
         }
+    }
+
+    protected function paymentMethods(): array
+    {
+        return ['Cash', 'ABA', 'ACLEDA', 'Wing', 'Bank Transfer', 'QR', 'Credit Adjustment'];
     }
 }

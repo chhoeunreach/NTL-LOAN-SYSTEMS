@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@3.4.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+</head>
+<body>
+    <div id="results"></div>
+
+    <!-- 1. Normal page (Dashboard Reports) -->
+    <div id="container-normal">
+        <style>
+            __LM_CSS__
+            :root {
+                --lm-primary: #ea580c;
+                --lm-primary-dark: #c2410c;
+                --lm-primary-light: #f97316;
+                --lm-primary-50: #fff7ed;
+                --lm-primary-100: #ffedd5;
+                --lm-primary-200: #fed7aa;
+            }
+        </style>
+        <a href="#" class="lm-menu-link active tone-slate" id="normalLink">
+            <i class="fa fa-line-chart lm-menu-icon" id="normalIcon"></i>
+            <span class="lm-menu-label" id="normalLabel">Dashboard Reports</span>
+        </a>
+    </div>
+
+    <!-- 2. Admin loan page (with Tailwind) -->
+    <div id="container-admin">
+        <style>
+            __TAILWIND_CSS__
+        </style>
+        <style>
+            __ADMIN_BLADE_CSS__
+        </style>
+        <a href="#" class="lm-menu-link active tone-slate" id="adminLink">
+            <i class="fa fa-table lm-menu-icon" id="adminIcon"></i>
+            <span class="lm-menu-label" id="adminLabel">Admin Installment</span>
+        </a>
+    </div>
+
+    <script>
+        function getStyles(id) {
+            const el = document.getElementById(id);
+            const cs = window.getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            return {
+                width: rect.width,
+                height: rect.height,
+                paddingTop: cs.paddingTop,
+                paddingRight: cs.paddingRight,
+                paddingBottom: cs.paddingBottom,
+                paddingLeft: cs.paddingLeft,
+                marginTop: cs.marginTop,
+                marginRight: cs.marginRight,
+                marginBottom: cs.marginBottom,
+                marginLeft: cs.marginLeft,
+                borderTopWidth: cs.borderTopWidth,
+                borderRightWidth: cs.borderRightWidth,
+                borderBottomWidth: cs.borderBottomWidth,
+                borderLeftWidth: cs.borderLeftWidth,
+                borderTopColor: cs.borderTopColor,
+                borderLeftColor: cs.borderLeftColor,
+                borderStyle: cs.borderStyle,
+                borderRadius: cs.borderRadius,
+                boxShadow: cs.boxShadow,
+                boxSizing: cs.boxSizing,
+                lineHeight: cs.lineHeight,
+                fontSize: cs.fontSize,
+                fontWeight: cs.fontWeight,
+                transform: cs.transform
+            };
+        }
+
+        const out = {
+            normalLink: getStyles('normalLink'),
+            adminLink: getStyles('adminLink'),
+            normalIcon: getStyles('normalIcon'),
+            adminIcon: getStyles('adminIcon'),
+            normalLabel: getStyles('normalLabel'),
+            adminLabel: getStyles('adminLabel'),
+        };
+
+        const pre = document.createElement('pre');
+        pre.id = 'computed-json';
+        pre.textContent = JSON.stringify(out, null, 2);
+        document.getElementById('results').appendChild(pre);
+    </script>
+</body>
+</html>

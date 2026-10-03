@@ -192,6 +192,34 @@ class AdminLoanTest extends TestCase
         $this->assertSame(3.0, $paid['interest_deducted']);
     }
 
+    public function testAdminInstallmentKeepsOriginalLayoutAndReportControls(): void
+    {
+        auth()->setUser(new class(['id' => 1, 'name' => 'Test Staff']) extends GenericUser implements \Illuminate\Contracts\Auth\Access\Authorizable {
+            public function can($ability, $arguments = []): bool { return true; }
+        });
+        config(['session.driver' => 'array', 'view.compiled' => sys_get_temp_dir(), 'cache.default' => 'array']);
+        view()->share('errors', new \Illuminate\Support\ViewErrorBag);
+        \Illuminate\Support\Facades\Cache::put('loan_management.sidebar_badges', [], 600);
+        session()->put('user.language', 'en');
+        $html = view('loanmanagement::admin_loan.index', [
+            'filters' => ['start_year' => 2026, 'end_year' => 2026, 'location_id' => '', 'search' => ''],
+            'payload' => ['adminRows' => [], 'adminMonthlyRows' => []],
+            'locations' => [], 'isKhmer' => false,
+        ])->render();
+        $document = new \DOMDocument;
+        @$document->loadHTML($html);
+        $xpath = new \DOMXPath($document);
+        foreach (['loanManagementApp', 'loanManagementMain', 'loanManagementSidebar', 'adminLoanFilter', 'admin-loan-react-root', 'root', 'adminLoanDetailModal'] as $id) {
+            $this->assertSame(1, $xpath->query('//*[@id="'.$id.'"]')->length, $id);
+        }
+        $this->assertSame(1, $xpath->query('//body')->length);
+        $this->assertSame(1, $xpath->query('//*[@id="loanManagementMain" and contains(@class,"admin-loan-main")]')->length);
+        $this->assertSame(0, $xpath->query('//*[@id="loanManagementHeader"]')->length);
+        $this->assertSame(1, $xpath->query('//form[@id="adminLoanFilter"]//input[@name="date_from"]')->length);
+        $this->assertStringContainsString('window.__LM_SYSTEM_BUSINESS_NAME__', $html);
+        $this->assertSame(1, $xpath->query('//*[@id="loanBusinessTheme"]')->length);
+    }
+
     public function testDetailsRenderWhenTelegramRoutesAreUnavailable(): void
     {
         config(['session.driver' => 'array', 'view.compiled' => sys_get_temp_dir()]);

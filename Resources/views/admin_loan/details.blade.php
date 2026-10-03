@@ -344,7 +344,7 @@
             <div>
                 <h1 class="title">{{ $groupTitle }} - {{ $year }}</h1>
                 <div class="meta">
-                    {{ $text('Showing full loan data from Admin Loan table', 'បង្ហាញទិន្នន័យកម្ចីពេញពីតារាងរដ្ឋបាលកម្ចី') }}
+                    {{ $text('Showing full loan data from Admin Installment table', 'បង្ហាញទិន្នន័យកម្ចីពេញពីតារាងរដ្ឋបាលកម្ចីរំលស់') }}
                     · {{ number_format($loans->count()) }} {{ $text('records', 'ជួរ') }}
                 </div>
             </div>
@@ -356,7 +356,7 @@
                     <a class="btn" href="{{ route('loan-management.export.download', ['type' => 'active_loan_schedule_template', 'date_from' => $year.'-01-01', 'date_to' => $year.'-12-31']) }}">{{ $text('Export Schedule Fill Rows', 'នាំចេញជួរកាលវិភាគបង់') }}</a>
                     <a class="btn btn-primary" href="{{ route('loan-management.import.index', ['type' => 'active_loans']) }}" target="_blank">{{ $text('Import Active/Ongoing', 'នាំចូលកំពុងដំណើរការ') }}</a>
                 @endif
-                <a class="btn" href="{{ route('loan-management.admin-loan', request()->only(['start_year', 'end_year', 'location_id', 'search'])) }}">{{ $text('Back to Admin Loan', 'ត្រឡប់ទៅរដ្ឋបាលកម្ចី') }}</a>
+                <a class="btn" href="{{ route('loan-management.admin-loan', request()->only(['start_year', 'end_year', 'location_id', 'search'])) }}">{{ $text('Back to Admin Installment', 'ត្រឡប់ទៅរដ្ឋបាលកម្ចីរំលស់') }}</a>
                 <a class="btn" href="{{ route('loan-management.loans') }}" target="_blank">{{ $text('Open Installment List', 'បើកបញ្ជីកម្ចី') }}</a>
             </div>
         </section>

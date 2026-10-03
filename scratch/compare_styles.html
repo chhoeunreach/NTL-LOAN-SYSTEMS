@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+</head>
+<body style="background: #f8fafc; padding: 20px; font-family: sans-serif; display: flex; gap: 40px;">
+
+    <!-- Left: simulating standard page (e.g. Dashboard Reports) -->
+    <div style="width: 260px; background: #fff; padding: 15px; border-radius: 8px;">
+        <h4 style="margin: 0 0 10px;">Page: Dashboard Reports</h4>
+        <iframe id="frameNormal" style="width: 100%; height: 200px; border: 0;" srcdoc='
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+            <style>
+                __LM_CSS__
+                :root {
+                    --lm-primary: #ea580c;
+                    --lm-primary-dark: #c2410c;
+                    --lm-primary-light: #f97316;
+                    --lm-primary-50: #fff7ed;
+                    --lm-primary-100: #ffedd5;
+                    --lm-primary-200: #fed7aa;
+                }
+            </style>
+            <div style="padding: 10px;">
+                <a href="#" class="lm-menu-link active tone-slate" id="normalLink">
+                    <i class="fa fa-line-chart lm-menu-icon"></i>
+                    <span class="lm-menu-label">Dashboard Reports</span>
+                </a>
+            </div>
+        '></iframe>
+    </div>
+
+    <!-- Right: simulating Admin Loan page (with Tailwind CSS loaded) -->
+    <div style="width: 260px; background: #fff; padding: 15px; border-radius: 8px;">
+        <h4 style="margin: 0 0 10px;">Page: Admin Loan</h4>
+        <iframe id="frameAdmin" style="width: 100%; height: 200px; border: 0;" srcdoc='
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+            <style>
+                __LM_CSS__
+                :root {
+                    --lm-primary: #ea580c;
+                    --lm-primary-dark: #c2410c;
+                    --lm-primary-light: #f97316;
+                    --lm-primary-50: #fff7ed;
+                    --lm-primary-100: #ffedd5;
+                    --lm-primary-200: #fed7aa;
+                }
+            </style>
+            <style>
+                __TAILWIND_CSS__
+            </style>
+            <style>
+                __ADMIN_BLADE_CSS__
+            </style>
+            <div style="padding: 10px;">
+                <a href="#" class="lm-menu-link active tone-slate" id="adminLink">
+                    <i class="fa fa-table lm-menu-icon"></i>
+                    <span class="lm-menu-label">Admin Installment</span>
+                </a>
+            </div>
+        '></iframe>
+    </div>
+
+</body>
+</html>

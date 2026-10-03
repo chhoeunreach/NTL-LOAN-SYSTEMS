@@ -22,6 +22,11 @@
     $adminLoanJsExists = file_exists($adminLoanJsPath);
     $loanBadgeCounts = LoanMenuHelper::badgeCounts();
     $loanLanguage = session('user.language', config('app.locale'));
+    $businessSettings = \Modules\LoanManagement\Services\BusinessSettingsService::get();
+    $systemBusinessName = $businessSettings['business_name'] ?: 'NTL INSTALLMENT';
+    $systemLegalName = $businessSettings['legal_name'] ?: 'NTL CO., LTD';
+    $systemCompanyAddress = $businessSettings['company_address'] ?: 'Phnom Penh, Cambodia';
+    $systemCompanyPhone = $businessSettings['company_phone'] ?: '+855 23 888 999';
     $adminRows = collect($payload['adminRows'] ?? [])->sortBy('year')->map(function ($row) {
         return [
             'id' => (string) $row['year'],
@@ -129,7 +134,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $text('Admin Loan', 'រដ្ឋបាលកម្ចី') }}</title>
+    <title>{{ $text('Admin Installment', 'រដ្ឋបាលកម្ចី') }}</title>
     @include('layouts.partials.css')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -142,6 +147,11 @@
     @if (file_exists($moduleCssPath))
         <style>{!! file_get_contents($moduleCssPath) !!}</style>
     @endif
+    <style id="loanBusinessTheme">
+        :root {
+            {!! \Modules\LoanManagement\Services\BusinessSettingsService::cssVariables() !!}
+        }
+    </style>
     <style>
         html,
         body {
@@ -1105,8 +1115,16 @@
         (function () {
             var yearlyRecords = @json($adminRows);
             var monthlyRecords = @json($adminMonthlyRows);
-            localStorage.setItem('khnar_yeung_ledger', JSON.stringify(yearlyRecords));
-            localStorage.setItem('khnar_yeung_monthly_ledger', JSON.stringify(monthlyRecords));
+            window.__LM_SYSTEM_BUSINESS_NAME__ = @json($systemBusinessName);
+            window.__LM_SYSTEM_LEGAL_NAME__ = @json($systemLegalName);
+            window.__LM_SYSTEM_COMPANY_ADDRESS__ = @json($systemCompanyAddress);
+            window.__LM_SYSTEM_COMPANY_PHONE__ = @json($systemCompanyPhone);
+            try {
+                localStorage.setItem('khnar_yeung_ledger', JSON.stringify(yearlyRecords));
+                localStorage.setItem('khnar_yeung_monthly_ledger', JSON.stringify(monthlyRecords));
+                localStorage.setItem('ntl_installment_ledger', JSON.stringify(yearlyRecords));
+                localStorage.setItem('ntl_installment_monthly_ledger', JSON.stringify(monthlyRecords));
+            } catch (e) {}
         })();
     </script>
     @if ($adminLoanJsPublished)

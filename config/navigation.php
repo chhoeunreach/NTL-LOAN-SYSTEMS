@@ -8,7 +8,7 @@ return [
     'sections' => [
         ['key' => 'overview', 'label' => 'Overview', 'km' => 'ទិដ្ឋភាពទូទៅ', 'items' => [
             ['label' => 'Dashboard', 'km' => 'ផ្ទាំងគ្រប់គ្រង', 'icon' => 'fa fa-home', 'route' => 'loan-management.dashboard', 'active_routes' => ['loan-management.dashboard', 'loan-management.dashboard.index'], 'can' => 'loan_management.dashboard.view|loan_management.view'],
-            ['label' => 'Admin Loan', 'km' => 'រដ្ឋបាលកម្ចី', 'icon' => 'fa fa-table', 'route' => 'loan-management.admin-loan', 'active_routes' => ['loan-management.admin-loan*'], 'can' => $view],
+            ['label' => 'Admin Installment', 'km' => 'រដ្ឋបាលកម្ចីរំលស់', 'icon' => 'fa fa-table', 'route' => 'loan-management.admin-loan', 'active_routes' => ['loan-management.admin-loan*'], 'can' => $view],
             ['label' => 'Dashboard Reports', 'km' => 'របាយការណ៍ផ្ទាំងគ្រប់គ្រង', 'icon' => 'fa fa-line-chart', 'route' => 'loan-management.reports.dashboard', 'can' => $reports],
         ]],
         ['key' => 'installments', 'label' => 'Installments', 'km' => 'កម្ចីរំលស់', 'items' => [

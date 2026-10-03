@@ -61,7 +61,7 @@ class InstallController extends Controller
 
             $this->runInstallSteps();
 
-            System::addProperty($this->module_name . '_version', $this->appVersion);
+            System::setProperty($this->module_name . '_version', $this->appVersion);
             DB::commit();
 
             $output = ['success' => 1, 'msg' => $this->module_display_name . ' module installed successfully'];
@@ -84,7 +84,7 @@ class InstallController extends Controller
 
         try {
             $this->runUninstallSteps();
-            System::removeProperty($this->module_name . '_version');
+            System::query()->where('key', $this->module_name . '_version')->delete();
             $this->setModuleStatus(false);
             $this->clearCaches();
             $output = ['success' => true, 'msg' => __('lang_v1.success')];

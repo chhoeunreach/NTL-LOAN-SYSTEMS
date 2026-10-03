@@ -12,6 +12,13 @@ use Spatie\Permission\Models\Role;
 
 class AdminUserSeeder extends Seeder
 {
+    /**
+     * Reported in the console summary; overridden by LoanAdminUserSeeder.
+     *
+     * @var string
+     */
+    protected string $successMessage = 'Admin user seeded successfully!';
+
     public function run(): void
     {
         $email = env('ADMIN_EMAIL', 'admin@example.com');
@@ -24,7 +31,7 @@ class AdminUserSeeder extends Seeder
 
         // 1. Ensure permissions exist if spatie permission is installed
         if (class_exists(Permission::class) && Schema::hasTable('permissions')) {
-            $permissions = (array) config('loanmanagement.permissions', []);
+            $permissions = app(LoanManagementPermissionSeeder::class)->permissions();
             foreach ($permissions as $permissionName) {
                 try {
                     Permission::firstOrCreate([
@@ -117,12 +124,19 @@ class AdminUserSeeder extends Seeder
                     'updated_at' => now(),
                 ];
 
+                // loan_users only carries a subset of these columns, so intersect
+                // against the real schema instead of failing the whole insert.
+                $loanColumns = Schema::connection($loanConn)->getColumnListing('loan_users');
+                $userData = array_intersect_key($userData, array_flip($loanColumns));
+
                 if ($exists) {
                     DB::connection($loanConn)->table('loan_users')
                         ->where('id', $exists->id)
                         ->update($userData);
                 } else {
-                    $userData['created_at'] = now();
+                    if (in_array('created_at', $loanColumns, true)) {
+                        $userData['created_at'] = now();
+                    }
                     DB::connection($loanConn)->table('loan_users')->insert($userData);
                 }
             }
@@ -132,7 +146,7 @@ class AdminUserSeeder extends Seeder
 
         if (isset($this->command)) {
             $this->command->info('-----------------------------------------');
-            $this->command->info('Admin user seeded successfully!');
+            $this->command->info($this->successMessage);
             $this->command->info("Username : {$username}");
             $this->command->info("Email    : {$email}");
             $this->command->info("Password : {$password}");

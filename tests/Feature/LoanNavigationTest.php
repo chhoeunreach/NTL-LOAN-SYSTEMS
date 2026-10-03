@@ -64,7 +64,7 @@ class LoanNavigationTest extends TestCase
     {
         $sections = LoanMenuHelper::navigationSections();
         $this->assertSame(['overview', 'installments', 'customers', 'collections', 'reports', 'administration'], array_column($sections, 'key'));
-        $this->assertSame(['Dashboard', 'Admin Loan', 'Dashboard Reports'], array_column($sections[0]['items'], 'label'));
+        $this->assertSame(['Dashboard', 'Admin Installment', 'Dashboard Reports'], array_column($sections[0]['items'], 'label'));
         $items = array_merge(...array_column($sections, 'items'));
         foreach (['Cash & Bank', 'Income', 'New Installment', 'Installment Calculator', 'Closed Accounts', 'Installment Calendar'] as $removed) {
             $this->assertNotContains($removed, array_column($items, 'label'));
@@ -86,6 +86,21 @@ class LoanNavigationTest extends TestCase
         ] as [$route, $page, $label]) {
             $this->visit($route, $page);
             $this->assertSame([$label], $this->activeLabels());
+        }
+    }
+
+    public function testAdminInstallmentMenuKeepsActiveIndicatorOnItsPages(): void
+    {
+        foreach (['loan-management.admin-loan', 'loan-management.admin-loan.details', 'loan-management.admin-loan.export'] as $route) {
+            $this->visit($route);
+            $this->assertSame(['Admin Installment'], $this->activeLabels());
+            $html = view('loanmanagement::layouts.sidebar', ['loanBadgeCounts' => []])->render();
+            $document = new \DOMDocument;
+            @$document->loadHTML($html);
+            $active = (new \DOMXPath($document))->query('//a[@aria-current="page"]');
+            $this->assertSame(1, $active->length);
+            $this->assertSame('Admin Installment', $active->item(0)->getAttribute('title'));
+            $this->assertStringContainsString('active', $active->item(0)->getAttribute('class'));
         }
     }
 

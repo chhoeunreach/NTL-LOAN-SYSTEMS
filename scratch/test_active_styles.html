@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <style>
+        :root {
+            --lm-primary: #ea580c;
+            --lm-primary-dark: #c2410c;
+            --lm-primary-light: #f97316;
+            --lm-primary-50: #fff7ed;
+            --lm-primary-100: #ffedd5;
+            --lm-primary-200: #fed7aa;
+            --lm-text-secondary: #475569;
+            --lm-radius-sm: 8px;
+            --lm-transition-fast: 120ms ease-out;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f1f5f9;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 250px);
+            gap: 20px;
+        }
+        .box {
+            background: #fff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+        h4 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; }
+
+        .lm-menu-link {
+            display: flex; align-items: center; gap: 10px;
+            position: relative; min-height: 36px; height: 36px;
+            color: var(--lm-text-secondary); padding: 6px 12px;
+            border-radius: var(--lm-radius-sm); text-decoration: none;
+            line-height: 1.25; margin: 1px 0; font-size: 13px; font-weight: 500;
+            border: 1px solid transparent; box-sizing: border-box;
+            transition: all var(--lm-transition-fast);
+        }
+        .lm-menu-icon {
+            flex: 0 0 20px; width: 20px; min-width: 20px;
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 14px; line-height: 1; text-align: center;
+        }
+        .lm-menu-link.active .lm-menu-icon { color: var(--lm-primary); }
+
+        /* V1: Current inset 3px shadow with 12px padding */
+        .v1 .lm-menu-link { padding: 6px 12px; }
+        .v1 .lm-menu-link.active {
+            color: var(--lm-primary);
+            background: linear-gradient(90deg, var(--lm-primary-50) 0%, rgba(99,102,241,.04) 100%);
+            border-color: var(--lm-primary-200);
+            box-shadow: inset 3px 0 0 var(--lm-primary);
+            font-weight: 600;
+        }
+
+        /* V2: Full height left bar (clean flush left) */
+        .v2 .lm-menu-link { padding: 6px 12px; overflow: hidden; }
+        .v2 .lm-menu-link::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px;
+            background: var(--lm-primary); opacity: 0;
+        }
+        .v2 .lm-menu-link.active {
+            color: var(--lm-primary);
+            background: linear-gradient(90deg, var(--lm-primary-50) 0%, rgba(99,102,241,.04) 100%);
+            border-color: var(--lm-primary-200);
+            font-weight: 600;
+        }
+        .v2 .lm-menu-link.active::before { opacity: 1; }
+
+        /* V3: Rounded floating pill indicator */
+        .v3 .lm-menu-link { padding: 6px 12px; }
+        .v3 .lm-menu-link::before {
+            content: ''; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3.5px;
+            border-radius: 0 3px 3px 0; background: var(--lm-primary); opacity: 0;
+        }
+        .v3 .lm-menu-link.active {
+            color: var(--lm-primary);
+            background: linear-gradient(90deg, var(--lm-primary-50) 0%, rgba(99,102,241,.04) 100%);
+            border-color: var(--lm-primary-200);
+            font-weight: 600;
+        }
+        .v3 .lm-menu-link.active::before { opacity: 1; }
+
+        /* V4: Border-left 3px solid (integrated border) */
+        .v4 .lm-menu-link { padding: 6px 10px; border-left: 3px solid transparent; }
+        .v4 .lm-menu-link.active {
+            color: var(--lm-primary);
+            background: linear-gradient(90deg, var(--lm-primary-50) 0%, rgba(99,102,241,.04) 100%);
+            border: 1px solid var(--lm-primary-200);
+            border-left: 3px solid var(--lm-primary);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="box v1">
+        <h4>V1: Inset 3px + 12px padding</h4>
+        <a href="#" class="lm-menu-link"><i class="fa fa-home lm-menu-icon"></i><span>Dashboard</span></a>
+        <a href="#" class="lm-menu-link active"><i class="fa fa-table lm-menu-icon"></i><span>Admin Installment</span></a>
+        <a href="#" class="lm-menu-link"><i class="fa fa-line-chart lm-menu-icon"></i><span>Dashboard Reports</span></a>
+    </div>
+
+    <div class="box v2">
+        <h4>V2: Full flush left bar</h4>
+        <a href="#" class="lm-menu-link"><i class="fa fa-home lm-menu-icon"></i><span>Dashboard</span></a>
+        <a href="#" class="lm-menu-link active"><i class="fa fa-table lm-menu-icon"></i><span>Admin Installment</span></a>
+        <a href="#" class="lm-menu-link"><i class="fa fa-line-chart lm-menu-icon"></i><span>Dashboard Reports</span></a>
+    </div>
+
+    <div class="box v3">
+        <h4>V3: Floating Pill Line</h4>
+        <a href="#" class="lm-menu-link"><i class="fa fa-home lm-menu-icon"></i><span>Dashboard</span></a>
+        <a href="#" class="lm-menu-link active"><i class="fa fa-table lm-menu-icon"></i><span>Admin Installment</span></a>
+        <a href="#" class="lm-menu-link"><i class="fa fa-line-chart lm-menu-icon"></i><span>Dashboard Reports</span></a>
+    </div>
+
+    <div class="box v4">
+        <h4>V4: border-left: 3px solid</h4>
+        <a href="#" class="lm-menu-link"><i class="fa fa-home lm-menu-icon"></i><span>Dashboard</span></a>
+        <a href="#" class="lm-menu-link active"><i class="fa fa-table lm-menu-icon"></i><span>Admin Installment</span></a>
+        <a href="#" class="lm-menu-link"><i class="fa fa-line-chart lm-menu-icon"></i><span>Dashboard Reports</span></a>
+    </div>
+
+</body>
+</html>
