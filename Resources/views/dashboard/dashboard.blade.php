@@ -30,7 +30,9 @@
         : 'success';
     $dashboardActions = [
         ['label' => $lmText('New Installment', 'បង្កើតរំលស់ថ្មី'), 'icon' => 'fa fa-plus-circle', 'tone' => 'primary', 'url' => route('loan-management.loans.create')],
+        ['label' => $lmText('Quotations', 'តារាងតម្លៃ/សំណើ'), 'icon' => 'fa fa-calculator', 'tone' => 'primary', 'url' => route('loan-management.quotations.index')],
         ['label' => $lmText('Collect Payment', 'ប្រមូលប្រាក់បង់'), 'icon' => 'fa fa-money', 'tone' => 'success', 'url' => route('loan-management.operations.page', ['page' => 'due-today'])],
+        ['label' => $lmText('PAR Analytics', 'ហានិភ័យ PAR'), 'icon' => 'fa fa-shield', 'tone' => 'danger', 'url' => route('loan-management.reports.portfolio-at-risk')],
         ['label' => $lmText('Customers', 'អតិថិជន'), 'icon' => 'fa fa-users', 'tone' => 'info', 'url' => route('loan-management.customers.index')],
         ['label' => $lmText('Reports', 'របាយការណ៍'), 'icon' => 'fa fa-line-chart', 'tone' => 'neutral', 'url' => route('loan-management.reports.index')],
     ];

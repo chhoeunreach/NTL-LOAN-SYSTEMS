@@ -14,13 +14,28 @@ class StoreStandaloneLoanRequest extends FormRequest
         );
     }
 
+    protected function prepareForValidation(): void
+    {
+        $name = trim((string) $this->input('customer_name', ''));
+        $merge = [];
+        if (! $this->has('customer_english_name') || trim((string) $this->input('customer_english_name', '')) === '') {
+            $merge['customer_english_name'] = $name;
+        }
+        if (! $this->has('customer_khmer_name') || trim((string) $this->input('customer_khmer_name', '')) === '') {
+            $merge['customer_khmer_name'] = $name;
+        }
+        if (! empty($merge)) {
+            $this->merge($merge);
+        }
+    }
+
     public function rules(): array
     {
         return [
             'customer_id' => 'nullable|integer',
             'customer_name' => 'required|string|max:191',
-            'customer_english_name' => 'required|string|max:191',
-            'customer_khmer_name' => 'required|string|max:191',
+            'customer_english_name' => 'nullable|string|max:191',
+            'customer_khmer_name' => 'nullable|string|max:191',
             'customer_phone' => 'nullable|string|max:191',
             'alternate_phone' => 'nullable|string|max:191',
             'customer_address' => 'nullable|string|max:1000',

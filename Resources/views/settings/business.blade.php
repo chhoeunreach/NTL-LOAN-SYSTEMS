@@ -380,6 +380,7 @@
 @endsection
 
 @section('content_body')
+@include('loanmanagement::layouts.partials.workspace_tabs', ['workspace' => 'settings'])
 @php
     $lmIsKhmer = session('user.language', config('app.locale')) === 'km';
     $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
@@ -702,7 +703,7 @@
                             </div>
                         </div>
                         <input type="file" id="loginBackgroundInput" name="login_background" class="ultimate-input" style="margin-top:10px;" accept="image/png,image/jpeg,image/webp">
-                        <div class="ultimate-help">{{ $lmText('Landscape JPG, PNG, or WEBP. Maximum 5 MB.', 'រូបភាពផ្តេក JPG, PNG ឬ WEBP។ ទំហំអតិបរមា 5 MB។') }}</div>
+                        <div class="ultimate-help">{{ $lmText('Landscape JPG, PNG, or WEBP. Maximum 50 MB.', 'រូបភាពផ្តេក JPG, PNG ឬ WEBP។ ទំហំអតិបរមា 50 MB។') }}</div>
                         @if($loginBackgroundUrl)
                             <label class="ultimate-help" style="font-weight:600;color:#374151;">
                                 <input type="checkbox" name="remove_login_background" value="1">

@@ -4,7 +4,7 @@
     $loanBalance = (float) ($loanRow->balance_amount ?? 0);
     $loanCurrency = $loanRow->currency ?? 'USD';
     $telegramCustomerId = (int) ($loanRow->customer_id ?? 0);
-    $telegramLinkUrl = $telegramCustomerId > 0 ? route('loan-management.customers.telegram.link', $telegramCustomerId) : null;
+    $telegramLinkUrl = $telegramCustomerId > 0 && \Illuminate\Support\Facades\Route::has('loan-management.customers.telegram.link') ? route('loan-management.customers.telegram.link', $telegramCustomerId) : null;
     $telegramLinked = (bool) ($telegramLinked ?? false);
     $scheduleLabel = null;
 

@@ -271,6 +271,7 @@
 @endsection
 
 @section('content_body')
+@include('loanmanagement::layouts.partials.workspace_tabs', ['workspace' => 'settings'])
 @php
     $methodUsage = collect($usage ?? []);
     $totalPayments = $methodUsage->sum('payments_count');

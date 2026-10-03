@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Modules\LoanManagement\Services\BusinessSettingsService;
-use Modules\LoanManagement\Services\TelegramSettingsService;
+
 use Throwable;
 
 class SettingsController extends Controller
@@ -56,7 +56,7 @@ class SettingsController extends Controller
             'theme_color' => ['required', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'invoice_message_template' => 'required|string|max:2000',
             'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:2048',
-            'login_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+            'login_background' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:51200',
             'cms_enabled' => 'nullable|boolean',
             'customer_login_enabled' => 'nullable|boolean',
             'demo_customer_login_enabled' => 'nullable|boolean',
@@ -139,21 +139,39 @@ class SettingsController extends Controller
 
     public function updateCms(Request $request)
     {
-        if (! auth()->user()->can('loan_management.view')) {
+        if (! auth()->user()->can('loan_management.edit')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $data = $request->validate([
+        $rules = [
             'home_headline' => 'required|string|max:140',
             'home_subtitle' => 'required|string|max:220',
             'home_body' => 'nullable|string|max:1200',
-        ]);
+            'home_hero' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:51200',
+            'remove_home_hero' => 'nullable|boolean',
+        ];
+        foreach (\Modules\LoanManagement\Services\CmsHomeService::fields() as $key => [$label, $type]) {
+            $rules['home_cms.'.$key] = $type === 'boolean' ? 'required|boolean' : ($type === 'email' ? 'nullable|email|max:220' : 'nullable|string|max:'.($type === 'textarea' ? 1200 : 220));
+        }
+        $data = $request->validate($rules);
+        $current = BusinessSettingsService::get();
+        $heroPath = $current['home_hero_path'];
+        if ($request->hasFile('home_hero')) {
+            $heroPath = $request->file('home_hero')->store('loan-management/cms', 'public');
+        } elseif ($request->boolean('remove_home_hero')) {
+            $heroPath = null;
+        }
 
-        BusinessSettingsService::save(array_merge(BusinessSettingsService::get(), [
+        BusinessSettingsService::save(array_merge($current, [
             'home_headline' => $data['home_headline'],
             'home_subtitle' => $data['home_subtitle'],
             'home_body' => $data['home_body'] ?? '',
+            'home_cms' => $data['home_cms'],
+            'home_hero_path' => $heroPath,
         ]));
+        if ($heroPath !== $current['home_hero_path'] && str_starts_with($current['home_hero_path'] ?? '', 'loan-management/cms/')) {
+            Storage::disk('public')->delete($current['home_hero_path']);
+        }
 
         return redirect()
             ->route('loan-management.settings.cms')
@@ -416,121 +434,7 @@ class SettingsController extends Controller
             ->with('status', ['success' => 1, 'msg' => 'Currency settings updated successfully.']);
     }
 
-    public function telegram()
-    {
-        if (! auth()->user()->can('loan_management.view')) {
-            abort(403, 'Unauthorized action.');
-        }
 
-        $settings = TelegramSettingsService::get();
-        $webhookUrl = trim((string) config('loanmanagement.telegram.webhook_url')) ?: url('/webhook/loan-telegram');
-
-        return view('loanmanagement::settings.telegram', compact('settings', 'webhookUrl'));
-    }
-
-    public function updateTelegram(Request $request)
-    {
-        if (! auth()->user()->can('loan_management.view')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $data = $request->validate([
-            'bot_token' => 'nullable|string|max:255',
-            'bot_username' => 'nullable|string|max:255|regex:/^[A-Za-z0-9_]*$/',
-            'webhook_secret' => 'nullable|string|max:255',
-            'link_ttl_minutes' => 'required|integer|min:1|max:1440',
-        ]);
-
-        TelegramSettingsService::save([
-            'bot_token' => trim((string) ($data['bot_token'] ?? '')),
-            'bot_username' => trim((string) ($data['bot_username'] ?? ''), '@'),
-            'webhook_secret' => trim((string) ($data['webhook_secret'] ?? '')),
-            'link_ttl_minutes' => (int) $data['link_ttl_minutes'],
-        ]);
-
-        return redirect()
-            ->route('loan-management.settings.telegram')
-            ->with('status', ['success' => 1, 'msg' => 'Telegram bot settings saved.']);
-    }
-
-    public function generateTelegramWebhookSecret()
-    {
-        if (! auth()->user()->can('loan_management.view')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        return response()->json(['secret' => bin2hex(random_bytes(24))]);
-    }
-
-    public function testTelegramConnection(Request $request)
-    {
-        if (! auth()->user()->can('loan_management.view')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $token = trim((string) $request->input('bot_token')) ?: TelegramSettingsService::botToken();
-        if ($token === '') {
-            return response()->json(['success' => false, 'message' => 'Enter a bot token first.'], 422);
-        }
-
-        try {
-            $response = Http::timeout(10)->get("https://api.telegram.org/bot{$token}/getMe");
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => 'Could not reach Telegram: '.$e->getMessage()], 502);
-        }
-
-        if ($response->failed() || ! $response->json('ok')) {
-            return response()->json(['success' => false, 'message' => 'Telegram rejected this token: '.$response->body()], 422);
-        }
-
-        $bot = (array) $response->json('result');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Connected successfully.',
-            'bot_name' => $bot['first_name'] ?? '',
-            'bot_username' => $bot['username'] ?? '',
-        ]);
-    }
-
-    public function registerTelegramWebhook(Request $request)
-    {
-        if (! auth()->user()->can('loan_management.view')) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $token = TelegramSettingsService::botToken();
-        $secret = TelegramSettingsService::webhookSecret();
-
-        if ($token === '') {
-            return response()->json(['success' => false, 'message' => 'Save a bot token before registering the webhook.'], 422);
-        }
-        if ($secret === '') {
-            return response()->json(['success' => false, 'message' => 'Save a webhook secret before registering the webhook.'], 422);
-        }
-
-        $webhookUrl = trim((string) config('loanmanagement.telegram.webhook_url'));
-        if ($webhookUrl === '') {
-            $webhookUrl = url('/webhook/loan-telegram');
-        }
-
-        try {
-            $response = Http::timeout(15)->asForm()->post("https://api.telegram.org/bot{$token}/setWebhook", [
-                'url' => $webhookUrl,
-                'secret_token' => $secret,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'message' => 'Could not reach Telegram: '.$e->getMessage()], 502);
-        }
-
-        if ($response->failed() || ! $response->json('ok')) {
-            return response()->json(['success' => false, 'message' => 'setWebhook failed: '.$response->body()], 422);
-        }
-
-        TelegramSettingsService::markWebhookRegistered($webhookUrl);
-
-        return response()->json(['success' => true, 'message' => 'Webhook registered: '.$webhookUrl]);
-    }
 
     protected function loanPaymentMethodUsage(): array
     {

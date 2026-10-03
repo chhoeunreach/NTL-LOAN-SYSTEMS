@@ -322,6 +322,7 @@
 
 @section('content_body')
 <div class="lm-users-content">
+    @include('loanmanagement::layouts.partials.workspace_tabs', ['workspace' => 'users'])
 
     {{-- Content Header (Page header) --}}
     <section class="content-header" style="padding: 0 0 16px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">

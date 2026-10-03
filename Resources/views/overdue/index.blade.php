@@ -361,13 +361,20 @@
     {{-- Overdue DataTable Ledger Box --}}
     <div class="od-table-box">
         <div class="od-table-box-header">
-            <h3 class="od-table-box-title">
-                <i class="fa fa-list-alt" style="color:#ef4444;"></i>
-                {{ $activeTab === 'today_due' ? $bi('Due Today Contracts', 'បញ្ជីកម្ចីដល់ថ្ងៃបង់ថ្ងៃនេះ') : $bi('Overdue Installment Contracts', 'បញ្ជីកម្ចីហួសកំណត់កាលបរិច្ឆេទ') }}
-            </h3>
-            <span class="badge" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; font-weight:700; padding:4px 10px;">
-                <i class="fa fa-warning"></i> {{ $activeTab === 'today_due' ? $number($summary['due_today'] ?? 0) : $number($summary['overdue'] ?? 0) }} {{ $bi('Records', 'កំណត់ត្រា') }}
-            </span>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <h3 class="od-table-box-title">
+                    <i class="fa fa-list-alt" style="color:#ef4444;"></i>
+                    {{ $activeTab === 'today_due' ? $bi('Due Today Contracts', 'បញ្ជីកម្ចីដល់ថ្ងៃបង់ថ្ងៃនេះ') : $bi('Overdue Installment Contracts', 'បញ្ជីកម្ចីហួសកំណត់កាលបរិច្ឆេទ') }}
+                </h3>
+                <span class="badge" style="background:#fee2e2; color:#dc2626; border:1px solid #fecaca; font-weight:700; padding:4px 10px;">
+                    <i class="fa fa-warning"></i> {{ $activeTab === 'today_due' ? $number($summary['due_today'] ?? 0) : $number($summary['overdue'] ?? 0) }} {{ $bi('Records', 'កំណត់ត្រា') }}
+                </span>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-info" id="btnBatchTelegram" style="font-weight:700;">
+                    <i class="fa fa-paper-plane"></i> {{ $bi('Send Telegram Overdue Reminders', 'ផ្ញើសាររំលឹក Telegram ទាំងអស់') }}
+                </button>
+            </div>
         </div>
 
         <div class="table-responsive" style="padding: 10px 14px;">
@@ -383,6 +390,7 @@
                         <th class="text-right">{{ $bi('Balance at Risk', 'សមតុល្យប្រឈម') }}</th>
                         <th>{{ $bi('Due Date', 'កាលបរិច្ឆេទ') }}</th>
                         <th>{{ $bi('Collector', 'អ្នកប្រមូល') }}</th>
+                        <th class="text-center">{{ $bi('Action', 'សកម្មភាព') }}</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -390,6 +398,7 @@
         </div>
     </div>
 
+    <div class="modal fade view_modal" tabindex="-1" role="dialog" aria-labelledby="gridSystemModalLabel"></div>
 </div>
 @endsection
 
@@ -423,7 +432,8 @@ $(document).ready(function () {
             { data: 'paid_amount', name: 'l.paid_amount', className: 'text-right' },
             { data: 'balance_amount', name: 'l.balance_amount', className: 'text-right' },
             { data: 'next_due_date', name: 'next_due_date' },
-            { data: 'collector_name', name: 'l.collector_name_snapshot' }
+            { data: 'collector_name', name: 'l.collector_name_snapshot' },
+            { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' }
         ],
         language: {
             processing: '<i class="fa fa-spinner fa-spin" style="color:#dc2626;"></i> ' + (isKhmer ? 'កំពុងទាញយក...' : 'Loading overdue records...'),
@@ -433,11 +443,51 @@ $(document).ready(function () {
         }
     });
 
+    $(document).on('click', '.btn-modal', function(e) {
+        e.preventDefault();
+        var container = $(this).data('container') || '.view_modal';
+        $.ajax({
+            url: $(this).data('href'),
+            dataType: 'html',
+            success: function(result) {
+                $(container).html(result).modal('show');
+            }
+        });
+    });
+
     $('#btnRefreshOverdue').on('click', function () {
         var $btn = $(this);
         $btn.find('i').addClass('fa-spin');
         overdueTable.ajax.reload(function () {
             $btn.find('i').removeClass('fa-spin');
+        });
+    });
+
+    $('#btnBatchTelegram').on('click', function () {
+        if (!confirm(isKhmer ? 'តើអ្នកពិតជាចង់ផ្ញើសាររំលឹកតាម Telegram ទៅកាន់អតិថិជនយឺតយ៉ាវទាំងអស់មែនទេ?' : 'Do you want to dispatch automated Telegram reminders to all delinquent borrowers?')) return;
+        var $btn = $(this).prop('disabled', true);
+        var origText = $btn.html();
+        $btn.html('<i class="fa fa-spinner fa-spin"></i> ' + (isKhmer ? 'កំពុងផ្ញើ...' : 'Sending...'));
+
+        $.ajax({
+            url: "{{ route('loan-management.loans.batch-telegram-reminder') }}",
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                loan_ids: [1]
+            },
+            success: function (resp) {
+                $btn.prop('disabled', false).html(origText);
+                if (resp && resp.success) {
+                    alert((isKhmer ? 'បានផ្ញើសាររំលឹកដោយជោគជ័យ! ' : 'Reminders dispatched successfully! ') + (resp.data ? 'Sent: ' + resp.data.sent : ''));
+                } else {
+                    alert(resp.message || 'Error occurred');
+                }
+            },
+            error: function () {
+                $btn.prop('disabled', false).html(origText);
+                alert(isKhmer ? 'មានបញ្ហាក្នុងការផ្ញើសារ' : 'Failed to send reminders.');
+            }
         });
     });
 });

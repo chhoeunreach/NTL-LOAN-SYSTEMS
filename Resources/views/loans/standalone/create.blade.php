@@ -1939,6 +1939,33 @@
     }
 
     addItemRow();
+
+    @if(!empty($prefillQuotation))
+        (function() {
+            var q = @json($prefillQuotation);
+            if (q.customer_name) {
+                $('#customer_name, #customer_english_name, #customer_khmer_name').val(q.customer_name);
+            }
+            if (q.customer_phone) $('#customer_phone').val(q.customer_phone);
+            if (q.principal_amount) $('#principal_amount_input').val(q.principal_amount);
+            if (q.down_payment) $('#payment_amount_input').val(q.down_payment);
+            if (q.interest_rate) $('#interest_rate_input').val(q.interest_rate);
+            if (q.installment_terms) $('#duration_months_input').val(q.installment_terms);
+            if (q.interest_type) $('#interest_type_select').val(q.interest_type);
+            if (q.payment_frequency) $('#payment_frequency_select').val(q.payment_frequency);
+            if (q.currency) $('select[name="currency"]').val(q.currency);
+            if (q.business_location_id) $('select[name="business_location_id"]').val(q.business_location_id);
+            if (q.product_name) {
+                var firstRow = $('#itemsTable tbody tr:first');
+                if (firstRow.length) {
+                    firstRow.find('.item-product-name').val(q.product_name);
+                    if (q.item_price) firstRow.find('.item-price').val(q.item_price);
+                    recalcItemTotals();
+                }
+            }
+        })();
+    @endif
+
     recalcSummary();
 })(jQuery);
 </script>

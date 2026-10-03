@@ -47,6 +47,12 @@ class LoanCreateController extends Controller
 
         $recentLoans = $this->recentLoans();
 
+        $prefillQuotation = null;
+        $quotationId = (int) request('quotation_id', 0);
+        if ($quotationId > 0 && Schema::connection('mysql_loan')->hasTable('loan_quotations')) {
+            $prefillQuotation = DB::connection('mysql_loan')->table('loan_quotations')->where('id', $quotationId)->first();
+        }
+
         return view('loanmanagement::loans.standalone.create', compact(
             'locations',
             'paymentTypes',
@@ -55,7 +61,8 @@ class LoanCreateController extends Controller
             'loanLocations',
             'defaultLocationId',
             'defaultCollectorId',
-            'recentLoans'
+            'recentLoans',
+            'prefillQuotation'
         ));
     }
 

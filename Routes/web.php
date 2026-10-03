@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\LoanManagement\Http\Controllers\AdminCustomerTrackingController;
 use Modules\LoanManagement\Http\Controllers\CambodiaAddressController;
 use Modules\LoanManagement\Http\Controllers\DashboardController;
+use Modules\LoanManagement\Http\Controllers\LoanAbaPaywayController;
 use Modules\LoanManagement\Http\Controllers\LoanActivityLogController;
 use Modules\LoanManagement\Http\Controllers\LoanChatController;
 use Modules\LoanManagement\Http\Controllers\LoanCollectionController;
@@ -16,17 +17,21 @@ use Modules\LoanManagement\Http\Controllers\LoanInstallmentListController;
 use Modules\LoanManagement\Http\Controllers\LoanLocationController;
 use Modules\LoanManagement\Http\Controllers\LoanPaymentController;
 use Modules\LoanManagement\Http\Controllers\LoanProductController;
+use Modules\LoanManagement\Http\Controllers\LoanQuotationController;
 use Modules\LoanManagement\Http\Controllers\LoanRoleController;
-use Modules\LoanManagement\Http\Controllers\LoanTelegramChatController;
-use Modules\LoanManagement\Http\Controllers\LoanTelegramWebhookController;
+
+
 use Modules\LoanManagement\Http\Controllers\LoanUserController;
 use Modules\LoanManagement\Http\Controllers\PublicAppController;
 use Modules\LoanManagement\Http\Controllers\SettingsController;
 use Modules\LoanManagement\Http\Controllers\SystemHealthController;
 
-Route::middleware(['web'])
-    ->post('/webhook/loan-telegram', [LoanTelegramWebhookController::class, 'handle'])
-    ->name('loan-management.telegram.webhook');
+Route::middleware(['web'])->group(function () {
+    Route::get('/loan-management/payway/{ref}', [LoanAbaPaywayController::class, 'checkout'])->name('loan-management.payway.checkout');
+    Route::post('/loan-management/payway/{ref}/simulate', [LoanAbaPaywayController::class, 'simulateSuccess'])->name('loan-management.payway.simulate');
+    Route::post('/loan-management/payway/check-status', [LoanAbaPaywayController::class, 'checkStatus'])->name('loan-management.payway.check-status');
+    Route::post('/loan-management/payway/create', [LoanAbaPaywayController::class, 'create'])->name('loan-management.payway.create');
+});
 
 Route::middleware(['web'])
     ->get('/loan-management/settings/business/login-background', [SettingsController::class, 'businessLoginBackground'])
@@ -38,11 +43,12 @@ Route::middleware(['web'])
 
 Route::middleware(['web'])->group(function () {
     Route::get('/', [PublicAppController::class, 'home'])->name('loan-management.public.home');
+    Route::get('/cms/home-image', [PublicAppController::class, 'homeImage'])->name('loan-management.public.home-image');
     Route::get('/register', [PublicAppController::class, 'register'])->name('loan-management.public.register');
     Route::post('/register', [PublicAppController::class, 'storeRegistration'])->name('loan-management.public.register.store');
     Route::get('/customer/login', [PublicAppController::class, 'customerLogin'])->name('loan-management.public.customer-login');
     Route::get('/loan-management/customer/login', fn () => redirect()->route('loan-management.public.customer-login'));
-    Route::post('/customer/login', [PublicAppController::class, 'customerLoginStore'])->name('loan-management.public.customer-login.store');
+    Route::post('/customer/login', [PublicAppController::class, 'customerLoginStore'])->middleware('throttle:6,1')->name('loan-management.public.customer-login.store');
     Route::match(['get', 'post'], '/customer/logout', [PublicAppController::class, 'customerLogout'])->name('loan-management.public.customer-logout');
     Route::match(['get', 'post'], '/logout', [\App\Http\Controllers\Auth\LoginController::class, 'logout'])->name('logout');
 
@@ -71,7 +77,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/operations/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['new-loans', 'active-loans', 'due-today', 'today-collection', 'partial-payments', 'closed-accounts'])->name('loan-management.operations.page');
         Route::get('/collection/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['overdue-accounts', 'promise-to-pay', 'broken-promise', 'field-visit-required', 'skip-customers', 'delinquent-accounts', 'recovery-management', 'debt-collection'])->name('loan-management.collection.page');
         Route::get('/risk/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['high-risk-customers', 'fraud-risk', 'legal-cases', 'blacklisted-customers', 'repossessions'])->name('loan-management.risk.page');
-        Route::get('/communication/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['voice-calls', 'notifications', 'sms-telegram-logs'])->name('loan-management.communication.page');
+        Route::get('/communication/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['voice-calls', 'notifications'])->name('loan-management.communication.page');
         Route::get('/customers-workflow/{page}', [LoanCollectionController::class, 'index'])->whereIn('page', ['contact-history'])->name('loan-management.customer-workflow.page');
         Route::get('/collection-reports', [LoanCollectionController::class, 'reports'])->name('loan-management.collection.reports');
         Route::get('/collection-reports/{report}', [LoanCollectionController::class, 'report'])->name('loan-management.collection.report');
@@ -83,7 +89,18 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/loans/sell/{transaction_id}/clone', [LoanFromSellController::class, 'clone'])->name('loan-management.loans.clone-sell');
         Route::get('/loans/sell/{transaction_id}/check-duplicate', [LoanFromSellController::class, 'checkDuplicateLoan'])->name('loan-management.loans.check-duplicate');
         Route::post('/loans/preview-schedule', [LoanFromSellController::class, 'previewSchedule'])->name('loan-management.loans.preview-schedule');
-        Route::post('/loans/store-from-sell', fn () => abort(404))->name('loan-management.loans.store-from-sell');
+        Route::get('/quotations', [LoanQuotationController::class, 'index'])->name('loan-management.quotations.index');
+        Route::get('/quotations/create', [LoanQuotationController::class, 'create'])->name('loan-management.quotations.create');
+        Route::post('/quotations', [LoanQuotationController::class, 'store'])->name('loan-management.quotations.store');
+        Route::post('/quotations/preview-schedule', [LoanQuotationController::class, 'previewSchedule'])->name('loan-management.quotations.preview-schedule');
+        Route::get('/quotations/{quotation}/edit', [LoanQuotationController::class, 'edit'])->name('loan-management.quotations.edit');
+        Route::put('/quotations/{quotation}', [LoanQuotationController::class, 'update'])->name('loan-management.quotations.update');
+        Route::get('/quotations/{quotation}', [LoanQuotationController::class, 'show'])->name('loan-management.quotations.show');
+        Route::get('/quotations/{quotation}/print', [LoanQuotationController::class, 'print'])->name('loan-management.quotations.print');
+        Route::post('/quotations/{quotation}/convert', [LoanQuotationController::class, 'convertToLoan'])->name('loan-management.quotations.convert');
+        Route::post('/quotations/{quotation}/duplicate', [LoanQuotationController::class, 'duplicate'])->name('loan-management.quotations.duplicate');
+        Route::post('/quotations/{quotation}/status', [LoanQuotationController::class, 'changeStatus'])->name('loan-management.quotations.status');
+        Route::delete('/quotations/{quotation}', [LoanQuotationController::class, 'destroy'])->name('loan-management.quotations.destroy');
 
         Route::get('/loans/create', [LoanCreateController::class, 'index'])->name('loan-management.loans.create');
         Route::get('/loans/create-standalone-modal', [LoanCreateController::class, 'modal'])->name('loan-management.loans.create-standalone-modal');
@@ -115,7 +132,15 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/loans/{loan}/status', [LoanInstallmentListController::class, 'changeStatus'])->name('loan-management.loans.status');
         Route::get('/loans/{loan}/print-modal', [LoanInstallmentListController::class, 'printModal'])->name('loan-management.loans.print-modal');
         Route::get('/loans/{loan}/print', [LoanInstallmentListController::class, 'print'])->name('loan-management.loans.print');
-        Route::get('/loans/{loan}/convert-to-pos', fn () => abort(404))->name('loan-management.loans.convert-to-pos');
+        Route::get('/loans/{loan}/contract', [LoanInstallmentListController::class, 'contract'])->name('loan-management.loans.contract');
+        Route::get('/loans/{loan}/settlement', [LoanInstallmentListController::class, 'settlementModal'])->name('loan-management.loans.settlement.modal');
+        Route::post('/loans/{loan}/settlement', [LoanInstallmentListController::class, 'processSettlement'])->name('loan-management.loans.settlement.process');
+        Route::get('/loans/{loan}/reschedule', [LoanInstallmentListController::class, 'rescheduleModal'])->name('loan-management.loans.reschedule.modal');
+        Route::post('/loans/{loan}/reschedule', [LoanInstallmentListController::class, 'processReschedule'])->name('loan-management.loans.reschedule.process');
+        Route::get('/loans/{loan}/ptp', [LoanInstallmentListController::class, 'ptpModal'])->name('loan-management.loans.ptp.modal');
+        Route::post('/loans/{loan}/ptp', [LoanInstallmentListController::class, 'logPtp'])->name('loan-management.loans.ptp.store');
+
+        Route::get('/loans/{loan}/convert-to-pos', fn () => redirect()->route('loan-management.loans.index'))->name('loan-management.loans.convert-to-pos');
         Route::get('/loans/{loan}/payment/copy-info', [LoanInstallmentListController::class, 'paymentCopyInfo'])->name('loan-management.loans.payment.copy-info');
         Route::get('/loans/{loan}/payment/create', [LoanInstallmentListController::class, 'createPayment'])->name('loan-management.loans.payment.create');
         Route::get('/loans/{loan}/payment/quick-pay', [LoanInstallmentListController::class, 'mobileQuickPay'])->name('loan-management.loans.payment.quick-pay');
@@ -171,8 +196,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/customers/{customer}/reset-password', [LoanCustomerController::class, 'resetPassword'])->name('loan-management.customers.reset-password');
         Route::post('/customers/{customer}/gps/enable', [LoanCustomerController::class, 'enableGpsTracking'])->name('loan-management.customers.gps.enable');
         Route::post('/customers/{customer}/gps/disable', [LoanCustomerController::class, 'disableGpsTracking'])->name('loan-management.customers.gps.disable');
-        Route::post('/customers/{customer}/telegram/link', [LoanCustomerController::class, 'generateTelegramLink'])->name('loan-management.customers.telegram.link');
-        Route::post('/customers/{customer}/telegram/unlink', [LoanCustomerController::class, 'unlinkTelegram'])->name('loan-management.customers.telegram.unlink');
+
         Route::post('/customers/{customer}/sync-main-contact', [LoanCustomerController::class, 'syncFromUltimatePos'])->name('loan-management.customers.sync-main-contact');
 
         Route::get('/customer-tracking', [AdminCustomerTrackingController::class, 'index'])->name('loan-management.customer-tracking');
@@ -183,17 +207,18 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/payments', [LoanPaymentController::class, 'index'])->name('loan-management.payments');
         Route::get('/payments/index', [LoanPaymentController::class, 'index'])->name('loan-management.payments.index');
         Route::get('/payments/{payment}', [LoanPaymentController::class, 'show'])->name('loan-management.payments.show');
+        Route::get('/payments/{payment}/receipt', [LoanPaymentController::class, 'receipt'])->name('loan-management.payments.receipt');
         Route::get('/payments/{payment}/edit', [LoanPaymentController::class, 'edit'])->name('loan-management.payments.edit');
         Route::put('/payments/{payment}', [LoanPaymentController::class, 'update'])->name('loan-management.payments.update');
         Route::delete('/payments/{payment}', [LoanPaymentController::class, 'destroy'])->name('loan-management.payments.destroy');
 
         Route::get('/live-chat', [LoanChatController::class, 'webInbox'])->name('loan-management.live-chat');
         Route::get('/live-chat/{thread}', [LoanChatController::class, 'webDetail'])->name('loan-management.live-chat.detail');
-        Route::get('/chat-files/{file}', [LoanTelegramChatController::class, 'file'])->where(['file' => '[0-9]+'])->name('loan-management.chat-files.show');
+
         Route::get('/chat', [LoanChatController::class, 'webInbox'])->name('loan-management.chat.index');
         Route::get('/chat/{thread}', [LoanChatController::class, 'webDetail'])->name('loan-management.chat.detail');
         Route::delete('/chat/{thread}', [LoanChatController::class, 'destroy'])->name('loan-management.chat.destroy');
-        foreach (['chat-api' => LoanChatController::class, 'telegram-chat-api' => LoanTelegramChatController::class] as $prefix => $controller) {
+        foreach (['chat-api' => LoanChatController::class] as $prefix => $controller) {
             Route::get("/{$prefix}/chats", [$controller, 'index'])->name("loan-management.{$prefix}.index");
             Route::post("/{$prefix}/chats", [$controller, 'store'])->name("loan-management.{$prefix}.store");
             Route::get("/{$prefix}/chats/{thread}", [$controller, 'show'])->name("loan-management.{$prefix}.show");
@@ -207,9 +232,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/chat-api/chats/{thread}/reopen', [LoanChatController::class, 'reopen'])->name('loan-management.chat-api.reopen');
         Route::post('/chat-api/chats/{thread}/pin', [LoanChatController::class, 'pin'])->name('loan-management.chat-api.pin');
         Route::post('/chat-api/chats/{thread}/mute', [LoanChatController::class, 'mute'])->name('loan-management.chat-api.mute');
-        Route::post('/telegram-chat-api/chats/{thread}/invoice-image', [LoanTelegramChatController::class, 'sendInvoiceImage'])->name('loan-management.telegram-chat-api.invoice-image');
-        Route::put('/telegram-chat-api/chats/{thread}/messages/{message}', [LoanTelegramChatController::class, 'updateMessage'])->name('loan-management.telegram-chat-api.messages.update');
-        Route::delete('/telegram-chat-api/chats/{thread}/messages/{message}', [LoanTelegramChatController::class, 'destroyMessage'])->name('loan-management.telegram-chat-api.messages.destroy');
+
 
         Route::get('/locations', [LoanLocationController::class, 'index'])->name('loan-management.locations.index');
         Route::get('/locations/asset-gallery', [LoanLocationController::class, 'assetGalleryModal'])->name('loan-management.locations.asset-gallery');
@@ -221,7 +244,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::put('/locations/{location}', [LoanLocationController::class, 'updateDetails'])->name('loan-management.locations.update');
         Route::delete('/locations/{location}', [LoanLocationController::class, 'destroy'])->name('loan-management.locations.destroy');
         Route::post('/locations/{location}/assets', [LoanLocationController::class, 'update'])->name('loan-management.locations.assets.update');
-        Route::post('/locations/{location}/telegram-test', [LoanLocationController::class, 'testTelegram'])->name('loan-management.locations.telegram-test');
+
         Route::get('/location-assets/{location}/{filename}', [LoanLocationController::class, 'asset'])->name('loan-management.locations.assets.show');
 
         Route::get('/settings', fn () => redirect()->route('loan-management.settings.business'))->name('loan-management.settings');
@@ -235,11 +258,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/settings/payment-methods', [SettingsController::class, 'updatePaymentMethods'])->name('loan-management.settings.payment-methods.update');
         Route::get('/settings/currencies', fn () => redirect()->route('loan-management.settings.payment-methods'))->name('loan-management.settings.currencies');
         Route::post('/settings/currencies', fn () => redirect()->route('loan-management.settings.payment-methods'))->name('loan-management.settings.currencies.update');
-        Route::get('/settings/telegram', [SettingsController::class, 'telegram'])->name('loan-management.settings.telegram');
-        Route::post('/settings/telegram', [SettingsController::class, 'updateTelegram'])->name('loan-management.settings.telegram.update');
-        Route::post('/settings/telegram/secret', [SettingsController::class, 'generateTelegramWebhookSecret'])->name('loan-management.settings.telegram.secret');
-        Route::post('/settings/telegram/test', [SettingsController::class, 'testTelegramConnection'])->name('loan-management.settings.telegram.test');
-        Route::post('/settings/telegram/webhook', [SettingsController::class, 'registerTelegramWebhook'])->name('loan-management.settings.telegram.webhook');
+
 
         Route::get('/system-status', [SystemHealthController::class, 'status'])->name('loan-management.system.status');
         Route::get('/system-status/data', [SystemHealthController::class, 'data'])->name('loan-management.system.status.data');
@@ -280,19 +299,23 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/tools/export', [LoanImportExportController::class, 'export'])->name('loan-management.export.download');
         Route::get('/tools/monthly-import-export', [LoanImportExportController::class, 'payments'])->name('loan-management.tools.monthly-import-export');
         Route::get('/tools/loan-import-export', [LoanImportExportController::class, 'loans'])->name('loan-management.tools.loan-import-export');
-        Route::get('/tools/send-notification', [DashboardController::class, 'placeholder'])->defaults('page', 'Send Notification')->name('loan-management.tools.send-notification');
+        Route::get('/tools/send-notification', fn () => redirect()->route('loan-management.chat.index'))->name('loan-management.tools.send-notification');
 
         Route::get('/schedules', [DashboardController::class, 'loanSchedules'])->name('loan-management.schedules.index');
         Route::get('/schedules/calendar', [DashboardController::class, 'installmentCalendar'])->name('loan-management.schedules.calendar');
         Route::get('/schedules/calendar-day-details', [DashboardController::class, 'installmentCalendarDayDetails'])->name('loan-management.schedules.calendar-day-details');
-        Route::get('/monthly-payments', [DashboardController::class, 'placeholder'])->defaults('page', 'Monthly Payments')->name('loan-management.monthly-payments.index');
+        Route::get('/guarantors', [DashboardController::class, 'guarantorsIndex'])->name('loan-management.guarantors.index');
+        Route::get('/monthly-payments', fn () => redirect()->route('loan-management.payments.index', ['payment_type' => 'monthly']))->name('loan-management.monthly-payments.index');
         Route::get('/overdue', [DashboardController::class, 'overdue'])->name('loan-management.overdue.index');
         Route::get('/collection-visits', [DashboardController::class, 'collectionVisits'])->name('loan-management.collection-visits.index');
         Route::get('/gps', [AdminCustomerTrackingController::class, 'index'])->name('loan-management.gps.index');
-        Route::get('/finance/aba-transactions', [DashboardController::class, 'placeholder'])->defaults('page', 'ABA Transactions')->name('loan-management.aba.index');
-        Route::get('/aba', [DashboardController::class, 'placeholder'])->defaults('page', 'ABA Transactions')->name('loan-management.aba');
-        Route::get('/reports', [DashboardController::class, 'placeholder'])->defaults('page', 'Reports')->name('loan-management.reports');
+        Route::get('/finance/aba-transactions', fn () => redirect()->route('loan-management.reports.payments', ['method' => 'aba']))->name('loan-management.aba.index');
+        Route::get('/aba', fn () => redirect()->route('loan-management.reports.payments', ['method' => 'aba']))->name('loan-management.aba');
+        Route::get('/reports', fn () => redirect()->route('loan-management.reports.index'))->name('loan-management.reports');
         Route::get('/reports/index', [DashboardController::class, 'installmentReports'])->name('loan-management.reports.index');
+        Route::get('/reports/portfolio-at-risk', [DashboardController::class, 'portfolioAtRiskReport'])->name('loan-management.reports.portfolio-at-risk');
+        Route::get('/reports/par', [DashboardController::class, 'portfolioAtRiskReport'])->name('loan-management.reports.par');
+        Route::get('/reports/cbc-export', [DashboardController::class, 'cbcExport'])->name('loan-management.reports.cbc-export');
         Route::get('/reports/dashboard', [DashboardController::class, 'dashboardReports'])->name('loan-management.reports.dashboard');
         Route::get('/reports/daily-loan-summary', [DashboardController::class, 'dailyLoanSummary'])->name('loan-management.reports.daily-loan-summary');
         Route::get('/reports/monthly-loan-summary', [DashboardController::class, 'monthlyLoanSummary'])->name('loan-management.reports.monthly-loan-summary');

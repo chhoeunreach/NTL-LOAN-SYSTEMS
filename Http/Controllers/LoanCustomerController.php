@@ -349,45 +349,9 @@ class LoanCustomerController extends Controller
         return back()->with('status', ['success' => 1, 'msg' => 'GPS tracking disabled.']);
     }
 
-    public function generateTelegramLink(int $customer)
-    {
-        $row = DB::connection($this->connection)->table($this->table)->where('id', $customer)->first();
-        abort_if(! $row, 404);
-        abort_if(! empty($row->telegram_chat_id), 422, 'This customer is already connected to Telegram.');
 
-        $botUsername = trim(\Modules\LoanManagement\Services\TelegramSettingsService::botUsername());
-        abort_if($botUsername === '', 422, 'Telegram bot is not configured yet. Ask an admin to set it up under System Settings > Telegram Bot.');
 
-        $token = \Illuminate\Support\Str::random(40);
-        $expiresAt = now()->addMinutes(\Modules\LoanManagement\Services\TelegramSettingsService::linkTtlMinutes());
 
-        DB::connection($this->connection)->table($this->table)->where('id', $customer)->update($this->filterColumns([
-            'telegram_link_token' => $token,
-            'telegram_link_token_expires_at' => $expiresAt,
-            'updated_at' => now(),
-        ]));
-
-        return response()->json([
-            'success' => true,
-            'link' => 'https://t.me/'.$botUsername.'?start='.$token,
-            'expires_at' => $expiresAt->toIso8601String(),
-        ]);
-    }
-
-    public function unlinkTelegram(int $customer)
-    {
-        $row = DB::connection($this->connection)->table($this->table)->where('id', $customer)->first();
-        abort_if(! $row, 404);
-
-        DB::connection($this->connection)->table($this->table)->where('id', $customer)->update($this->filterColumns([
-            'telegram_chat_id' => null,
-            'telegram_username' => null,
-            'telegram_linked_at' => null,
-            'updated_at' => now(),
-        ]));
-
-        return response()->json(['success' => true]);
-    }
 
     public function syncFromUltimatePos(int $customer)
     {
@@ -585,9 +549,20 @@ class LoanCustomerController extends Controller
             $payments = $paymentsQuery->get();
         }
 
+        $quotations = collect();
+        if (Schema::connection($this->connection)->hasTable('loan_quotations')) {
+            $quotations = DB::connection($this->connection)
+                ->table('loan_quotations')
+                ->where('customer_id', $customer)
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get();
+        }
+
         return [
             'loans' => $loans,
             'payments' => $payments,
+            'quotations' => $quotations,
             'loanSummary' => [
                 'count' => $loans->count(),
                 'principal' => (float) $loans->sum(fn ($loan) => (float) ($loan->principal_amount ?? 0)),

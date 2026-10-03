@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Modules\LoanManagement\Services\LoanCollectionService;
 use Modules\LoanManagement\Support\LoanCollectionConstants;
+use Modules\LoanManagement\Helpers\LoanMenuHelper;
 
 class LoanCollectionController extends Controller
 {
@@ -15,6 +16,7 @@ class LoanCollectionController extends Controller
 
     public function index(Request $request, string $page)
     {
+        abort_unless(LoanMenuHelper::loanUserCan('loan_management.view'), 403, 'Unauthorized action.');
         $filters = $this->service->filters($request);
         $definition = $this->service->pageDefinition($page);
         $loans = $this->service->loansForPage($page, $filters);
@@ -27,6 +29,7 @@ class LoanCollectionController extends Controller
 
     public function reports(Request $request)
     {
+        abort_unless(LoanMenuHelper::loanUserCan('loan_management.reports.view|loan_management.view'), 403, 'Unauthorized action.');
         $filters = $this->service->filters($request);
         $options = $this->service->options();
         $cards = $this->service->dashboardCards($filters);
@@ -36,6 +39,7 @@ class LoanCollectionController extends Controller
 
     public function report(Request $request, string $report)
     {
+        abort_unless(LoanMenuHelper::loanUserCan('loan_management.reports.view|loan_management.view'), 403, 'Unauthorized action.');
         $filters = $this->service->filters($request);
         $options = $this->service->options();
         $title = LoanCollectionConstants::REPORTS[$report] ?? 'Collection Report';

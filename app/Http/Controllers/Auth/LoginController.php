@@ -14,24 +14,23 @@ class LoginController extends Controller
             return redirect()->route('loan-management.dashboard');
         }
 
-        return view('auth.login');
+        return view('auth.login', ['demoLogin' => \Modules\LoanManagement\Services\PortalDemoService::credentials('admin')]);
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'string'],
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
         $field = filter_var($credentials['email'], FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        // Disallow concurrent logins: log out customer session if active
-        if (Auth::guard('customer_loan')->check()) {
-            Auth::guard('customer_loan')->logout();
-        }
-
-        if (Auth::attempt([$field => $credentials['email'], 'password' => $credentials['password']], $request->boolean('remember'))) {
+        if (Auth::attempt([$field => trim($credentials['email']), 'password' => $credentials['password'], 'status' => 'active', 'allow_login' => 1], $request->boolean('remember'))) {
+            if (Auth::guard('customer_loan')->check()) {
+                Auth::guard('customer_loan')->logout();
+                $request->session()->forget('url.intended');
+            }
             $request->session()->regenerate();
 
             return redirect()->intended('/loan-management/dashboard');

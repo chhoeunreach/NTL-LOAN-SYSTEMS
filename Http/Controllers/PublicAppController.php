@@ -20,6 +20,18 @@ class PublicAppController extends Controller
 {
     use ApiResponseTrait;
 
+    public function homeImage()
+    {
+        $path = module_path('LoanManagement', 'Resources/assets/cms-home/hero.jpg');
+        $uploaded = BusinessSettingsService::get()['home_hero_path'];
+        if (is_string($uploaded) && str_starts_with($uploaded, 'loan-management/cms/') && ! str_contains($uploaded, '..') && \Illuminate\Support\Facades\Storage::disk('public')->exists($uploaded)) {
+            $path = \Illuminate\Support\Facades\Storage::disk('public')->path($uploaded);
+        }
+        abort_unless(is_file($path), 404);
+
+        return response()->file($path, ['Cache-Control' => 'no-cache']);
+    }
+
     public function home()
     {
         if (! BusinessSettingsService::isCmsEnabled()) {
@@ -109,16 +121,9 @@ class PublicAppController extends Controller
             return redirect()->route('loan-management.public.customer-dashboard');
         }
 
-        $demoCustomers = LoanCustomer::query()
-            ->where('can_login', 1)
-            ->where('status', 'active')
-            ->select('id', 'name', 'phone', 'login_phone', 'username')
-            ->take(3)
-            ->get();
-
         return view('loanmanagement::public.customer_login', [
             'settings' => BusinessSettingsService::get(),
-            'demoCustomers' => $demoCustomers,
+            'demoLogin' => \Modules\LoanManagement\Services\PortalDemoService::credentials('customer'),
         ]);
     }
 
@@ -145,16 +150,14 @@ class PublicAppController extends Controller
             ->where('status', 'active')
             ->first();
 
-        // Disallow concurrent logins: log out admin/web session if active
-        if (Auth::guard('web')->check() || Auth::check()) {
-            Auth::guard('web')->logout();
-            Auth::logout();
-        }
-
         if (! $customer || ! Auth::guard('customer_loan')->attempt(['id' => $customer->id, 'password' => $credentials['password']], $request->boolean('remember'))) {
             return back()->withErrors(['login' => 'These credentials do not match our records.'])->onlyInput('login');
         }
 
+        if (Auth::guard('web')->check()) {
+            Auth::guard('web')->logout();
+            $request->session()->forget('url.intended');
+        }
         $request->session()->regenerate();
         $customer->forceFill(['last_login_at' => now()])->save();
 

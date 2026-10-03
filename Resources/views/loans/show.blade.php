@@ -376,6 +376,18 @@
                 <i class="fa fa-money"></i> {{ $lmText('Add Payment', 'ទទួលការទូទាត់') }}
             </button>
 
+            @if($balanceAmount > 0.01)
+            <form method="POST" action="{{ route('loan-management.payway.create') }}" style="display:inline;" target="_blank">
+                @csrf
+                <input type="hidden" name="loan_id" value="{{ $loanRow->id }}">
+                <input type="hidden" name="amount" value="{{ max(0.01, round($balanceAmount, 2)) }}">
+                <input type="hidden" name="currency" value="{{ $loanRow->currency ?? 'USD' }}">
+                <button type="submit" class="lm-btn-nav" style="background:#d61827;border-color:#b91c1c;color:#fff;" title="Generate Bakong & ABA KHQR Code">
+                    <i class="fa fa-qrcode"></i> KHQR Pay
+                </button>
+            </form>
+            @endif
+
             @can('loan_management.edit')
             <button type="button"
                     class="lm-btn-nav lm-btn-nav-primary btn-modal"
@@ -391,6 +403,39 @@
                     data-container=".view_modal">
                 <i class="fa fa-print"></i> {{ $lmText('Print', 'បោះពុម្ព') }}
             </button>
+
+            <a href="{{ route('loan-management.loans.contract', $loanRow->id) }}"
+               target="_blank"
+               class="lm-btn-nav"
+               title="{{ $lmText('Official Legal Contract', 'កិច្ចសន្យាឥណទានផ្លូវការ') }}">
+                <i class="fa fa-file-text-o"></i> {{ $lmText('Contract', 'កិច្ចសន្យា') }}
+            </a>
+
+            @if(!in_array(strtolower((string) $loanRow->status), ['completed', 'closed', 'rejected', 'cancelled']))
+            <button type="button"
+                    class="lm-btn-nav btn-modal"
+                    data-href="{{ route('loan-management.loans.settlement.modal', $loanRow->id) }}"
+                    data-container=".view_modal"
+                    title="{{ $lmText('Early Payoff & Settlement', 'ទូទាត់ផ្តាច់កម្ចីមុនកំណត់') }}">
+                <i class="fa fa-handshake-o"></i> {{ $lmText('Early Payoff', 'ទូទាត់ផ្តាច់') }}
+            </button>
+
+            <button type="button"
+                    class="lm-btn-nav btn-modal"
+                    data-href="{{ route('loan-management.loans.reschedule.modal', $loanRow->id) }}"
+                    data-container=".view_modal"
+                    title="{{ $lmText('Restructure / Reschedule', 'រៀបចំកម្ចីឡើងវិញ') }}">
+                <i class="fa fa-refresh"></i> {{ $lmText('Restructure', 'រៀបចំកម្ចី') }}
+            </button>
+
+            <button type="button"
+                    class="lm-btn-nav btn-modal"
+                    data-href="{{ route('loan-management.loans.ptp.modal', $loanRow->id) }}"
+                    data-container=".view_modal"
+                    title="{{ $lmText('Promise to Pay (PTP)', 'កត់ត្រាការសន្យាសង') }}">
+                <i class="fa fa-calendar-check-o"></i> {{ $lmText('Log PTP', 'សន្យាសង') }}
+            </button>
+            @endif
 
             @can('loan_management.edit')
             <button type="button"
@@ -674,6 +719,17 @@
         <span class="lm-mab-amount">{{ number_format($balanceAmount, 2) }} {{ $loanRow->currency ?? 'USD' }}</span>
     </div>
     <div class="lm-mab-actions">
+        @if($balanceAmount > 0.01)
+        <form method="POST" action="{{ route('loan-management.payway.create') }}" style="display:inline;" target="_blank">
+            @csrf
+            <input type="hidden" name="loan_id" value="{{ $loanRow->id }}">
+            <input type="hidden" name="amount" value="{{ max(0.01, round($balanceAmount, 2)) }}">
+            <input type="hidden" name="currency" value="{{ $loanRow->currency ?? 'USD' }}">
+            <button type="submit" class="lm-mab-btn" style="background:#d61827;">
+                <i class="fa fa-qrcode"></i> KHQR
+            </button>
+        </form>
+        @endif
         <button type="button"
                 class="lm-mab-btn lm-quick-pay-trigger"
                 data-url="{{ route('loan-management.loans.payment.quick-pay', $loanRow->id) }}"
@@ -686,6 +742,12 @@
                 data-container=".view_modal">
             <i class="fa fa-print"></i>
         </button>
+        <a href="{{ route('loan-management.loans.contract', $loanRow->id) }}"
+           target="_blank"
+           class="lm-mab-btn lm-mab-btn-outline"
+           title="{{ $lmText('Official Legal Contract', 'កិច្ចសន្យាឥណទានផ្លូវការ') }}">
+            <i class="fa fa-file-text-o"></i>
+        </a>
         @can('loan_management.edit')
         <button type="button"
                 class="lm-mab-btn lm-mab-btn-outline btn-modal"

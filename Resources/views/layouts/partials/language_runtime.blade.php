@@ -5,7 +5,7 @@
         'Installment Management': 'គ្រប់គ្រងកម្ចី',
         'Dedicated loan operation workspace': 'កន្លែងធ្វើការសម្រាប់ប្រតិបត្តិការកម្ចី',
         'Dashboard': 'ផ្ទាំងគ្រប់គ្រង',
-        'Admin Installment': 'រដ្ឋបាលកម្ចី',
+        'Admin Loan': 'រដ្ឋបាលកម្ចី',
         'Installment Operations': 'ប្រតិបត្តិការកម្ចី',
         'All Installments': 'កម្ចីទាំងអស់',
         'Create Installment': 'បង្កើតកម្ចី',

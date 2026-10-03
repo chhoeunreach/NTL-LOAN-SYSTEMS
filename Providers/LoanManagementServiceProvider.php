@@ -6,8 +6,10 @@ use App\Transaction;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\ServiceProvider;
+use Modules\LoanManagement\Console\AccrueLoanPenaltiesCommand;
 use Modules\LoanManagement\Console\InstallLoanManagementCommand;
 use Modules\LoanManagement\Console\RunCollectionAutomationCommand;
+
 use Modules\LoanManagement\Console\SystemCheckCommand;
 use Modules\LoanManagement\Console\TestChatSchemaCommand;
 use Modules\LoanManagement\Console\UninstallLoanManagementCommand;
@@ -33,9 +35,17 @@ class LoanManagementServiceProvider extends ServiceProvider
                 InstallLoanManagementCommand::class,
                 SystemCheckCommand::class,
                 RunCollectionAutomationCommand::class,
+                AccrueLoanPenaltiesCommand::class,
+
                 TestChatSchemaCommand::class,
                 UninstallLoanManagementCommand::class,
             ]);
+
+            $this->app->booted(function () {
+                $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
+                $schedule->command('loan-management:accrue-penalties')->dailyAt('00:05')->withoutOverlapping();
+
+            });
         }
     }
 

@@ -1141,7 +1141,7 @@
                 <p>{{ $text('Manage installment agreements, track repayments, approval statuses, and customer balances.', 'គ្រប់គ្រងកិច្ចព្រមព្រៀងបង់រំលស់ តាមដានការទូទាត់ប្រាក់ ស្ថានភាពអនុម័ត និងសមតុល្យអតិថិជន') }}</p>
             </div>
             <div class="lm-loan-list-hero-actions">
-                @if(Route::has('loan-management.loans.calculator'))
+                @if(Route::has('loan-management.loans.calculator') && \Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.loans.create|loan_management.create'))
                     <a href="{{ route('loan-management.loans.calculator') }}" class="btn btn-default" target="_blank">
                         <i class="fa fa-calculator text-primary"></i> {{ $text('Calculator', 'ម៉ាស៊ីនគណនា') }}
                     </a>

@@ -7,6 +7,7 @@
 @endsection
 
 @section('content_body')
+@include('loanmanagement::layouts.partials.workspace_tabs', ['workspace' => 'settings'])
 @php
     $lmIsKhmer = session('user.language', config('app.locale')) === 'km';
     $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
@@ -35,11 +36,15 @@
     .lm-textarea { min-height: 190px; resize: vertical; line-height: 1.55; }
     .lm-help { color: #64748b; font-size: 12px; line-height: 1.5; }
     .lm-preview { border: 1px solid #dbe4ef; border-radius: 8px; overflow: hidden; background: #f8fafc; }
-    .lm-preview-hero { min-height: 330px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; background: linear-gradient(135deg, #102033, var(--lm-primary, #2563eb)); }
+    .lm-preview-hero { min-height: 330px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; color: #fff; background: linear-gradient(#0008, #0008), var(--lm-hero-preview, none) center/cover; }
     .lm-preview-brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; }
     .lm-preview-logo { width: 38px; height: 38px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.18); display: inline-flex; align-items: center; justify-content: center; }
     .lm-preview-logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .lm-preview-hero h3 { margin: 26px 0 0; font-size: 34px; line-height: 1.08; font-weight: 900; letter-spacing: 0; }
+    .lm-preview-hero h3 { margin: 26px 0 0; font-size: 24px; line-height: 1.25; font-weight: 700; letter-spacing: 0; overflow-wrap:anywhere; }
+    .lm-cms-group { border-top:1px solid #e2e8f0; padding:14px 0; }
+    .lm-cms-group summary { cursor:pointer; font-size:15px; font-weight:700; margin-bottom:14px; }
+    .lm-cms-group .lm-textarea { min-height:100px; }
+    .lm-cms-group label { text-transform:none; }
     .lm-preview-hero p { margin: 10px 0 0; color: rgba(255,255,255,.82); line-height: 1.6; }
     .lm-preview-products { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px; }
     .lm-preview-product { height: 74px; border-radius: 6px; background: #fff; border: 1px solid #e2e8f0; }
@@ -73,7 +78,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('loan-management.settings.cms.update') }}">
+    <form method="POST" enctype="multipart/form-data" action="{{ route('loan-management.settings.cms.update') }}">
         @csrf
         <div class="lm-cms-card">
             <aside class="lm-cms-tabs">
@@ -103,12 +108,42 @@
                             <textarea class="lm-textarea" id="homeBodyInput" name="home_body" maxlength="1200">{{ old('home_body', $settings['home_body']) }}</textarea>
                             <div class="lm-help">{{ $lmText('Use this for customer-facing service details. Line breaks are preserved.', 'ប្រើសម្រាប់ពណ៌នាសេវាកម្មអតិថិជន។ ការចុះបន្ទាត់នឹងរក្សាទុក។') }}</div>
                         </div>
+                        <h2 class="lm-cms-section-title">Homepage Sections &amp; Navigation</h2>
+                        @php($cmsValues = \Modules\LoanManagement\Services\CmsHomeService::normalize($settings['home_cms'] ?? []))
+                        @foreach(\Modules\LoanManagement\Services\CmsHomeService::groups() as $group => $fields)
+                        <details class="lm-cms-group" @if($loop->first) open @endif><summary>{{ $group }}</summary>
+                        @foreach($fields as $key => [$label, $type, $default])
+                            <div class="lm-field">
+                                @if($type === 'boolean')
+                                    <input type="hidden" name="home_cms[{{ $key }}]" value="0">
+                                    <label for="cms_{{ $key }}"><input type="checkbox" id="cms_{{ $key }}" name="home_cms[{{ $key }}]" value="1" {{ old('home_cms.'.$key, $cmsValues[$key]) ? 'checked' : '' }}> {{ $label }}</label>
+                                @else
+                                    <label for="cms_{{ $key }}">{{ $label }}</label>
+                                    @if($type === 'textarea')
+                                        <textarea class="lm-textarea" id="cms_{{ $key }}" name="home_cms[{{ $key }}]" maxlength="1200">{{ old('home_cms.'.$key, $cmsValues[$key]) }}</textarea>
+                                    @else
+                                        <input type="{{ $type }}" class="lm-input" id="cms_{{ $key }}" name="home_cms[{{ $key }}]" maxlength="220" value="{{ old('home_cms.'.$key, $cmsValues[$key]) }}">
+                                    @endif
+                                @endif
+                                @error('home_cms.'.$key)<span class="text-danger">{{ $message }}</span>@enderror
+                            </div>
+                        @endforeach
+                        </details>
+                        @endforeach
+                        <div class="lm-field">
+                            <label for="homeHeroInput">{{ $lmText('Homepage Banner Image', 'រូបភាពបិទផ្ទាំងទំព័រដើមសាធារណៈ') }}</label>
+                            <img id="cmsHeroThumbnail" src="{{ route('loan-management.public.home-image') }}" alt="Current hero" style="width:100%;max-height:180px;object-fit:cover;margin-bottom:12px;">
+                            <input type="file" id="homeHeroInput" name="home_hero" accept="image/jpeg,image/png,image/webp">
+                            <div class="lm-help">{{ $lmText('JPG, PNG, or WEBP. Maximum 50 MB. Upload a new banner to replace the current one.', 'JPG, PNG ឬ WEBP។ ទំហំអតិបរមា 50 MB។ ផ្ទុកបិទថ្មីដើម្បីជំនួសបិទផ្ទាំងបច្ចុប្បន្ន។') }}</div>
+                            @error('home_hero')<span class="text-danger">{{ $message }}</span>@enderror
+                            <label><input type="checkbox" name="remove_home_hero" value="1"> Restore Template Image</label>
+                        </div>
                     </section>
 
                     <aside>
-                        <h2 class="lm-cms-section-title">{{ $lmText('Live Preview', 'មើលគំរូ') }}</h2>
+                        <h2 class="lm-cms-section-title">{{ $lmText('Content Preview', 'មើលគំរូ') }}</h2>
                         <div class="lm-preview">
-                            <div class="lm-preview-hero">
+                            <div class="lm-preview-hero" id="cmsPreviewHero" style="--lm-hero-preview: url('{{ route('loan-management.public.home-image') }}');">
                                 <div class="lm-preview-brand">
                                     <span class="lm-preview-logo">
                                         @if($businessLogoUrl)
@@ -142,7 +177,7 @@
                     </div>
                     <div class="lm-actions-right">
                         <a href="{{ route('loan-management.dashboard') }}" class="btn btn-default">{{ $lmText('Cancel', 'បោះបង់') }}</a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" @disabled(!auth()->user()->can('loan_management.edit'))>
                             <i class="fa fa-save"></i> {{ $lmText('Save CMS', 'រក្សាទុក CMS') }}
                         </button>
                     </div>
@@ -172,6 +207,32 @@
         [headline, subtitle, body].forEach(function (input) {
             input.addEventListener('input', syncPreview);
         });
+
+        var heroInput = document.getElementById('homeHeroInput');
+        var heroThumbnail = document.getElementById('cmsHeroThumbnail');
+        var heroPreview = document.getElementById('cmsPreviewHero');
+
+        if (heroInput) {
+            heroInput.addEventListener('change', function () {
+                var file = heroInput.files && heroInput.files[0];
+                if (!file || !file.type.match(/^image\//)) {
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function (event) {
+                    var url = 'url("' + event.target.result + '")';
+                    if (heroThumbnail) {
+                        heroThumbnail.src = event.target.result;
+                    }
+                    if (heroPreview) {
+                        heroPreview.style.setProperty('--lm-hero-preview', url);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
         syncPreview();
     })();
 </script>

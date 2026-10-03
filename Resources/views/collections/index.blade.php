@@ -304,6 +304,12 @@
 
 @section('content_body')
 <div class="lm-col-content">
+    @php
+        $collectionWorkspace = in_array($page, ['due-today', 'today-collection', 'partial-payments'], true) ? 'daily-collection'
+            : (in_array($page, ['overdue-accounts', 'delinquent-accounts'], true) ? 'overdue'
+            : (in_array($page, ['promise-to-pay', 'broken-promise', 'recovery-management', 'debt-collection'], true) ? 'cases' : ''));
+    @endphp
+    @include('loanmanagement::layouts.partials.workspace_tabs', ['workspace' => $collectionWorkspace])
     {{-- Content Header (Page header) --}}
     <section class="content-header" style="padding: 0 0 16px 0;">
         <h1 style="font-size: 22px; font-weight: 700; color: #1e293b; margin: 0;">

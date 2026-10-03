@@ -6,6 +6,8 @@
     $primaryName = trim((string) ($customerRow->khmer_name ?? '')) ?: trim((string) ($customerRow->name ?? ''));
     $englishName = trim((string) ($customerRow->name ?? ''));
     $telegramLinked = !empty($customerRow->telegram_chat_id);
+    $telegramAvailable = \Illuminate\Support\Facades\Route::has('loan-management.customers.telegram.link')
+        && \Illuminate\Support\Facades\Route::has('loan-management.customers.telegram.unlink');
 @endphp
 <section class="content-header">
     <h1>Customer Detail</h1>
@@ -33,6 +35,7 @@
                     <div class="col-md-4"><strong>Can Login:</strong> {{ !empty($customerRow->can_login) ? 'Yes' : 'No' }}</div>
                     <div class="col-md-4"><strong>GPS Tracking:</strong> {{ !empty($customerRow->allow_gps_tracking) ? 'Enabled' : 'Disabled' }}</div>
                 </div>
+                @if($telegramAvailable)
                 <div class="row" style="margin-top:10px">
                     <div class="col-md-12">
                         <span id="lmTelegramStatus">
@@ -56,6 +59,7 @@
                         <div style="font-size:11px;color:#94a3b8;margin-top:6px"><i class="fa fa-arrow-down"></i> Use the Telegram button in the bottom-right corner to open the chat.</div>
                     </div>
                 </div>
+                @endif
             </div>
         </div>
     </div></div>
@@ -64,6 +68,65 @@
         <table class="table table-bordered"><thead><tr><th>ID</th><th>Installment Number</th><th>Status</th><th>Balance</th></tr></thead><tbody>
             @forelse($loans as $l)<tr><td>{{ $l->id }}</td><td>{{ $l->loan_number ?? '-' }}</td><td>{{ $l->status ?? '-' }}</td><td>{{ $l->balance_amount ?? 0 }}</td></tr>@empty<tr><td colspan="4" class="text-center">No loans</td></tr>@endforelse
         </tbody></table>
+    </div></div>
+
+    <div class="box box-default"><div class="box-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <h3 class="box-title" style="margin:0;"><i class="fa fa-calculator" style="color:#2563eb;margin-right:6px;"></i> Quotations & Proposals</h3>
+        @if(\Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.create'))
+        <a href="{{ route('loan-management.quotations.create', ['customer_id' => $customerRow->id]) }}" class="btn btn-primary btn-xs">
+            <i class="fa fa-plus"></i> New Quotation
+        </a>
+        @endif
+    </div><div class="box-body">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>Ref #</th>
+                    <th>Date</th>
+                    <th>Product / Model</th>
+                    <th class="text-right">Price</th>
+                    <th class="text-right">Loan Amount</th>
+                    <th>Terms</th>
+                    <th>Status</th>
+                    <th class="text-center">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($quotations ?? [] as $q)
+                    <tr>
+                        <td><strong>{{ $q->quotation_number }}</strong></td>
+                        <td>{{ \Carbon\Carbon::parse($q->quotation_date)->format('d-M-Y') }}</td>
+                        <td>{{ $q->product_name ?: '-' }}</td>
+                        <td class="text-right">{{ number_format($q->item_price, 2) }} {{ $q->currency }}</td>
+                        <td class="text-right"><strong>{{ number_format($q->principal_amount, 2) }} {{ $q->currency }}</strong></td>
+                        <td>{{ $q->installment_terms }} M ({{ ucfirst($q->payment_frequency) }})</td>
+                        <td>
+                            @php
+                                $badgeCls = match($q->status) {
+                                    'converted' => 'label-success',
+                                    'approved' => 'label-info',
+                                    'rejected' => 'label-danger',
+                                    default => 'label-default'
+                                };
+                            @endphp
+                            <span class="label {{ $badgeCls }}">{{ ucfirst($q->status) }}</span>
+                        </td>
+                        <td class="text-center">
+                            <a href="{{ route('loan-management.quotations.show', $q->id) }}" class="btn btn-default btn-xs" title="View"><i class="fa fa-eye"></i></a>
+                            <a href="{{ route('loan-management.quotations.print', $q->id) }}" target="_blank" class="btn btn-default btn-xs" title="Print"><i class="fa fa-print"></i></a>
+                            @if($q->status !== 'converted' && \Modules\LoanManagement\Helpers\LoanMenuHelper::loanUserCan('loan_management.loans.create|loan_management.create'))
+                                <form method="POST" action="{{ route('loan-management.quotations.convert', $q->id) }}" style="display:inline-block;" onsubmit="return confirm('Convert this quotation to an active loan?');">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success btn-xs" title="Convert to Loan"><i class="fa fa-check"></i> Convert</button>
+                                </form>
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr><td colspan="8" class="text-center text-muted">No quotations recorded for this customer</td></tr>
+                @endforelse
+            </tbody>
+        </table>
     </div></div>
 
     <div class="box box-default"><div class="box-header"><h3 class="box-title">Payments</h3></div><div class="box-body">
@@ -75,6 +138,7 @@
 @endsection
 
 @section('loan_js')
+@if($telegramAvailable)
 <script>
 (function($){
     var csrf = '{{ csrf_token() }}';
@@ -120,4 +184,5 @@
     });
 })(jQuery);
 </script>
+@endif
 @endsection

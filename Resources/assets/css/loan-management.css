@@ -258,8 +258,20 @@ body.loan-management-page.lm-language-km .glyphicon {
 .lm-menu-section-title {
     display: flex; align-items: center; gap: 8px;
     margin: 10px 6px 4px; color: var(--lm-muted);
-    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+    width: calc(100% - 12px); padding: 4px 0; border: 0; background: transparent; cursor: pointer;
+    font-size: 10px; font-weight: 700; letter-spacing: 0; text-transform: uppercase; text-align: left;
 }
+.lm-menu-section-title i { order: 1; transition: transform .15s ease; }
+.lm-menu-section.is-collapsed > .lm-menu-section-title i { transform: rotate(-90deg); }
+.lm-menu-section.is-collapsed > .lm-menu-link,
+.lm-menu-section.is-collapsed > .lm-menu-group { display: none; }
+body.lm-sidebar-collapsed .lm-menu-section.is-collapsed > .lm-menu-link { display: flex; }
+.lm-workspace-tabs { display: flex; gap: 4px; overflow-x: auto; margin: 0 0 16px; border-bottom: 1px solid var(--lm-border-light); }
+.lm-workspace-tabs a { flex: 0 0 auto; padding: 9px 12px; min-height: 38px; color: var(--lm-text-secondary); border-bottom: 2px solid transparent; text-decoration: none; font-size: 13px; font-weight: 600; }
+.lm-workspace-tabs a:hover { color: #047857; }
+.lm-workspace-tabs a.active { color: #047857; border-bottom-color: #059669; }
+.lm-menu-section-title:focus-visible,
+.lm-workspace-tabs a:focus-visible { outline: 2px solid #059669; outline-offset: 2px; }
 .lm-menu-section-title::after {
     content: ''; height: 1px; flex: 1 1 auto; background: var(--lm-border-light);
 }

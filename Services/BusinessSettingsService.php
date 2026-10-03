@@ -28,6 +28,8 @@ class BusinessSettingsService
         'logo_path' => null,
         'login_background_path' => null,
         'cms_enabled' => true,
+        'home_cms' => [],
+        'home_hero_path' => null,
         'customer_login_enabled' => true,
         'demo_customer_login_enabled' => true,
         'demo_admin_login_enabled' => false,
@@ -41,7 +43,9 @@ class BusinessSettingsService
     {
         $settings = self::read();
 
-        return array_merge(self::DEFAULTS, array_intersect_key($settings, self::DEFAULTS));
+        $result = array_merge(self::DEFAULTS, array_intersect_key($settings, self::DEFAULTS));
+        $result['home_cms'] = CmsHomeService::normalize($result['home_cms']);
+        return $result;
     }
 
     public static function save(array $data): void
@@ -74,6 +78,8 @@ class BusinessSettingsService
             'home_headline' => self::cleanText($data['home_headline'] ?? $current['home_headline'], 140),
             'home_subtitle' => self::cleanText($data['home_subtitle'] ?? $current['home_subtitle'], 220),
             'home_body' => self::cleanMultilineText($data['home_body'] ?? $current['home_body'], 1200, ''),
+            'home_cms' => CmsHomeService::normalize($data['home_cms'] ?? $current['home_cms']),
+            'home_hero_path' => array_key_exists('home_hero_path', $data) ? $data['home_hero_path'] : $current['home_hero_path'],
             'invoice_message_template' => self::cleanMultilineText($data['invoice_message_template'] ?? $current['invoice_message_template'], 2000, self::DEFAULTS['invoice_message_template']),
         ];
 

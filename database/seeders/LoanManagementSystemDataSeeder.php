@@ -6,14 +6,14 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Modules\LoanManagement\Services\BusinessSettingsService;
-use Modules\LoanManagement\Services\TelegramSettingsService;
+
 
 class LoanManagementSystemDataSeeder extends Seeder
 {
     public function run(): void
     {
         $this->seedBusinessSettings();
-        $this->seedTelegramSettings();
+
     }
 
     private function seedBusinessSettings(): void
@@ -33,28 +33,5 @@ class LoanManagementSystemDataSeeder extends Seeder
         ]);
     }
 
-    private function seedTelegramSettings(): void
-    {
-        if (! Schema::connection('mysql_loan')->hasTable('loan_telegram_settings')) {
-            return;
-        }
 
-        $exists = DB::connection('mysql_loan')->table('loan_telegram_settings')
-            ->where('id', 1)
-            ->exists();
-
-        if ($exists) {
-            return;
-        }
-
-        DB::connection('mysql_loan')->table('loan_telegram_settings')->insert([
-            'id' => 1,
-            'bot_token' => null,
-            'bot_username' => null,
-            'webhook_secret' => (string) TelegramSettingsService::webhookSecret(),
-            'link_ttl_minutes' => (int) TelegramSettingsService::linkTtlMinutes(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-    }
 }

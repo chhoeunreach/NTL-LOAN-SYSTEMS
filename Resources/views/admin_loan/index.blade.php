@@ -10,6 +10,14 @@
     $adminLoanJsAsset = 'modules/loanmanagement/admin-loan-app/assets/index-BpfyckyY.js';
     $adminLoanCssPath = public_path($adminLoanCssAsset);
     $adminLoanJsPath = public_path($adminLoanJsAsset);
+    $adminLoanCssPublished = file_exists($adminLoanCssPath);
+    $adminLoanJsPublished = file_exists($adminLoanJsPath);
+    if (! $adminLoanCssPublished) {
+        $adminLoanCssPath = module_path('LoanManagement', 'Resources/assets/admin-loan-app/index-tfrm5V5v.css');
+    }
+    if (! $adminLoanJsPublished) {
+        $adminLoanJsPath = module_path('LoanManagement', 'Resources/assets/admin-loan-app/index-BpfyckyY.js');
+    }
     $adminLoanCssExists = file_exists($adminLoanCssPath);
     $adminLoanJsExists = file_exists($adminLoanJsPath);
     $loanBadgeCounts = LoanMenuHelper::badgeCounts();
@@ -121,13 +129,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $text('Admin Installment', 'រដ្ឋបាលកម្ចី') }}</title>
+    <title>{{ $text('Admin Loan', 'រដ្ឋបាលកម្ចី') }}</title>
     @include('layouts.partials.css')
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700;800&display=swap">
-    @if ($adminLoanCssExists)
+    @if ($adminLoanCssPublished)
         <link rel="stylesheet" href="{{ asset($adminLoanCssAsset) }}?v={{ filemtime($adminLoanCssPath) }}">
+    @elseif ($adminLoanCssExists)
+        <style>{!! file_get_contents($adminLoanCssPath) !!}</style>
     @endif
     @if (file_exists($moduleCssPath))
         <style>{!! file_get_contents($moduleCssPath) !!}</style>
@@ -265,6 +275,15 @@
         }
         #admin-loan-react-root #header-settings > div:last-child {
             display: none !important;
+        }
+        #admin-loan-react-root #global-header h1 {
+            margin: 0;
+            font-family: inherit;
+            font-size: 20px;
+            font-weight: 800;
+            line-height: 1.35;
+            letter-spacing: 0;
+            overflow-wrap: anywhere;
         }
         #admin-loan-react-root #global-header > div,
         #admin-loan-react-root #main-application-shell > main,
@@ -1090,8 +1109,10 @@
             localStorage.setItem('khnar_yeung_monthly_ledger', JSON.stringify(monthlyRecords));
         })();
     </script>
-    @if ($adminLoanJsExists)
+    @if ($adminLoanJsPublished)
         <script type="module" src="{{ asset($adminLoanJsAsset) }}?v={{ filemtime($adminLoanJsPath) }}"></script>
+    @elseif ($adminLoanJsExists)
+        <script type="module">{!! file_get_contents($adminLoanJsPath) !!}</script>
     @endif
     <script>
         (function () {

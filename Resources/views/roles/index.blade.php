@@ -8,6 +8,7 @@
 
 @section('content_body')
 <div class="pos-admin-page">
+    @include('loanmanagement::layouts.partials.workspace_tabs', ['workspace' => 'users'])
     <div class="pos-page-head">
         <div class="pos-page-title">
             <h1>Roles</h1>
