@@ -62,4 +62,35 @@ class CmsSampleDataSeederTest extends TestCase
         $this->assertSame(5, DB::connection('mysql_loan')->table('loan_products')->where('id', $asus->id)->value('qty_available'));
         $this->assertSame('Custom Phone', BusinessSettingsService::get()['home_cms']['contact_phone']);
     }
+
+    public function testBundledImagesExistAndResolveForSeededProducts(): void
+    {
+        (new CmsSampleDataSeeder)->run();
+        foreach (\Modules\LoanManagement\Entities\LoanProduct::all() as $product) {
+            $path = public_path($product->meta_json['image_path']);
+            $this->assertFileExists($path);
+            $this->assertNotFalse(getimagesize($path));
+            $this->assertSame(asset($product->meta_json['image_path']), $product->image_url);
+        }
+        $this->assertFileExists(module_path('LoanManagement', 'Resources/assets/cms-home/hero.jpg'));
+    }
+
+    public function testOriginalRemoteSampleImagesAreUpgradedButCustomPhotosArePreserved(): void
+    {
+        $seeder = new CmsSampleDataSeeder;
+        $seeder->run();
+        $sample = CmsSampleDataSeeder::products()[0];
+        $meta = $sample['meta'];
+        $meta['image_path'] = $meta['image_remote_url'];
+        DB::connection('mysql_loan')->table('loan_products')->where('sku', $sample['sku'])->update(['meta_json' => json_encode($meta), 'selling_price' => 600]);
+        $seeder->run();
+        $row = DB::connection('mysql_loan')->table('loan_products')->where('sku', $sample['sku'])->first();
+        $this->assertSame($sample['meta']['image_path'], json_decode($row->meta_json, true)['image_path']);
+        $this->assertSame(600.0, (float) $row->selling_price);
+        $meta['image_path'] = 'https://example.com/custom.jpg';
+        DB::connection('mysql_loan')->table('loan_products')->where('sku', $sample['sku'])->update(['meta_json' => json_encode($meta)]);
+        $seeder->run();
+        $row = DB::connection('mysql_loan')->table('loan_products')->where('sku', $sample['sku'])->first();
+        $this->assertSame($meta['image_path'], json_decode($row->meta_json, true)['image_path']);
+    }
 }
