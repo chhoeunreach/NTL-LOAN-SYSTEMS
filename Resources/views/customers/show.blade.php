@@ -31,10 +31,17 @@
                     <div class="col-md-4"><strong>English Name:</strong> {{ $englishName !== '' ? $englishName : '-' }}</div>
                     <div class="col-md-4"><strong>Khmer Name:</strong> {{ trim((string) ($customerRow->khmer_name ?? '')) ?: '-' }}</div>
                     <div class="col-md-4"><strong>Phone:</strong> {{ $customerRow->phone ?? '-' }}</div>
+                    <div class="col-md-12"><strong>Delivery / Contact Address:</strong> {{ $customerRow->address ?? '-' }}</div>
                     <div class="col-md-4"><strong>Status:</strong> {{ $customerRow->status ?? '-' }}</div>
                     <div class="col-md-4"><strong>Can Login:</strong> {{ !empty($customerRow->can_login) ? 'Yes' : 'No' }}</div>
                     <div class="col-md-4"><strong>GPS Tracking:</strong> {{ !empty($customerRow->allow_gps_tracking) ? 'Enabled' : 'Disabled' }}</div>
                 </div>
+                @if(!empty($customerRow->note))
+                    <div style="margin-top:16px;">
+                        <strong>{{ ($customerRow->customer_type ?? '') === 'public_installment_request' ? 'Installment Request' : 'Notes' }}</strong>
+                        <div style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:6px;">{{ $customerRow->note }}</div>
+                    </div>
+                @endif
                 @if($telegramAvailable)
                 <div class="row" style="margin-top:10px">
                     <div class="col-md-12">

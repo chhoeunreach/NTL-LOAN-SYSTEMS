@@ -8,8 +8,10 @@ class LoanManagementDatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(CmsHomeSeeder::class);
         $this->call(LoanManagementPermissionSeeder::class);
         $this->call(LoanManagementReferenceSeeder::class);
         $this->call(LoanManagementSystemDataSeeder::class);
+        $this->call(PortalDemoAccountSeeder::class);
     }
 }

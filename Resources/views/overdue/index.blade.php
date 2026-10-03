@@ -464,31 +464,61 @@ $(document).ready(function () {
     });
 
     $('#btnBatchTelegram').on('click', function () {
-        if (!confirm(isKhmer ? 'តើអ្នកពិតជាចង់ផ្ញើសាររំលឹកតាម Telegram ទៅកាន់អតិថិជនយឺតយ៉ាវទាំងអស់មែនទេ?' : 'Do you want to dispatch automated Telegram reminders to all delinquent borrowers?')) return;
-        var $btn = $(this).prop('disabled', true);
-        var origText = $btn.html();
-        $btn.html('<i class="fa fa-spinner fa-spin"></i> ' + (isKhmer ? 'កំពុងផ្ញើ...' : 'Sending...'));
+        var confirmMsg = isKhmer ? 'តើអ្នកពិតជាចង់ផ្ញើសាររំលឹកតាម Telegram ទៅកាន់អតិថិជនយឺតយ៉ាវទាំងអស់មែនទេ?' : 'Do you want to dispatch automated Telegram reminders to all delinquent borrowers?';
 
-        $.ajax({
-            url: "{{ route('loan-management.loans.batch-telegram-reminder') }}",
-            method: 'POST',
-            data: {
-                _token: "{{ csrf_token() }}",
-                loan_ids: [1]
-            },
-            success: function (resp) {
-                $btn.prop('disabled', false).html(origText);
-                if (resp && resp.success) {
-                    alert((isKhmer ? 'បានផ្ញើសាររំលឹកដោយជោគជ័យ! ' : 'Reminders dispatched successfully! ') + (resp.data ? 'Sent: ' + resp.data.sent : ''));
-                } else {
-                    alert(resp.message || 'Error occurred');
+        var doSend = function () {
+            var $btn = $('#btnBatchTelegram').prop('disabled', true);
+            var origText = $btn.html();
+            $btn.html('<i class="fa fa-spinner fa-spin"></i> ' + (isKhmer ? 'កំពុងផ្ញើ...' : 'Sending...'));
+
+            $.ajax({
+                url: "{{ route('loan-management.loans.batch-telegram-reminder') }}",
+                method: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    loan_ids: [1]
+                },
+                success: function (resp) {
+                    $btn.prop('disabled', false).html(origText);
+                    if (resp && resp.success) {
+                        var successMsg = (isKhmer ? 'បានផ្ញើសាររំលឹកដោយជោគជ័យ! ' : 'Reminders dispatched successfully! ') + (resp.data ? 'Sent: ' + resp.data.sent : '');
+                        if (window.LoanAlert) {
+                            LoanAlert.success(successMsg);
+                        } else {
+                            alert(successMsg);
+                        }
+                    } else {
+                        var errMsg = resp.message || 'Error occurred';
+                        if (window.LoanAlert) {
+                            LoanAlert.error(errMsg);
+                        } else {
+                            alert(errMsg);
+                        }
+                    }
+                },
+                error: function () {
+                    $btn.prop('disabled', false).html(origText);
+                    var failMsg = isKhmer ? 'មានបញ្ហាក្នុងការផ្ញើសារ' : 'Failed to send reminders.';
+                    if (window.LoanAlert) {
+                        LoanAlert.error(failMsg);
+                    } else {
+                        alert(failMsg);
+                    }
                 }
-            },
-            error: function () {
-                $btn.prop('disabled', false).html(origText);
-                alert(isKhmer ? 'មានបញ្ហាក្នុងការផ្ញើសារ' : 'Failed to send reminders.');
-            }
-        });
+            });
+        };
+
+        if (window.LoanAlert) {
+            LoanAlert.confirm(confirmMsg, {
+                title: isKhmer ? 'ផ្ញើសាររំលឹកតាម Telegram' : 'Telegram Reminders',
+                type: 'info',
+                confirmText: isKhmer ? 'ផ្ញើសារ' : 'Send Now'
+            }).then(function(confirmed){
+                if (confirmed) doSend();
+            });
+        } else if (confirm(confirmMsg)) {
+            doSend();
+        }
     });
 });
 </script>

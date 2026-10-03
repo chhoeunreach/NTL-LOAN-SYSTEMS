@@ -4,10 +4,10 @@
     $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
 
     $cards = [
-        ['key' => 'total_loans', 'label' => $lmText('All Installments', 'រំលស់ទាំងអស់'), 'icon' => 'fa fa-files-o', 'tone' => 'slate', 'url' => route('loan-management.loans.index')],
+        ['key' => 'total_loans', 'label' => $lmText('All Installments', 'រំលស់ទាំងអស់'), 'icon' => 'fa fa-file-text-o', 'tone' => 'slate', 'url' => route('loan-management.loans.index')],
         ['key' => 'pending_requests', 'label' => $lmText('Pending Requests', 'សំណើកំពុងរង់ចាំ'), 'icon' => 'fa fa-hourglass-half', 'tone' => 'amber', 'url' => route('loan-management.loans.index', ['status' => 'pending'])],
         ['key' => 'due_today', 'label' => $lmText('Due Today', 'ដល់ថ្ងៃបង់ថ្ងៃនេះ'), 'icon' => 'fa fa-calendar-check-o', 'tone' => 'blue', 'url' => route('loan-management.operations.page', ['page' => 'due-today'])],
-        ['key' => 'overdue_accounts', 'label' => $lmText('Overdue Accounts', 'គណនីហួសកំណត់'), 'icon' => 'fa fa-exclamation-circle', 'tone' => 'red', 'url' => route('loan-management.collection.page', ['page' => 'overdue-accounts'])],
+        ['key' => 'overdue_accounts', 'label' => $lmText('Overdue Accounts', 'គណនីហួសកំណត់'), 'icon' => 'fa fa-exclamation-triangle', 'tone' => 'red', 'url' => route('loan-management.collection.page', ['page' => 'overdue-accounts'])],
         ['key' => 'broken_ptp', 'label' => $lmText('Broken PTP', 'ខកខានសន្យា'), 'icon' => 'fa fa-chain-broken', 'tone' => 'amber', 'url' => route('loan-management.collection.page', ['page' => 'broken-promise'])],
         ['key' => 'blacklist_customers', 'label' => $lmText('Blacklist Customers', 'អតិថិជនបញ្ជីខ្មៅ'), 'icon' => 'fa fa-user-times', 'tone' => 'red', 'url' => route('loan-management.blacklist.index')],
     ];
@@ -47,12 +47,25 @@
 <div class="lm-dashboard">
     <section class="lm-dashboard-command">
         <div class="lm-dashboard-command__main">
-            <span class="lm-dashboard-command__eyebrow"><i class="fa fa-tachometer"></i> {{ $lmText('Loan Management', 'ការគ្រប់គ្រងរំលស់') }}</span>
-            <h2 class="lm-dashboard-command__title">{{ $lmText('Dashboard', 'ផ្ទាំងគ្រប់គ្រង') }}</h2>
-            <p class="lm-dashboard-command__subtitle">{{ $lmText('Monitor collections, customer follow-up, overdue risk, and daily payment activity from one clear workspace.', 'តាមដានការប្រមូលប្រាក់ ការតាមដានអតិថិជន ហានិភ័យហួសកំណត់ និងសកម្មភាពបង់ប្រាក់ប្រចាំថ្ងៃក្នុងផ្ទាំងតែមួយ។') }}</p>
+            <span class="lm-dashboard-command__eyebrow"><i class="fa fa-tachometer"></i> {{ $lmText('Loan Operations Workspace', 'ផ្ទាំងប្រតិបត្តិការរំលស់') }}</span>
+            <h2 class="lm-dashboard-command__title"><i class="fa fa-tachometer" style="color:var(--lm-primary, #6366f1); margin-right:8px;"></i> {{ $lmText('Dashboard Overview', 'ទិដ្ឋភាពទូទៅនៃផ្ទាំងគ្រប់គ្រង') }}</h2>
+            <p class="lm-dashboard-command__subtitle">{{ $lmText('Unified mission control for collections, customer follow-up, overdue portfolio risk, and daily transactions.', 'មជ្ឈមណ្ឌលគ្រប់គ្រងការប្រមូលប្រាក់ ការតាមដានអតិថិជន ហានិភ័យហួសកំណត់ និងប្រតិបត្តិការប្រចាំថ្ងៃ។') }}</p>
             <div class="lm-dashboard-command__chips">
                 <span class="lm-dashboard-chip lm-dashboard-chip--{{ $dashboardHealthTone }}"><i class="fa fa-heartbeat"></i> {{ $dashboardHealthLabel }}</span>
                 <span class="lm-dashboard-chip"><i class="fa fa-calendar"></i> {{ now()->format('M d, Y') }}</span>
+                <span class="lm-dashboard-chip"><i class="fa fa-file-text-o"></i> {{ number_format((int)($quickCards['total_loans'] ?? 0)) }} {{ $lmText('Installments', 'រំលស់សរុប') }}</span>
+                <span class="lm-dashboard-chip lm-dashboard-chip--success"><i class="fa fa-money"></i> {{ session('currency.symbol', '$') }} {{ number_format($dashboardTodayCollection, 2) }} {{ $lmText('Today', 'ថ្ងៃនេះ') }}</span>
+            </div>
+            <div class="lm-dashboard-tabs" role="tablist">
+                <button type="button" class="lm-dashboard-tab is-active" data-dashboard-tab="overview" aria-pressed="true">
+                    <i class="fa fa-th-large"></i> {{ $lmText('Operations Overview', 'ទិដ្ឋភាពប្រតិបត្តិការ') }}
+                </button>
+                <button type="button" class="lm-dashboard-tab" data-dashboard-tab="live" aria-pressed="false">
+                    <i class="fa fa-comments"></i> {{ $lmText('Live Monitor & Feeds', 'ការតាមដានផ្ទាល់ & ជជែក') }}
+                    @if($dashboardUnreadChats > 0)
+                        <span class="badge" style="background:#ef4444; color:#fff; font-size:10px; margin-left:4px; padding:2px 6px; border-radius:10px;">{{ $dashboardUnreadChats }}</span>
+                    @endif
+                </button>
             </div>
         </div>
         <div class="lm-dashboard-command__actions">
@@ -190,7 +203,7 @@
         <div class="lm-dashboard-panel lm-dashboard-panel--feature">
             <div class="lm-dashboard-panel__header">
                 <div class="lm-chat-header-text">
-                    <h3 class="lm-dashboard-panel__title">{{ $lmText('Customer Chat', 'ជជែកជាមួយអតិថិជន') }}</h3>
+                    <h3 class="lm-dashboard-panel__title"><i class="fa fa-comments" style="color:var(--lm-primary, #6366f1); margin-right:8px;"></i> {{ $lmText('Customer Chat', 'ជជែកជាមួយអតិថិជន') }}</h3>
                     <p class="lm-dashboard-panel__hint">{{ $lmText('Recent conversations before field follow-up.', 'ការសន្ទនាថ្មីៗមុនពេលចុះតាមដានផ្ទាល់។') }}</p>
                 </div>
                 <div class="lm-chat-header-actions">
@@ -298,7 +311,7 @@
             <div class="lm-dashboard-panel">
                 <div class="lm-dashboard-panel__header">
                     <div>
-                        <h3 class="lm-dashboard-panel__title">{{ $lmText('Overdue Accounts', 'គណនីហួសកំណត់') }}</h3>
+                        <h3 class="lm-dashboard-panel__title"><i class="fa fa-exclamation-triangle" style="color:#ef4444; margin-right:8px;"></i> {{ $lmText('Overdue Accounts', 'គណនីហួសកំណត់') }}</h3>
                         <p class="lm-dashboard-panel__hint">{{ $lmText('Need immediate follow-up today.', 'ត្រូវការតាមដានជាបន្ទាន់ថ្ងៃនេះ។') }}</p>
                     </div>
                     <div class="lm-dashboard-panel__actions">
@@ -417,7 +430,7 @@
             <div class="lm-dashboard-panel">
                 <div class="lm-dashboard-panel__header">
                     <div>
-                        <h3 class="lm-dashboard-panel__title">{{ $lmText('Installment Status Overview', 'ទិដ្ឋភាពស្ថានភាពរំលស់') }}</h3>
+                        <h3 class="lm-dashboard-panel__title"><i class="fa fa-pie-chart" style="color:var(--lm-primary, #6366f1); margin-right:8px;"></i> {{ $lmText('Installment Status Overview', 'ទិដ្ឋភាពស្ថានភាពរំលស់') }}</h3>
                         <p class="lm-dashboard-panel__hint">{{ $lmText('Installment status distribution.', 'ការបែងចែកស្ថានភាពរំលស់។') }}</p>
                     </div>
                 </div>
@@ -437,7 +450,7 @@
         <div class="lm-dashboard-panel">
             <div class="lm-dashboard-panel__header">
                 <div>
-                    <h3 class="lm-dashboard-panel__title">{{ $lmText('Visit Schedule', 'កាលវិភាគចុះជួប') }}</h3>
+                    <h3 class="lm-dashboard-panel__title"><i class="fa fa-calendar-check-o" style="color:var(--lm-primary, #6366f1); margin-right:8px;"></i> {{ $lmText('Visit Schedule', 'កាលវិភាគចុះជួប') }}</h3>
                     <p class="lm-dashboard-panel__hint">{{ $lmText('Pending fieldwork assignments.', 'កិច្ចការចុះផ្ទាល់កំពុងរង់ចាំ។') }}</p>
                 </div>
             </div>
@@ -482,7 +495,7 @@
         <div class="lm-dashboard-panel">
             <div class="lm-dashboard-panel__header">
                 <div>
-                    <h3 class="lm-dashboard-panel__title">{{ $lmText('Collector Performance', 'ប្រសិទ្ធភាពអ្នកប្រមូលប្រាក់') }}</h3>
+                    <h3 class="lm-dashboard-panel__title"><i class="fa fa-line-chart" style="color:var(--lm-primary, #6366f1); margin-right:8px;"></i> {{ $lmText('Collector Performance', 'ប្រសិទ្ធភាពអ្នកប្រមូលប្រាក់') }}</h3>
                     <p class="lm-dashboard-panel__hint">{{ $lmText('Output, loans, and visits by collector.', 'លទ្ធផល រំលស់ និងការចុះជួបតាមអ្នកប្រមូល។') }}</p>
                 </div>
             </div>
@@ -533,7 +546,7 @@
         <section class="lm-dashboard-panel lm-dashboard-panel--feature">
             <div class="lm-dashboard-panel__header">
                 <div>
-                    <h3 class="lm-dashboard-panel__title">{{ $lmText('Live Chat', 'ការជជែកផ្ទាល់') }}</h3>
+                    <h3 class="lm-dashboard-panel__title"><i class="fa fa-desktop" style="color:var(--lm-primary, #6366f1); margin-right:8px;"></i> {{ $lmText('Live Chat & Feeds', 'ការជជែកផ្ទាល់ & បណ្តាញ') }}</h3>
                     <p class="lm-dashboard-panel__hint">{{ $lmText('Conversations, unread queues, and support activity.', 'ការសន្ទនា ជួរមិនទាន់អាន និងសកម្មភាពគាំទ្រ។') }}</p>
                 </div>
                 <span class="lm-live-badge"><span class="lm-live-badge__dot"></span> {{ $lmText('Auto refresh 30s', 'ផ្ទុកឡើងវិញស្វ័យប្រវត្តិ 30វិ') }}</span>

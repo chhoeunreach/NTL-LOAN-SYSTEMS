@@ -1,101 +1,9 @@
-@php
-    $businessLogoUrl = \Modules\LoanManagement\Services\BusinessSettingsService::publicLogoUrl();
-    $businessName = \Modules\LoanManagement\Services\BusinessSettingsService::businessName();
-    $headline = $settings['home_headline'] ?? 'Simple loan service for customers';
-    $subtitle = $settings['home_subtitle'] ?? '';
-    $body = $settings['home_body'] ?? '';
-    $cms = \Modules\LoanManagement\Services\CmsHomeService::normalize($settings['home_cms'] ?? []);
-    $customerPortalEnabled = \Modules\LoanManagement\Services\BusinessSettingsService::isCustomerLoginEnabled();
-    $partnerBrands = \Modules\LoanManagement\Services\CmsHomeService::visibleBrands($cms, $brands ?? []);
-    $menuSections = ['home' => 'hero', 'products' => 'catalog', 'how' => 'guide', 'cart' => 'cart', 'about' => 'about', 'contact' => 'contact'];
-    $visibleMenu = array_filter($menuSections, fn ($section, $key) => $cms['menu_'.$key] && $cms[$section] && ($key !== 'cart' || $cms['catalog']), ARRAY_FILTER_USE_BOTH);
-
-    $customerUser = Auth::guard('customer_loan')->user();
-    $adminUser = Auth::guard('web')->user() ?? Auth::user();
-
-    $customerPhotoUrl = $customerUser ? $customerUser->customer_photo_url : null;
-    $adminPhotoUrl = null;
-    if ($adminUser) {
-        if (!empty($adminUser->profile_photo_url)) {
-            $adminPhotoUrl = $adminUser->profile_photo_url;
-        } elseif (!empty($adminUser->profile_photo)) {
-            $adminPhotoUrl = asset('uploads/profile_photos/' . $adminUser->profile_photo);
-        } elseif (session()->has('user.profile_photo_url')) {
-            $adminPhotoUrl = session('user.profile_photo_url');
-        }
-    }
-
-    $footerUrl = function ($value) {
-        $url = trim((string) $value);
-        if ($url === '') {
-            return null;
-        }
-        return preg_match('#^(https?:)?//#i', $url) ? $url : 'https://'.$url;
-    };
-    $footerSocials = array_values(array_filter([
-        ['url' => $footerUrl($cms['footer_facebook']), 'icon' => 'fa-brands fa-facebook-f', 'label' => 'Facebook'],
-        ['url' => $footerUrl($cms['footer_telegram']), 'icon' => 'fa-brands fa-telegram', 'label' => 'Telegram'],
-        ['url' => $footerUrl($cms['footer_tiktok']), 'icon' => 'fa-brands fa-tiktok', 'label' => 'TikTok'],
-        ['url' => $footerUrl($cms['footer_instagram']), 'icon' => 'fa-brands fa-instagram', 'label' => 'Instagram'],
-        ['url' => $footerUrl($cms['footer_youtube']), 'icon' => 'fa-brands fa-youtube', 'label' => 'YouTube'],
-        ['url' => $footerUrl($cms['footer_website']), 'icon' => 'fa-solid fa-globe', 'label' => 'Website'],
-    ], fn ($item) => filled($item['url'])));
-    $footerContactRows = array_values(array_filter([
-        ['icon' => 'fa-solid fa-location-dot', 'value' => $cms['contact_address']],
-        ['icon' => 'fa-solid fa-phone', 'value' => $cms['contact_phone'], 'link' => 'tel:'.preg_replace('/[^0-9+]/', '', $cms['contact_phone'])],
-        ['icon' => 'fa-solid fa-envelope', 'value' => $cms['contact_email'], 'link' => 'mailto:'.$cms['contact_email']],
-        ['icon' => 'fa-solid fa-clock', 'value' => $cms['contact_hours']],
-    ], fn ($item) => filled($item['value'])));
-    $footerCopyright = trim(strtr($cms['footer_copyright'] ?: '© {year} {business}. All rights reserved.', [
-        '{year}' => date('Y'),
-        '{business}' => $businessName,
-    ])) ?: '© '.date('Y').' '.$businessName;
-    $footerQuickLinks = [];
-    foreach ($visibleMenu as $footerKey => $footerSection) {
-        $footerQuickLinks[] = ['href' => '#'.$footerKey, 'label' => $cms['label_'.$footerKey], 'icon' => 'fa-solid fa-chevron-right'];
-    }
-    if (! $customerUser && $customerPortalEnabled && $cms['catalog']) {
-        $footerQuickLinks[] = ['href' => route('loan-management.public.register'), 'label' => 'Request Installment', 'icon' => 'fa-solid fa-chevron-right'];
-    }
-    $footerAccounts = [];
-    if ($customerUser) {
-        $footerAccounts[] = ['href' => route('loan-management.public.customer-dashboard'), 'label' => 'My Dashboard', 'icon' => 'fa-solid fa-gauge-high'];
-    }
-    if ($adminUser) {
-        $footerAccounts[] = ['href' => route('loan-management.dashboard'), 'label' => 'Admin Dashboard', 'icon' => 'fa-solid fa-gauge-high'];
-    } else {
-        $footerAccounts[] = [
-            'href' => route('login'),
-            'label' => 'Admin Login',
-            'icon' => 'fa-solid fa-user-shield',
-            'confirm' => $customerUser ? 'Are you sure you want to log out first to access Admin Login?' : null,
-        ];
-    }
-    if ($customerPortalEnabled) $footerAccounts[] = [
-        'href' => route('loan-management.public.customer-login'),
-        'label' => $customerUser ? 'Switch Customer Account' : 'Customer Portal',
-        'icon' => 'fa-solid fa-id-card',
-        'confirm' => $adminUser ? 'You are currently signed in as Administrator ('.($adminUser->name ?? 'Admin').'). Are you sure you want to log out first to switch to Customer Portal?' : null,
-    ];
-    $footerAccounts[] = [
-        'href' => route('loan-management.products'),
-        'label' => 'Installment Products Setup',
-        'icon' => 'fa-solid fa-boxes-stacked',
-    ];
-    $footerAccounts[] = [
-        'href' => route('loan-management.public.home'),
-        'label' => 'Back to Homepage',
-        'icon' => 'fa-solid fa-house',
-    ];
-    $footerSignedIn = $customerUser ?? $adminUser;
-    $catalogCount = count($products ?? []);
-@endphp
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $businessName }}</title>
+    <title>NTL INSTALLMENT</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --public-primary:#b9570b; --brand-orange:#d76b17; --ink:#231f20; --muted:#6d6d72; --line:#e5e5e7; --panel:#fff; --soft:#f6f6f7; }
@@ -355,235 +263,115 @@
 </head>
 <body>
     <main class="public-shell">
-        @if($cms['announcement'])
-        <div class="announcement"><div class="announcement-inner">
-            <span>{{ $businessName }} &middot; {{ $cms['announcement_text'] }} @if($cms['contact_address']) &middot; {{ $cms['contact_address'] }} @endif @if($cms['contact_phone']) &middot; <a href="tel:{{ preg_replace('/[^0-9+]/', '', $cms['contact_phone']) }}">{{ $cms['contact_phone'] }}</a> @endif</span>
-            <div class="announcement-links">@if($customerPortalEnabled)<a href="{{ route('loan-management.public.customer-login') }}">Customer Portal</a>@endif<a href="{{ route('login') }}">Admin Login</a></div>
+                <div class="announcement"><div class="announcement-inner">
+            <span>NTL INSTALLMENT &middot; Showroom &amp; Installment  &middot; Kampuchea Krom (128), Sangkat Teuk Laak I, Khan Tuol Kork, Phnom Penh   &middot; <a href="tel:+85512345678">+855 12 345 678</a> </span>
+            <div class="announcement-links"><a href="http://127.0.0.1:8000/customer/login">Customer Portal</a><a href="http://127.0.0.1:8000/login">Admin Login</a></div>
         </div></div>
-        @endif
-        <header class="site-nav">
+                <header class="site-nav">
             <div class="nav-inner">
-                <a class="brand" href="{{ route('loan-management.public.home') }}">
+                <a class="brand" href="http://127.0.0.1:8000">
                     <span class="brand-logo">
-                        @if($businessLogoUrl)
-                            <img src="{{ $businessLogoUrl }}" alt="{{ $businessName }}">
-                        @else
-                            {{ strtoupper(mb_substr($businessName, 0, 1)) }}
-                        @endif
-                    </span>
-                    <span class="brand-text">{{ $businessName }}<small>{{ $cms['tagline'] }}</small></span>
+                                                    <img src="http://127.0.0.1:8000/loan-management/settings/business/public-logo" alt="NTL INSTALLMENT">
+                                            </span>
+                    <span class="brand-text">NTL INSTALLMENT<small>Showroom &amp; Installment</small></span>
                 </a>
-                @if(!empty($visibleMenu))<button type="button" class="menu-toggle" id="publicMenuToggle" aria-label="Toggle navigation" aria-controls="publicMainMenu" aria-expanded="false"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>@endif
-                <nav class="menu" id="publicMainMenu" aria-label="Main menu">
-                    @foreach($visibleMenu as $key => $section)
-                        <a href="#{{ $key }}" data-section-link="{{ $key }}" @class(['active' => $loop->first])>{{ $cms['label_'.$key] }}</a>
-                    @endforeach
-                </nav>
+                <button type="button" class="menu-toggle" id="publicMenuToggle" aria-label="Toggle navigation" aria-controls="publicMainMenu" aria-expanded="false"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>                <nav class="menu" id="publicMainMenu" aria-label="Main menu">
+                                            <a href="#home" data-section-link="home" class="active">Home</a>
+                                            <a href="#products" data-section-link="products" class="">Products Catalog</a>
+                                            <a href="#how" data-section-link="how" class="">Installment Guide</a>
+                                            <a href="#cart" data-section-link="cart" class="">Cart</a>
+                                            <a href="#about" data-section-link="about" class="">About Us</a>
+                                            <a href="#contact" data-section-link="contact" class="">Contact</a>
+                                    </nav>
                 <div class="nav-actions">
-                    @if($adminUser)
-                        <div class="user-dropdown-wrapper" id="adminDropdownWrapper">
-                            <button type="button" class="user-profile-btn admin-profile-btn" id="adminProfileToggle" aria-expanded="false">
-                                @if($adminPhotoUrl)
-                                    <img src="{{ $adminPhotoUrl }}" class="user-avatar-img" alt="Admin">
-                                @else
-                                    <span class="user-avatar-badge admin-avatar-badge">⚡</span>
-                                @endif
-                                <span class="user-profile-name">{{ $adminUser->name ?? $adminUser->username ?? 'Admin' }}</span>
-                                <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="user-dropdown-menu" id="adminDropdownMenu">
-                                <div class="dropdown-header-box">
-                                    @if($adminPhotoUrl)
-                                        <img src="{{ $adminPhotoUrl }}" class="dropdown-avatar-circle" alt="Admin">
-                                    @else
-                                        <div class="dropdown-avatar-circle-fallback admin-avatar-circle-fallback">⚡</div>
-                                    @endif
-                                    <div style="min-width: 0;">
-                                        <div class="dropdown-user-name">{{ $adminUser->name ?? $adminUser->username ?? 'Administrator' }}</div>
-                                        <div class="dropdown-user-sub">{{ $adminUser->email ?? 'Admin & Staff Portal' }}</div>
+                    
+                                            <a class="button-outline" href="http://127.0.0.1:8000/customer/login">Login</a>
+                        <a class="button" href="http://127.0.0.1:8000/register">Apply Now</a>
                                     </div>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <a href="{{ route('loan-management.dashboard') }}" class="dropdown-item">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                                    Admin Dashboard
-                                </a>
-                                <a href="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and switch to Customer Portal?');" title="Switch or login as customer">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                    Switch to Customer
-                                </a>
-                                <a href="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and switch admin account?');" title="Switch or login as another admin user">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                    Switch / Other Admin
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                <form method="POST" action="{{ Route::has('logout') ? route('logout') : url('/logout') }}" style="margin: 0;" onsubmit="return confirm('Are you sure you want to log out?');">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item danger">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                        Logout Admin
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @endif
-
-                    @if($customerUser)
-                        <div class="user-dropdown-wrapper" id="customerDropdownWrapper">
-                            <button type="button" class="user-profile-btn" id="customerProfileToggle" aria-expanded="false">
-                                @if($customerPhotoUrl)
-                                    <img src="{{ $customerPhotoUrl }}" class="user-avatar-img" alt="{{ $customerUser->name ?: 'Customer' }}">
-                                @else
-                                    <span class="user-avatar-badge">{{ strtoupper(mb_substr($customerUser->name ?: 'C', 0, 1)) }}</span>
-                                @endif
-                                <span class="user-profile-name">{{ $customerUser->name ?: 'Customer' }}</span>
-                                <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-                            </button>
-                            <div class="user-dropdown-menu" id="customerDropdownMenu">
-                                <div class="dropdown-header-box">
-                                    @if($customerPhotoUrl)
-                                        <img src="{{ $customerPhotoUrl }}" class="dropdown-avatar-circle" alt="{{ $customerUser->name ?: 'Customer' }}">
-                                    @else
-                                        <div class="dropdown-avatar-circle-fallback">{{ strtoupper(mb_substr($customerUser->name ?: 'C', 0, 1)) }}</div>
-                                    @endif
-                                    <div style="min-width: 0;">
-                                        <div class="dropdown-user-name">{{ $customerUser->name ?: 'Customer' }}</div>
-                                        <div class="dropdown-user-sub">{{ $customerUser->phone ?: $customerUser->username }}</div>
-                                    </div>
-                                </div>
-                                <div class="dropdown-divider"></div>
-                                <a href="{{ route('loan-management.public.customer-dashboard') }}" class="dropdown-item">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                                    My Dashboard
-                                </a>
-                                <a href="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and switch to another account?');" title="Switch or add another customer account">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                                    Switch Account
-                                </a>
-                                @if(! $adminUser)
-                                    <a href="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and go to Admin Login?');">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                        Admin Login
-                                    </a>
-                                @endif
-                                <div class="dropdown-divider"></div>
-                                <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0;" onsubmit="return confirm('Are you sure you want to log out?');">
-                                    @csrf
-                                    <button type="submit" class="dropdown-item danger">
-                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                        Logout Customer
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                    @elseif(! $adminUser && $customerPortalEnabled)
-                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Login</a>
-                        <a class="button" href="{{ route('loan-management.public.register') }}">Apply Now</a>
-                    @endif
-                </div>
             </div>
         </header>
 
-        @if($cms['hero'])
-        <section class="hero" id="home">
-            <img class="hero-image" src="{{ route('loan-management.public.home-image') }}" alt="Computer and technology showroom" fetchpriority="high">
+                <section class="hero" id="home">
+            <img class="hero-image" src="http://127.0.0.1:8000/cms/home-image" alt="Computer and technology showroom" fetchpriority="high">
             <div class="hero-inner">
                 <div class="hero-copy">
-                    <span class="eyebrow">{{ $cms['hero_eyebrow'] }}</span>
-                    <h1>{{ $businessName }}</h1>
-                    <p class="subtitle">{{ $headline }}</p>
-                    @if($subtitle)
-                        <p class="subtitle">{{ $subtitle }}</p>
-                    @endif
-                    @if($body)
-                        <p class="body-copy">{{ $body }}</p>
-                    @endif
-                    <div class="hero-cta">
-                        @if($customerUser)
-                            <a class="button" href="{{ route('loan-management.public.customer-dashboard') }}">Go to My Dashboard</a>
-                            @if($cms['catalog'])<a class="button-outline" href="#products">Shop Products</a>@endif
-                        @elseif($adminUser)
-                            <a class="button" href="{{ route('loan-management.dashboard') }}">Open Admin Dashboard</a>
-                            <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}" onclick="return confirm('You are currently signed in as Administrator ({{ $adminUser->name ?? $adminUser->username ?? 'Admin' }}). Are you sure you want to log out first to switch to Customer Portal?');">Customer Login / Switch</a>
-                        @else
-                            @if($cms['catalog'])<a class="button" href="#products">Shop Products</a>@endif
-                            @if($customerPortalEnabled)<a class="button-outline" href="{{ route('loan-management.public.register') }}">Apply Now</a>@endif
-                        @endif
-                    </div>
+                    <span class="eyebrow">Installment Shopping</span>
+                    <h1>NTL INSTALLMENT</h1>
+                    <p class="subtitle">Simple Installment service for customers</p>
+                                            <p class="subtitle">Register with NTL Co.Ltd and our team will contact you about your loan request.</p>
+                                                                <p class="body-copy">Fast customer registration, clear payment schedules, Telegram updates, and easy support from our branch team.</p>
+                                        <div class="hero-cta">
+                                                    <a class="button" href="#products">Shop Products</a>                            <a class="button-outline" href="http://127.0.0.1:8000/register">Apply Now</a>                                            </div>
                 </div>
             </div>
         </section>
-        @endif
-
-        @if($cms['assessment'] && $cms['catalog'] && !empty($products))
-        <section class="assessment" aria-labelledby="assessmentTitle"><div class="section-inner">
-            <h2 id="assessmentTitle">{{ $cms['assessment_title'] }}</h2>
+        
+                <section class="assessment" aria-labelledby="assessmentTitle"><div class="section-inner">
+            <h2 id="assessmentTitle">Instant Loan Assessment</h2>
             <div class="assessment-grid">
-                <div><label for="assessmentProduct">Selected Item</label><select id="assessmentProduct">@foreach($products as $product)<option value="{{ $loop->index }}">{{ $product['name'] }}</option>@endforeach</select></div>
+                <div><label for="assessmentProduct">Selected Item</label><select id="assessmentProduct"><option value="0">ASUS Vivobook 15</option><option value="1">Canon Printer</option><option value="2">Lenovo Laptop</option></select></div>
                 <div><label for="assessmentPrice">Product Price</label><input id="assessmentPrice" readonly></div>
                 <div><label for="assessmentMonths">Months</label><input id="assessmentMonths" type="number" min="1" max="120" value="12" required></div>
                 <div><label for="assessmentDownPayment">Down Payment</label><input id="assessmentDownPayment" type="number" min="0" step="0.01" value="0" required></div>
             </div>
-            <div class="assessment-output"><div>Estimated Monthly: <strong id="assessmentMonthly"></strong></div>@if($customerPortalEnabled)<button type="button" class="button" id="assessmentApply"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Configure Installment</button>@endif</div>
-            <p>{{ $cms['assessment_note'] }}</p>
+            <div class="assessment-output"><div>Estimated Monthly: <strong id="assessmentMonthly"></strong></div><button type="button" class="button" id="assessmentApply"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Configure Installment</button></div>
+            <p>Estimate before interest and fees. Our staff confirms final installment terms after review.</p>
         </div></section>
-        @endif
-
-        @if($cms['brands'] && !empty($partnerBrands))
-            <section class="brand-strip" aria-labelledby="partnerBrandsTitle">
-                <h2 id="partnerBrandsTitle">{{ $cms['brands_title'] }}</h2>
+        
+                    <section class="brand-strip" aria-labelledby="partnerBrandsTitle">
+                <h2 id="partnerBrandsTitle">Authorized Brands &amp; Partners</h2>
                 <div class="brand-strip-inner">
-                    @foreach($partnerBrands as $partner)
-                        @if($partner['website_url'])
-                            <a class="brand-partner" href="{{ $partner['website_url'] }}" target="_blank" rel="noopener noreferrer">
-                        @else
-                            <div class="brand-partner">
-                        @endif
-                            @if($partner['logo_url'])<img src="{{ $partner['logo_url'] }}" alt="" loading="lazy" onerror="this.hidden=true">@endif
-                            <span>{{ $partner['name'] }}</span>
-                        @if($partner['website_url'])</a>@else</div>@endif
-                    @endforeach
-                </div>
+                                                                        <a class="brand-partner" href="https://www.acer.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>PREDATOR</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.microsoft.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>Microsoft</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.lenovo.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>Lenovo</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.hikvision.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>HIKVISION</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.asus.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>ASUS</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.epson.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>EPSON</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.canon.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>Canon</span>
+                        </a>                                                                        <a class="brand-partner" href="https://www.toshiba.com/" target="_blank" rel="noopener noreferrer">
+                                                                                <span>TOSHIBA</span>
+                        </a>                                    </div>
             </section>
-        @endif
-
-        @if($cms['guide'])
-        <section class="section alt" id="how">
+        
+                <section class="section alt" id="how">
             <div class="section-inner">
                 <div class="section-head">
                     <div>
-                        <h2>{{ $cms['guide_title'] }}</h2>
-                        <p>{{ $cms['guide_description'] }}</p>
+                        <h2>Apply in a few minutes</h2>
+                        <p>Select products, submit your contact details, and our staff will follow up on your pending installment request.</p>
                     </div>
                 </div>
                 <div class="feature-grid">
-                    @foreach([1, 2, 3] as $step)
-                        <div class="feature"><div class="feature-icon">{{ $step }}</div><strong>{{ $cms['step_'.$step.'_title'] }}</strong><span>{{ $cms['step_'.$step.'_body'] }}</span></div>
-                    @endforeach
-                </div>
+                                            <div class="feature"><div class="feature-icon">1</div><strong>Choose product</strong><span>Add products from the catalog to your installment cart.</span></div>
+                                            <div class="feature"><div class="feature-icon">2</div><strong>Submit request</strong><span>Send your name, phone number, and contact address with your selected items.</span></div>
+                                            <div class="feature"><div class="feature-icon">3</div><strong>Staff follow-up</strong><span>Our staff will contact you to review your request and discuss installment terms.</span></div>
+                                    </div>
             </div>
         </section>
-        @endif
-
-        @if($cms['experience'])
-        <section class="section" id="experience"><div class="section-inner">
-            <div class="section-head"><div><h2>{{ $cms['experience_title'] }}</h2><p>{{ $cms['experience_description'] }}</p></div></div>
-            <div class="feature-grid">@foreach([1,2,3] as $step)<div class="feature"><div class="feature-icon"><i class="fa-solid {{ [1 => 'fa-laptop', 2 => 'fa-wallet', 3 => 'fa-headset'][$step] }}" aria-hidden="true"></i></div><strong>{{ $cms['experience_'.$step.'_title'] }}</strong><span>{{ $cms['experience_'.$step.'_body'] }}</span></div>@endforeach</div>
+        
+                <section class="section" id="experience"><div class="section-inner">
+            <div class="section-head"><div><h2>Simple customer experience</h2><p>Browse products, request installment service, and return to your customer account once staff has enabled access.</p></div></div>
+            <div class="feature-grid"><div class="feature"><div class="feature-icon"><i class="fa-solid fa-laptop" aria-hidden="true"></i></div><strong>Choose product</strong><span>Add products from the catalog to your installment cart.</span></div><div class="feature"><div class="feature-icon"><i class="fa-solid fa-wallet" aria-hidden="true"></i></div><strong>Submit request</strong><span>Send your contact details and selected items. Our staff will follow up.</span></div><div class="feature"><div class="feature-icon"><i class="fa-solid fa-headset" aria-hidden="true"></i></div><strong>Track your account</strong><span>After staff enables your account, log in to view loan records and payment history.</span></div></div>
         </div></section>
-        @endif
-
-        @if($cms['catalog'])
-        <section class="section" id="products">
-            <div @class(['section-inner', 'shop-inner', 'without-cart' => !$cms['cart']])>
+        
+                <section class="section" id="products">
+            <div class="section-inner shop-inner">
                 <div>
                     <div class="section-head">
                         <div>
-                            <h2>{{ $cms['catalog_title'] }}</h2>
-                            <p>{{ $cms['catalog_description'] }}</p>
+                            <h2>Products Catalog</h2>
+                            <p>Find your next product and submit an installment request. All requests are subject to review.</p>
                         </div>
                     </div>
 
-                    {{-- Search & Category Filter Toolbar --}}
+                    
                     <div class="catalog-filter-bar">
                         <div class="catalog-search-row">
                             <div class="search-input-box">
@@ -601,113 +389,152 @@
                             </div>
                         </div>
 
-                        {{-- Category Filter Chips --}}
+                        
                         <div class="category-chips-scroll" id="categoryChipsContainer">
                             <button type="button" class="category-chip active" data-category="all">
-                                All Products <span class="chip-count" id="totalCountPill">{{ count($products) }}</span>
+                                All Products <span class="chip-count" id="totalCountPill">3</span>
                             </button>
-                            @foreach($categories ?? [] as $cat)
-                                @php
-                                    $catCount = collect($products)->where('category', $cat)->count();
-                                @endphp
-                                <button type="button" class="category-chip" data-category="{{ strtolower($cat) }}">
-                                    {{ $cat }} <span class="chip-count">{{ $catCount }}</span>
+                                                                                            <button type="button" class="category-chip" data-category="computers">
+                                    Computers <span class="chip-count">2</span>
                                 </button>
-                            @endforeach
-                        </div>
+                                                                                            <button type="button" class="category-chip" data-category="printers">
+                                    Printers <span class="chip-count">1</span>
+                                </button>
+                                                    </div>
                     </div>
 
-                    {{-- Product Grid --}}
-                    @if(!empty($products))
-                        <div class="product-grid" id="productsCatalogGrid">
-                            @foreach($products as $product)
-                                @php
-                                    $pPrice = (float) ($product['price'] ?? 0);
-                                    $pName = (string) ($product['name'] ?? 'Product');
-                                    $pSku = (string) ($product['sku'] ?? '');
-                                    $pBrand = (string) ($product['brand'] ?? '');
-                                    $pCat = (string) ($product['category'] ?? 'General');
-                                    $pMinDp = (float) ($product['min_down_payment_percent'] ?? 0);
-                                    $estMonthly = $pPrice > 0 ? round($pPrice / 12, 2) : 0;
-                                @endphp
-                                <article class="product-card"
-                                    data-name="{{ strtolower($pName) }}"
-                                    data-sku="{{ strtolower($pSku) }}"
-                                    data-brand="{{ strtolower($pBrand) }}"
-                                    data-model="{{ strtolower($product['model'] ?? '') }}"
-                                    data-category="{{ strtolower($pCat) }}"
-                                    data-price="{{ $pPrice }}"
-                                    data-id="{{ $product['id'] ?? $loop->index }}">
+                    
+                                            <div class="product-grid" id="productsCatalogGrid">
+                                                                                            <article class="product-card"
+                                    data-name="asus vivobook 15"
+                                    data-sku="asus-15"
+                                    data-brand="asus"
+                                    data-model=""
+                                    data-category="computers"
+                                    data-price="520"
+                                    data-id="7">
 
                                     <div class="product-image-wrap">
-                                        @if(!empty($product['image_url']))
-                                            <img src="{{ $product['image_url'] }}" alt="{{ $pName }}" loading="lazy">
-                                        @else
-                                            <div class="product-fallback-icon">
+                                                                                    <div class="product-fallback-icon">
                                                 <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                                             </div>
-                                        @endif
-
-                                        @if($pCat && strtolower($pCat) !== 'general')
-                                            <span class="card-badge-top-left">{{ $pCat }}</span>
-                                        @endif
-
-                                        @if($pMinDp > 0)
-                                            <span class="card-badge-top-right">Min {{ $pMinDp }}% DP</span>
-                                        @else
-                                            <span class="card-badge-top-right">0% Down Payment</span>
-                                        @endif
-                                    </div>
+                                        
+                                                                                    <span class="card-badge-top-left">Computers</span>
+                                        
+                                                                                    <span class="card-badge-top-right">0% Down Payment</span>
+                                                                            </div>
 
                                     <div class="product-body">
-                                        <div @class(['product-stock', 'unavailable' => ($product['qty_available'] ?? 1) <= 0])>{{ ($product['qty_available'] ?? 1) > 0 ? 'In Stock' : 'Stock subject to staff confirmation' }}</div>
-                                        @if($pBrand)
-                                            <div class="product-brand-tag">{{ $pBrand }}</div>
-                                        @endif
-                                        <h3 class="product-title">{{ $pName }}</h3>
-                                        <div class="product-sku">{{ $pSku ? 'SKU: ' . $pSku : 'Installment Eligible' }}</div>
+                                        <div class="product-stock">In Stock</div>
+                                                                                    <div class="product-brand-tag">ASUS</div>
+                                                                                <h3 class="product-title">ASUS Vivobook 15</h3>
+                                        <div class="product-sku">SKU: ASUS-15</div>
 
                                         <div class="product-price-row">
-                                            <div class="price-cash">${{ number_format($pPrice, 2) }}</div>
-                                            @if($estMonthly > 0)
-                                                <div class="price-monthly-tag">Est. ${{ number_format($estMonthly, 2) }}/mo</div>
-                                            @endif
-                                        </div>
+                                            <div class="price-cash">$520.00</div>
+                                                                                            <div class="price-monthly-tag">Est. $43.33/mo</div>
+                                                                                    </div>
 
                                         <div class="product-actions-grid">
-                                            @if($cms['cart'])<button type="button" class="cart-btn" data-product='@json($product)'>
+                                            <button type="button" class="cart-btn" data-product='{"id":7,"variation_id":0,"name":"ASUS Vivobook 15","price":520,"brand":"ASUS","category":"Computers","sku":"ASUS-15"}'>
                                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
                                                 Add to Cart
-                                            </button>@endif
-                                            @if($customerUser)
-                                                <a href="{{ route('loan-management.public.customer-loan-request', ['product_id' => $product['id']]) }}" class="apply-btn" title="Direct Installment Request">
+                                            </button>                                                                                            <a href="http://127.0.0.1:8000/register?product_id=7" data-installment-product="{&quot;id&quot;:7,&quot;variation_id&quot;:0,&quot;name&quot;:&quot;ASUS Vivobook 15&quot;,&quot;price&quot;:520,&quot;brand&quot;:&quot;ASUS&quot;,&quot;category&quot;:&quot;Computers&quot;,&quot;sku&quot;:&quot;ASUS-15&quot;}" class="apply-btn" title="Direct Installment Request">
                                                     Apply
                                                 </a>
-                                            @elseif($customerPortalEnabled)
-                                                <a href="{{ route('loan-management.public.register', ['product_id' => $product['id']]) }}" data-installment-product="{{ json_encode($product) }}" class="apply-btn" title="Direct Installment Request">
-                                                    Apply
-                                                </a>
-                                            @endif
-                                        </div>
+                                                                                    </div>
                                     </div>
                                 </article>
-                            @endforeach
-                        </div>
+                                                                                            <article class="product-card"
+                                    data-name="canon printer"
+                                    data-sku="canon-1"
+                                    data-brand="canon"
+                                    data-model=""
+                                    data-category="printers"
+                                    data-price="180"
+                                    data-id="9">
+
+                                    <div class="product-image-wrap">
+                                                                                    <div class="product-fallback-icon">
+                                                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                            </div>
+                                        
+                                                                                    <span class="card-badge-top-left">Printers</span>
+                                        
+                                                                                    <span class="card-badge-top-right">0% Down Payment</span>
+                                                                            </div>
+
+                                    <div class="product-body">
+                                        <div class="product-stock">In Stock</div>
+                                                                                    <div class="product-brand-tag">Canon</div>
+                                                                                <h3 class="product-title">Canon Printer</h3>
+                                        <div class="product-sku">SKU: CANON-1</div>
+
+                                        <div class="product-price-row">
+                                            <div class="price-cash">$180.00</div>
+                                                                                            <div class="price-monthly-tag">Est. $15.00/mo</div>
+                                                                                    </div>
+
+                                        <div class="product-actions-grid">
+                                            <button type="button" class="cart-btn" data-product='{"id":9,"variation_id":0,"name":"Canon Printer","price":180,"brand":"Canon","category":"Printers","sku":"CANON-1"}'>
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                                                Add to Cart
+                                            </button>                                                                                            <a href="http://127.0.0.1:8000/register?product_id=9" data-installment-product="{&quot;id&quot;:9,&quot;variation_id&quot;:0,&quot;name&quot;:&quot;Canon Printer&quot;,&quot;price&quot;:180,&quot;brand&quot;:&quot;Canon&quot;,&quot;category&quot;:&quot;Printers&quot;,&quot;sku&quot;:&quot;CANON-1&quot;}" class="apply-btn" title="Direct Installment Request">
+                                                    Apply
+                                                </a>
+                                                                                    </div>
+                                    </div>
+                                </article>
+                                                                                            <article class="product-card"
+                                    data-name="lenovo laptop"
+                                    data-sku="lenovo-1"
+                                    data-brand="lenovo"
+                                    data-model=""
+                                    data-category="computers"
+                                    data-price="750"
+                                    data-id="11">
+
+                                    <div class="product-image-wrap">
+                                                                                    <div class="product-fallback-icon">
+                                                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                                            </div>
+                                        
+                                                                                    <span class="card-badge-top-left">Computers</span>
+                                        
+                                                                                    <span class="card-badge-top-right">0% Down Payment</span>
+                                                                            </div>
+
+                                    <div class="product-body">
+                                        <div class="product-stock">In Stock</div>
+                                                                                    <div class="product-brand-tag">Lenovo</div>
+                                                                                <h3 class="product-title">Lenovo Laptop</h3>
+                                        <div class="product-sku">SKU: LENOVO-1</div>
+
+                                        <div class="product-price-row">
+                                            <div class="price-cash">$750.00</div>
+                                                                                            <div class="price-monthly-tag">Est. $62.50/mo</div>
+                                                                                    </div>
+
+                                        <div class="product-actions-grid">
+                                            <button type="button" class="cart-btn" data-product='{"id":11,"variation_id":0,"name":"Lenovo Laptop","price":750,"brand":"Lenovo","category":"Computers","sku":"LENOVO-1"}'>
+                                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                                                Add to Cart
+                                            </button>                                                                                            <a href="http://127.0.0.1:8000/register?product_id=11" data-installment-product="{&quot;id&quot;:11,&quot;variation_id&quot;:0,&quot;name&quot;:&quot;Lenovo Laptop&quot;,&quot;price&quot;:750,&quot;brand&quot;:&quot;Lenovo&quot;,&quot;category&quot;:&quot;Computers&quot;,&quot;sku&quot;:&quot;LENOVO-1&quot;}" class="apply-btn" title="Direct Installment Request">
+                                                    Apply
+                                                </a>
+                                                                                    </div>
+                                    </div>
+                                </article>
+                                                    </div>
                         <div id="noProductsFoundMsg" style="display: none; padding: 48px 20px; text-align: center; background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 10px;">
                             <div style="font-size: 38px; color: #94a3b8; margin-bottom: 8px;">🔍</div>
                             <h4 style="margin: 0 0 4px; font-weight: 800; color: #0f172a;">No matching products found</h4>
                             <p style="margin: 0 0 14px; color: #64748b; font-size: 13px;">Try searching with another keyword or resetting the category filter.</p>
                             <button type="button" class="button-outline" onclick="resetAllFilters()" style="min-height: 36px; padding: 0 14px; font-size: 13px;">Reset Filters</button>
                         </div>
-                    @else
-                        <div class="feature">
-                            <strong>No installment products available</strong>
-                            <span>Please check back soon for new products.</span>
-                        </div>
-                    @endif
-                </div>
+                                    </div>
 
-                @if($cms['cart'])<aside class="cart-panel" id="cart">
+                <aside class="cart-panel" id="cart">
                     <div class="cart-panel-head">
                         <h2>Installment Cart</h2>
                         <span class="cart-count-pill" id="cartCountPill">0 items</span>
@@ -721,161 +548,344 @@
                         <span id="cartTotal">$0.00</span>
                     </div>
                     <p id="cartLimitMessage" role="status" hidden style="color:#b42318;"></p>
-                    @if($customerUser)
-                        <a class="cart-apply" href="{{ route('loan-management.public.customer-loan-request') }}" id="cartApply">
+                                            <a class="cart-apply" href="http://127.0.0.1:8000/register" id="cartApply">
                             Apply Installment
                         </a>
-                    @elseif($customerPortalEnabled)
-                        <a class="cart-apply" href="{{ route('loan-management.public.register') }}" id="cartApply">
-                            Apply Installment
-                        </a>
-                    @endif
-                </aside>@endif
-            </div>
+                                    </aside>            </div>
         </section>
-        @endif
-
-        @if($cms['about'])
-        <section class="section alt" id="about"><div class="section-inner">
-            <h2>{{ $cms['about_title'] }}</h2>
-            <p>{{ $body ?: $subtitle }}</p>
+        
+                <section class="section alt" id="about"><div class="section-inner">
+            <h2>About Us</h2>
+            <p>Fast customer registration, clear payment schedules, Telegram updates, and easy support from our branch team.</p>
         </div></section>
-        @endif
-        @if($cms['contact'])
-            <section class="section" id="contact"><div class="section-inner">
-                <h2>{{ $cms['contact_title'] }}</h2>
+                            <section class="section" id="contact"><div class="section-inner">
+                <h2>Contact Us</h2>
                 <div class="contact-details">
-                    @if($cms['contact_phone'])<p><i class="fa-solid fa-phone" aria-hidden="true"></i> <a href="tel:{{ preg_replace('/[^0-9+]/', '', $cms['contact_phone']) }}">{{ $cms['contact_phone'] }}</a></p>@endif
-                    @if($cms['contact_email'])<p><i class="fa-solid fa-envelope" aria-hidden="true"></i> <a href="mailto:{{ $cms['contact_email'] }}">{{ $cms['contact_email'] }}</a></p>@endif
-                    @if($cms['contact_address'])<p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $cms['contact_address'] }}</p>@endif
-                    @if($cms['contact_hours'])<p><i class="fa-solid fa-clock" aria-hidden="true"></i> {{ $cms['contact_hours'] }}</p>@endif
-                </div>
-                @if($customerPortalEnabled)<a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Customer Portal</a>@endif
-            </div></section>
-        @endif
-
-        @if($cms['footer'])<footer class="footer" id="publicFooter">
+                    <p><i class="fa-solid fa-phone" aria-hidden="true"></i> <a href="tel:+85512345678">+855 12 345 678</a></p>                    <p><i class="fa-solid fa-envelope" aria-hidden="true"></i> <a href="mailto:showroom@example.com">showroom@example.com</a></p>                    <p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Kampuchea Krom (128), Sangkat Teuk Laak I, Khan Tuol Kork, Phnom Penh</p>                    <p><i class="fa-solid fa-clock" aria-hidden="true"></i> Monday - Saturday, 8:00 AM - 6:00 PM</p>                </div>
+                <a class="button-outline" href="http://127.0.0.1:8000/customer/login">Customer Portal</a>            </div></section>
+        
+        <footer class="footer" id="publicFooter">
             <div class="footer-inner">
                 <div class="footer-grid">
                     <section class="footer-group footer-brand-group">
                         <div class="footer-brand">
                             <span class="footer-brand-logo">
-                                @if($businessLogoUrl)
-                                    <img src="{{ $businessLogoUrl }}" alt="{{ $businessName }}">
-                                @else
-                                    {{ strtoupper(mb_substr($businessName, 0, 1)) }}
-                                @endif
-                            </span>
+                                                                    <img src="http://127.0.0.1:8000/loan-management/settings/business/public-logo" alt="NTL INSTALLMENT">
+                                                            </span>
                             <span>
-                                <strong>{{ $businessName }}</strong>
-                                <small>{{ $cms['tagline'] }}</small>
+                                <strong>NTL INSTALLMENT</strong>
+                                <small>Showroom &amp; Installment</small>
                             </span>
                         </div>
                         <div class="footer-group-body">
-                            @if($cms['footer_text'])<p>{{ $cms['footer_text'] }}</p>@endif
-                            <div class="footer-cta">
-                                @if($customerUser)
-                                    <a class="primary" href="{{ route('loan-management.public.customer-dashboard') }}"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> My Dashboard</a>
-                                @elseif($adminUser)
-                                    <a class="primary" href="{{ route('loan-management.dashboard') }}"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Admin Dashboard</a>
-                                @elseif($customerPortalEnabled)
-                                    <a class="primary" href="{{ route('loan-management.public.register') }}"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Apply Now</a>
-                                    <a href="{{ route('loan-management.public.customer-login') }}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Login</a>
-                                @endif
-                            </div>
-                            @if($footerSignedIn)
-                                <p style="margin-top:12px; color:#8b929c;"><i class="fa-solid fa-circle-user" aria-hidden="true"></i> Signed in as {{ $customerUser ? $customerUser->name : ($adminUser->name ?? $adminUser->username ?? 'Administrator') }}</p>
-                            @endif
-                            @if($cms['footer_show_social'] && $footerSocials)
-                                <div class="footer-social-title">{{ $cms['footer_social_title'] }}</div>
+                            <p>For your applications, installment account, and payment history, visit the Customer Portal.</p>                            <div class="footer-cta">
+                                                                    <a class="primary" href="http://127.0.0.1:8000/register"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Apply Now</a>
+                                    <a href="http://127.0.0.1:8000/customer/login"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Login</a>
+                                                            </div>
+                                                                                        <div class="footer-social-title">Follow Us</div>
                                 <div class="footer-social">
-                                    @foreach($footerSocials as $footerSocial)
-                                        <a href="{{ $footerSocial['url'] }}" target="_blank" rel="noopener noreferrer" title="{{ $footerSocial['label'] }}" aria-label="{{ $footerSocial['label'] }}"><i class="{{ $footerSocial['icon'] }}" aria-hidden="true"></i></a>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
+                                                                            <a href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer" title="Facebook" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+                                                                            <a href="https://t.me/" target="_blank" rel="noopener noreferrer" title="Telegram" aria-label="Telegram"><i class="fa-brands fa-telegram" aria-hidden="true"></i></a>
+                                                                            <a href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer" title="TikTok" aria-label="TikTok"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
+                                                                            <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer" title="Instagram" aria-label="Instagram"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+                                                                            <a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer" title="YouTube" aria-label="YouTube"><i class="fa-brands fa-youtube" aria-hidden="true"></i></a>
+                                                                            <a href="http://127.0.0.1:8000" target="_blank" rel="noopener noreferrer" title="Website" aria-label="Website"><i class="fa-solid fa-globe" aria-hidden="true"></i></a>
+                                                                    </div>
+                                                    </div>
                     </section>
 
-                    @if($cms['footer_show_links'] && $footerQuickLinks)
-                        <section class="footer-group">
+                                            <section class="footer-group">
                             <button type="button" class="footer-group-toggle" aria-expanded="true" aria-controls="footerLinksBody">
-                                <span>{{ $cms['footer_links_title'] }}</span>
+                                <span>Quick Links</span>
                                 <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                             </button>
                             <div class="footer-group-body" id="footerLinksBody">
                                 <div class="footer-links">
-                                    @foreach($footerQuickLinks as $footerLink)
-                                        <a href="{{ $footerLink['href'] }}"><i class="{{ $footerLink['icon'] }}" aria-hidden="true"></i> {{ $footerLink['label'] }}</a>
-                                    @endforeach
-                                </div>
+                                                                            <a href="#home"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> Home</a>
+                                                                            <a href="#products"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> Products Catalog</a>
+                                                                            <a href="#how"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> Installment Guide</a>
+                                                                            <a href="#cart"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> Cart</a>
+                                                                            <a href="#about"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> About Us</a>
+                                                                            <a href="#contact"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> Contact</a>
+                                                                            <a href="http://127.0.0.1:8000/register"><i class="fa-solid fa-chevron-right" aria-hidden="true"></i> Request Installment</a>
+                                                                    </div>
                             </div>
                         </section>
-                    @endif
-
-                    @if($cms['footer_show_accounts'] && $footerAccounts)
-                        <section class="footer-group">
+                    
+                                            <section class="footer-group">
                             <button type="button" class="footer-group-toggle" aria-expanded="true" aria-controls="footerAccountsBody">
-                                <span>{{ $cms['footer_accounts_title'] }}</span>
+                                <span>Accounts</span>
                                 <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                             </button>
                             <div class="footer-group-body" id="footerAccountsBody">
                                 <div class="footer-links">
-                                    @foreach($footerAccounts as $footerAccount)
-                                        <a href="{{ $footerAccount['href'] }}"@if(!empty($footerAccount['confirm'])) onclick="return confirm(@json($footerAccount['confirm']));"@endif><i class="{{ $footerAccount['icon'] }}" aria-hidden="true"></i> {{ $footerAccount['label'] }}</a>
-                                    @endforeach
-                                </div>
+                                                                            <a href="http://127.0.0.1:8000/login"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Admin Login</a>
+                                                                            <a href="http://127.0.0.1:8000/customer/login"><i class="fa-solid fa-id-card" aria-hidden="true"></i> Customer Portal</a>
+                                                                            <a href="http://127.0.0.1:8000/loan-management/products"><i class="fa-solid fa-boxes-stacked" aria-hidden="true"></i> Installment Products Setup</a>
+                                                                            <a href="http://127.0.0.1:8000"><i class="fa-solid fa-house" aria-hidden="true"></i> Back to Homepage</a>
+                                                                    </div>
                             </div>
                         </section>
-                    @endif
-
-                    @if($cms['footer_show_contact'] && $footerContactRows)
-                        <section class="footer-group">
+                    
+                                            <section class="footer-group">
                             <button type="button" class="footer-group-toggle" aria-expanded="true" aria-controls="footerContactBody">
-                                <span>{{ $cms['footer_contact_title'] }}</span>
+                                <span>Get In Touch</span>
                                 <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
                             </button>
                             <div class="footer-group-body" id="footerContactBody">
                                 <div class="footer-contact-list">
-                                    @foreach($footerContactRows as $footerContact)
-                                        <div>
-                                            <i class="{{ $footerContact['icon'] }}" aria-hidden="true"></i>
-                                            @if(!empty($footerContact['link']))<a href="{{ $footerContact['link'] }}"><span>{{ $footerContact['value'] }}</span></a>
-                                            @else<span>{{ $footerContact['value'] }}</span>@endif
-                                        </div>
-                                    @endforeach
-                                </div>
+                                                                            <div>
+                                            <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                                            <span>Kampuchea Krom (128), Sangkat Teuk Laak I, Khan Tuol Kork, Phnom Penh</span>                                        </div>
+                                                                            <div>
+                                            <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                                            <a href="tel:+85512345678"><span>+855 12 345 678</span></a>
+                                                                                    </div>
+                                                                            <div>
+                                            <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+                                            <a href="mailto:showroom@example.com"><span>showroom@example.com</span></a>
+                                                                                    </div>
+                                                                            <div>
+                                            <i class="fa-solid fa-clock" aria-hidden="true"></i>
+                                            <span>Monday - Saturday, 8:00 AM - 6:00 PM</span>                                        </div>
+                                                                    </div>
                             </div>
                         </section>
-                    @endif
-                </div>
+                                    </div>
 
-                @if($cms['footer_show_note'] && $cms['footer_note'])<div class="footer-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> {{ $cms['footer_note'] }}</div>@endif
-                @if($cms['privacy'] && $cms['privacy_body'])<p><button type="button" class="footer-policy-btn" id="privacyOpen">{{ $cms['privacy_title'] }}</button></p>@endif
-
+                <div class="footer-note"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> All installment requests are subject to review and approval by our team.</div>                <p><button type="button" class="footer-policy-btn" id="privacyOpen">Privacy Policy</button></p>
                 <div class="footer-bottom">
-                    <div>{{ $footerCopyright }}</div>
+                    <div>© 2026 NTL INSTALLMENT. All rights reserved.</div>
                     <div class="footer-meta">
-                        @if($cms['hero'])<a href="#home" data-section-link="home"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Back to top</a>@endif
-                        @if($cms['cart'] && $catalogCount)<span>{{ $catalogCount }} {{ $catalogCount === 1 ? 'product' : 'products' }} available</span>@endif
-                        <span>{{ $businessName }} &middot; Powered by rvstechsolution.com</span>
+                        <a href="#home" data-section-link="home"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Back to top</a>                        <span>3 products available</span>                        <span>NTL INSTALLMENT &middot; Powered by rvstechsolution.com</span>
                     </div>
                 </div>
             </div>
-        </footer>@endif
-
+        </footer>
         <button type="button" class="footer-top-btn" id="backToTopBtn" aria-label="Back to top" title="Back to top">
             <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
         </button>
 
     </main>
 
-    @include('loanmanagement::public.partials.installment_request_modal')
-    @include('loanmanagement::public.partials.customer_login_modal')
-    @if($cms['privacy'] && $cms['privacy_body'])
-        <dialog class="installment-modal" id="privacyModal" aria-labelledby="privacyTitle"><h2 id="privacyTitle">{{ $cms['privacy_title'] }}</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere;">{{ $cms['privacy_body'] }}</p><form method="dialog"><button class="button" type="submit">Close</button></form></dialog>
-    @endif
+    <style>
+    .installment-modal { width:min(720px, calc(100% - 32px)); max-height:calc(100dvh - 32px); padding:32px; border:0; border-radius:8px; background:#fff; color:#202020; overflow-y:auto; }
+    .installment-modal::backdrop { background:rgba(0,0,0,.60); }
+    .installment-modal h2 { margin:0 36px 10px 0; font-size:28px; line-height:1.25; }
+    .installment-modal p { color:#667085; margin:0 0 24px; line-height:1.6; }
+    .installment-close { position:absolute; top:16px; right:16px; width:32px; height:32px; padding:0; border:0; background:transparent; color:#667085; font-size:20px; }
+    .installment-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:20px; }
+    .installment-field-full { grid-column:1 / -1; }
+    .installment-modal label { display:block; margin-bottom:8px; font-size:14px; font-weight:600; }
+    .installment-modal input, .installment-modal textarea { width:100%; min-width:0; padding:12px 14px; border:1px solid #dbe0e7; border-radius:6px; background:#fff; color:#202020; font:inherit; }
+    .installment-modal textarea { resize:vertical; min-height:72px; }
+    .installment-modal textarea[readonly] { background:#f8f9fb; }
+    .installment-submit { width:100%; min-height:48px; margin-top:24px; border:0; border-radius:6px; background:var(--public-primary, #b9570b); color:#fff; font:inherit; font-weight:700; }
+    .installment-submit:disabled { cursor:wait; opacity:.65; }
+    .installment-message { padding:12px 14px; margin-bottom:20px; border-radius:6px; background:#fff1f2; color:#b42318; overflow-wrap:anywhere; }
+    .installment-success .installment-message { background:#edf9f1; color:#18733d; }
+    .installment-success h2 { margin-top:12px; }
+    .installment-modal [hidden] { display:none !important; }
+    @media (max-width:540px) { .installment-modal { padding:24px 20px; } .installment-modal h2 { font-size:23px; } .installment-grid { grid-template-columns:1fr; gap:16px; } }
+</style>
+<dialog class="installment-modal" id="installmentRequestModal" aria-labelledby="installmentRequestTitle">
+    <button class="installment-close" type="button" id="installmentRequestClose" aria-label="Close request" title="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <div id="installmentRequestFields">
+        <h2 id="installmentRequestTitle">Register Installment Request</h2>
+        <p>Send your contact details and selected products. Our staff will follow up on your request.</p>
+        <div class="installment-message" id="installmentRequestError" role="alert" hidden></div>
+        <form method="POST" action="http://127.0.0.1:8000/register" id="installmentRequestForm">
+            <input type="hidden" name="_token" value="" autocomplete="off">            <input type="hidden" name="installment_request" value="1">
+            <input type="hidden" name="preferred_months" id="requestPreferredMonths">
+            <input type="hidden" name="preferred_down_payment" id="requestPreferredDownPayment">
+            <input type="hidden" name="installment_items" id="requestInstallmentItems" value="[]">
+            <div class="installment-grid">
+                <div>
+                    <label for="requestFullName">Full Name</label>
+                    <input id="requestFullName" name="name" maxlength="255" autocomplete="name" placeholder="Your name" value="" required autofocus>
+                </div>
+                <div>
+                    <label for="requestPhone">Phone Number</label>
+                    <input id="requestPhone" name="phone" type="tel" maxlength="50" autocomplete="tel" placeholder="+855 ..." value="" required>
+                </div>
+                <div class="installment-field-full">
+                    <label for="requestAddress">Delivery / Contact Address</label>
+                    <textarea id="requestAddress" name="address" maxlength="1000" autocomplete="street-address" placeholder="Phnom Penh address" required></textarea>
+                </div>
+                <div class="installment-field-full">
+                    <label for="requestSelectedProducts">Selected Products</label>
+                    <textarea id="requestSelectedProducts" readonly rows="2"></textarea>
+                </div>
+            </div>
+            <button class="installment-submit" type="submit" id="installmentRequestSubmit">Submit Registration &amp; Cart</button>
+        </form>
+    </div>
+    <div class="installment-success" id="installmentRequestSuccess" hidden tabindex="-1" role="status">
+        <h2 id="installmentRequestSuccessTitle">Request Submitted</h2>
+        <div class="installment-message"><i class="fa-solid fa-clock" aria-hidden="true"></i> Pending Staff Follow-Up</div>
+        <p id="installmentRequestSuccessMessage"></p>
+        <button class="installment-submit" type="button" id="installmentRequestDone">Done</button>
+    </div>
+</dialog>
+<script>
+(function () {
+    var dialog = document.getElementById('installmentRequestModal');
+    var form = document.getElementById('installmentRequestForm');
+    var fields = document.getElementById('installmentRequestFields');
+    var success = document.getElementById('installmentRequestSuccess');
+    var errorBox = document.getElementById('installmentRequestError');
+    var submit = document.getElementById('installmentRequestSubmit');
+    var usesCart = true;
+    var previousFocus;
+    var previousOverflow;
+    var submitting = false;
+    var oldError = "";
 
+    function closeRequest() {
+        if (!submitting) dialog.close();
+    }
+    window.openInstallmentRequest = function (items, clearCart, preferences) {
+        previousFocus = document.activeElement;
+        usesCart = clearCart;
+        fields.hidden = false;
+        success.hidden = true;
+        dialog.setAttribute('aria-labelledby', 'installmentRequestTitle');
+        errorBox.textContent = oldError;
+        errorBox.hidden = !oldError;
+        oldError = '';
+        document.getElementById('requestPreferredMonths').value = preferences?.months || '';
+        document.getElementById('requestPreferredDownPayment').value = preferences?.downPayment ?? '';
+        items = Array.isArray(items) ? items : [];
+        document.getElementById('requestInstallmentItems').value = JSON.stringify(items.map(function (item) {
+            return {id:item.id, variation_id:item.variation_id || 0, qty:item.qty || 1};
+        }));
+        document.getElementById('requestSelectedProducts').value = items.length ? items.map(function (item) {
+            return (item.name || 'Product') + ' x' + Number(item.qty || 1) + ' ($' + (Number(item.price || 0) * Number(item.qty || 1)).toFixed(2) + ')';
+        }).join('\n') : 'Staff will help you choose a product.';
+        if (preferences?.months) {
+            document.getElementById('requestSelectedProducts').value += '\nPreferred term: ' + preferences.months + ' months; down payment: $' + Number(preferences.downPayment || 0).toFixed(2);
+        }
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        dialog.showModal();
+    };
+    document.getElementById('installmentRequestClose').addEventListener('click', closeRequest);
+    document.getElementById('installmentRequestDone').addEventListener('click', closeRequest);
+    dialog.addEventListener('cancel', function (event) { if (submitting) event.preventDefault(); });
+    dialog.addEventListener('click', function (event) {
+        var bounds = dialog.getBoundingClientRect();
+        if (event.target === dialog && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) closeRequest();
+    });
+    dialog.addEventListener('close', function () {
+        document.body.style.overflow = previousOverflow || '';
+        if (previousFocus && previousFocus.isConnected) previousFocus.focus();
+    });
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (submitting) return;
+        submitting = true;
+        submit.disabled = true;
+        submit.textContent = 'Submitting...';
+        errorBox.hidden = true;
+        try {
+            var response = await fetch(form.action, {
+                method: 'POST', credentials: 'same-origin', body: new FormData(form),
+                headers: {'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest'}
+            });
+            var payload = response.headers.get('content-type')?.includes('application/json') ? await response.json() : {};
+            if (!response.ok || payload.status !== 'pending') {
+                var errors = Object.values(payload.errors || {}).flat();
+                throw new Error(errors[0] || (response.status === 419 ? 'Your session has expired. Refresh the page and try again.' : response.status === 429 ? 'Please wait a minute before submitting another request.' : response.status < 500 && payload.message ? payload.message : 'Unable to submit your request. Please try again.'));
+            }
+            fields.hidden = true;
+            success.hidden = false;
+            document.getElementById('installmentRequestSuccessMessage').textContent = payload.message;
+            dialog.setAttribute('aria-labelledby', 'installmentRequestSuccessTitle');
+            success.focus();
+            document.dispatchEvent(new CustomEvent('installment-request-submitted', {detail: {clearCart: usesCart}}));
+            form.reset();
+        } catch (error) {
+            errorBox.textContent = error.message || 'Unable to submit your request. Please try again.';
+            errorBox.hidden = false;
+        } finally {
+            submitting = false;
+            submit.disabled = false;
+            submit.textContent = 'Submit Registration & Cart';
+        }
+    });
+})();
+</script>
+    <dialog class="installment-modal" id="customerLoginModal" aria-labelledby="customerLoginTitle">
+    <button class="installment-close" type="button" id="customerLoginClose" aria-label="Close login" title="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <h2 id="customerLoginTitle">Customer Login</h2>
+    <p>Access your loan records and installment payment history.</p>
+    <div class="installment-message" id="customerLoginError" role="alert" hidden></div>
+    <form method="POST" action="http://127.0.0.1:8000/customer/login" id="customerLoginForm">
+        <input type="hidden" name="_token" value="" autocomplete="off">        <div class="installment-grid">
+            <div class="installment-field-full"><label for="modalCustomerLogin">Phone, Email or Username</label><input id="modalCustomerLogin" name="login" autocomplete="username" maxlength="255" required autofocus></div>
+            <div class="installment-field-full"><label for="modalCustomerPassword">Password</label><input id="modalCustomerPassword" name="password" type="password" autocomplete="current-password" required></div>
+        </div>
+        <button class="installment-submit" type="submit" id="customerLoginSubmit">Login to Portal</button>
+    </form>
+    <p style="margin-top:16px;"><a href="http://127.0.0.1:8000/customer/login" data-full-login>Open Customer Portal</a></p>
+</dialog>
+<script>
+(function () {
+    var dialog = document.getElementById('customerLoginModal');
+    var form = document.getElementById('customerLoginForm');
+    var errorBox = document.getElementById('customerLoginError');
+    var button = document.getElementById('customerLoginSubmit');
+    var pending = false;
+    var loginPath = new URL("http:\/\/127.0.0.1:8000\/customer\/login", location.href).pathname;
+    var previousFocus;
+    var previousOverflow;
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest('a[href]');
+        if (!link || link.hasAttribute('data-full-login') || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        var url = new URL(link.href, location.href);
+        if (url.origin !== location.origin || url.pathname !== loginPath) return;
+        event.preventDefault();
+        previousFocus = document.activeElement;
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        errorBox.hidden = true;
+        dialog.showModal();
+    });
+    document.getElementById('customerLoginClose').addEventListener('click', function () { if (!pending) dialog.close(); });
+    dialog.addEventListener('cancel', function (event) { if (pending) event.preventDefault(); });
+    dialog.addEventListener('close', function () {
+        document.body.style.overflow = previousOverflow || '';
+        document.getElementById('modalCustomerPassword').value = '';
+        if (previousFocus?.isConnected) previousFocus.focus();
+    });
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (pending) return;
+        pending = true;
+        button.disabled = true;
+        button.textContent = 'Signing in...';
+        errorBox.hidden = true;
+        try {
+            var response = await fetch(form.action, {method:'POST', credentials:'same-origin', body:new FormData(form), headers:{Accept:'application/json', 'X-Requested-With':'XMLHttpRequest'}});
+            var payload = response.headers.get('content-type')?.includes('application/json') ? await response.json() : {};
+            if (!response.ok || !payload.redirect) {
+                throw new Error(Object.values(payload.errors || {}).flat()[0] || (response.status === 429 ? 'Please wait a minute before trying again.' : response.status === 419 ? 'Refresh the page to renew your session.' : response.status < 500 && payload.message ? payload.message : 'Unable to sign in. Please try again.'));
+            }
+            location.assign(payload.redirect);
+        } catch (error) {
+            errorBox.textContent = error.message;
+            errorBox.hidden = false;
+            document.getElementById('modalCustomerPassword').value = '';
+        } finally {
+            pending = false;
+            button.disabled = false;
+            button.textContent = 'Login to Portal';
+        }
+    });
+})();
+</script>
+            <dialog class="installment-modal" id="privacyModal" aria-labelledby="privacyTitle"><h2 id="privacyTitle">Privacy Policy</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere;">Contact our showroom team for information about our privacy policy.</p><form method="dialog"><button class="button" type="submit">Close</button></form></dialog>
+    
     <script>
         (function () {
             var menuToggle = document.getElementById('publicMenuToggle');
@@ -896,17 +906,17 @@
                 if (event.key === 'Escape') closeMenu();
             });
             var cartKey = 'loan_public_installment_cart';
-            var liveCatalog = @json($products ?? []);
+            var liveCatalog = [{"id":7,"variation_id":0,"name":"ASUS Vivobook 15","price":520,"brand":"ASUS","category":"Computers","sku":"ASUS-15"},{"id":9,"variation_id":0,"name":"Canon Printer","price":180,"brand":"Canon","category":"Printers","sku":"CANON-1"},{"id":11,"variation_id":0,"name":"Lenovo Laptop","price":750,"brand":"Lenovo","category":"Computers","sku":"LENOVO-1"}];
             var cart = [];
             var itemsBox = document.getElementById('cartItems');
             var totalBox = document.getElementById('cartTotal');
             var countPill = document.getElementById('cartCountPill');
             var apply = document.getElementById('cartApply');
             var mobCartBadge = document.getElementById('mobileCartBadge');
-            var isCustomerLoggedIn = {{ $customerUser ? 'true' : 'false' }};
+            var isCustomerLoggedIn = false;
             var applyBaseUrl = isCustomerLoggedIn
-                ? '{{ route('loan-management.public.customer-loan-request') }}'
-                : '{{ route('loan-management.public.register') }}';
+                ? 'http://127.0.0.1:8000/customer/loan-request'
+                : 'http://127.0.0.1:8000/register';
 
             function money(value) {
                 return '$' + Number(value || 0).toFixed(2);
@@ -1018,7 +1028,7 @@
                 var notice = document.getElementById('cartLimitMessage');
                 if (notice) { notice.textContent = message; notice.hidden = false; }
             }
-            var assessmentProducts = @json($products ?? []);
+            var assessmentProducts = [{"id":7,"variation_id":0,"name":"ASUS Vivobook 15","price":520,"brand":"ASUS","category":"Computers","sku":"ASUS-15"},{"id":9,"variation_id":0,"name":"Canon Printer","price":180,"brand":"Canon","category":"Printers","sku":"CANON-1"},{"id":11,"variation_id":0,"name":"Lenovo Laptop","price":750,"brand":"Lenovo","category":"Computers","sku":"LENOVO-1"}];
             var assessmentSelect = document.getElementById('assessmentProduct');
             var assessmentMonths = document.getElementById('assessmentMonths');
             var assessmentDown = document.getElementById('assessmentDownPayment');
@@ -1043,7 +1053,7 @@
             var privacyOpen = document.getElementById('privacyOpen');
             if (privacyOpen) privacyOpen.addEventListener('click', function () { document.getElementById('privacyModal').showModal(); });
 
-            var registrationPath = new URL(@json(route('loan-management.public.register')), window.location.href).pathname;
+            var registrationPath = new URL("http:\/\/127.0.0.1:8000\/register", window.location.href).pathname;
             document.addEventListener('click', function (event) {
                 var link = event.target.closest('a[href]');
                 if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
@@ -1062,10 +1072,10 @@
                 }
             });
             var requestParams = new URLSearchParams(window.location.search);
-            if (requestParams.get('apply') === '1' || @json((bool) old('installment_request'))) {
-                var initialProducts = @json($products ?? []);
+            if (requestParams.get('apply') === '1' || false) {
+                var initialProducts = [{"id":7,"variation_id":0,"name":"ASUS Vivobook 15","price":520,"brand":"ASUS","category":"Computers","sku":"ASUS-15"},{"id":9,"variation_id":0,"name":"Canon Printer","price":180,"brand":"Canon","category":"Printers","sku":"CANON-1"},{"id":11,"variation_id":0,"name":"Lenovo Laptop","price":750,"brand":"Lenovo","category":"Computers","sku":"LENOVO-1"}];
                 var requestedProduct = initialProducts.find(function (product) { return String(product.id) === requestParams.get('product_id'); });
-                var oldItems = @json(old('installment_items'));
+                var oldItems = null;
                 var requestedItems = requestedProduct ? [Object.assign({}, requestedProduct, {qty: 1})] : cart;
                 if (oldItems) {
                     try {
@@ -1330,6 +1340,5 @@
             })();
         })();
     </script>
-    @include('loanmanagement::layouts.partials.alert_dialog')
 </body>
 </html>

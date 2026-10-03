@@ -940,11 +940,21 @@
         }
         var count = document.querySelectorAll('.product-checkbox:checked').length;
         if (count === 0) {
-            alert('Please select at least one product.');
+            if (window.LoanAlert) {
+                LoanAlert.warning('Please select at least one product.');
+            } else {
+                alert('Please select at least one product.');
+            }
             return;
         }
         if (action === 'delete') {
-            if (!confirm('Are you sure you want to delete ' + count + ' selected product(s)? Products with active loans will be protected.')) {
+            var msg = 'Are you sure you want to delete ' + count + ' selected product(s)? Products with active loans will be protected.';
+            if (window.LoanAlert) {
+                LoanAlert.confirm(msg, { isDelete: true }).then(function(confirmed){
+                    if (confirmed) document.getElementById('bulkActionForm').submit();
+                });
+                return;
+            } else if (!confirm(msg)) {
                 return;
             }
         }
@@ -953,10 +963,19 @@
 
     // Single Delete
     function deleteSingleProduct(id, name) {
-        if (confirm('Are you sure you want to delete "' + name + '"?')) {
+        var msg = 'Are you sure you want to delete "' + name + '"?';
+        var proceed = function () {
             var form = document.getElementById('singleDeleteForm');
             form.action = '/loan-management/products/' + id;
             form.submit();
+        };
+
+        if (window.LoanAlert) {
+            LoanAlert.confirm(msg, { isDelete: true }).then(function(confirmed){
+                if (confirmed) proceed();
+            });
+        } else if (confirm(msg)) {
+            proceed();
         }
     }
 

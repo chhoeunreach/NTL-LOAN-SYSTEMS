@@ -51,6 +51,11 @@ return [
         'path' => env('TESSERACT_PATH'),
     ],
     'website_url' => env('LOAN_MANAGEMENT_WEBSITE_URL', ''),
+    'demo_customer_identifier' => env('LOAN_DEMO_CUSTOMER_IDENTIFIER', '010111001'),
+    'demo_customer_password' => env('LOAN_DEMO_CUSTOMER_PASSWORD', 'password'),
+    'demo_customer_name' => env('LOAN_DEMO_CUSTOMER_NAME', 'Demo Customer'),
+    'demo_admin_identifier' => env('LOAN_DEMO_ADMIN_IDENTIFIER', 'admin@example.com'),
+    'demo_admin_password' => env('LOAN_DEMO_ADMIN_PASSWORD', 'password'),
     'menu_order' => 38,
     'permissions' => [
         'user.view',

@@ -358,8 +358,9 @@ class CreateStandaloneLoanService
             }
             $durationMonths = max(1, (int) ($data['duration_months'] ?? 1));
             $interestRate = max(0, (float) ($data['interest_rate'] ?? 0));
-            $resolvedInterestType = in_array(($data['interest_type'] ?? 'flat'), ['flat', 'reducing_balance'], true)
-                ? $data['interest_type']
+            $requestedInterestType = $data['interest_type'] ?? 'flat';
+            $resolvedInterestType = in_array($requestedInterestType, ['flat', 'reducing_balance'], true)
+                ? $requestedInterestType
                 : 'flat';
 
             $loanMeta = [
@@ -401,7 +402,7 @@ class CreateStandaloneLoanService
                 'customer_group_name_snapshot' => $this->resolveCustomerGroupName($data),
                 'business_location_id' => $locationId,
                 'location_name_snapshot' => $this->resolveLocationName($data),
-                'loan_date' => $data['loan_date'],
+                'loan_date' => $data['loan_date'] ?? now()->toDateString(),
                 'principal_amount' => $data['principal_amount'],
                 'interest_amount' => $scheduleInterestTotal,
                 'total_amount' => $scheduleAmountTotal > 0 ? $scheduleAmountTotal : (float) $data['principal_amount'],
@@ -414,7 +415,7 @@ class CreateStandaloneLoanService
                 'duration_months' => $durationMonths,
                 'installment_count' => $durationMonths,
                 'payment_frequency' => $loanMeta['payment_frequency'],
-                'first_due_date' => $data['first_due_date'],
+                'first_due_date' => $data['first_due_date'] ?? null,
                 'currency' => $data['currency'] ?? 'USD',
                 'exchange_rate' => $data['exchange_rate'] ?? 1,
                 'penalty_type' => $data['penalty_type'] ?? null,
@@ -903,6 +904,8 @@ class CreateStandaloneLoanService
             }
         }
 
+        $documentNames = (array) ($data['document_names'] ?? []);
+
         foreach ((array) ($data['documents'] ?? []) as $index => $document) {
             if (is_string($document) && $document !== '') {
                 $ext = 'jpg';
@@ -914,9 +917,13 @@ class CreateStandaloneLoanService
                         $ext = 'png';
                     } elseif (str_contains($mt, 'text')) {
                         $ext = 'txt';
+                    } elseif (str_contains($mt, 'webp')) {
+                        $ext = 'webp';
                     }
                 }
-                $this->storeDataUriFile($document, $customerId, 'document', 'customer-document-'.$loanId.'-'.($index + 1).'.'.$ext);
+
+                $originalName = $this->safeDocumentName($documentNames[$index] ?? null, $ext);
+                $this->storeDataUriFile($document, $customerId, 'document', $originalName ?: 'customer-document-'.$loanId.'-'.($index + 1).'.'.$ext);
             }
         }
 
@@ -931,6 +938,28 @@ class CreateStandaloneLoanService
                 $this->storeTextDocument($link, $customerId, 'customer-document-link-'.$loanId.'-'.($index + 1).'.txt');
             }
         }
+    }
+
+    protected function safeDocumentName($name, string $fallbackExtension): ?string
+    {
+        if (! is_string($name)) {
+            return null;
+        }
+
+        $base = basename(str_replace('\\', '/', trim($name)));
+        $base = preg_replace('/[\x00-\x1F\x7F"*\/:<>?\\\\|]+/', '', $base) ?? '';
+        $base = ltrim(trim($base), '.');
+        if ($base === '') {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo($base, PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'webp', 'pdf', 'txt', 'csv', 'doc', 'docx'];
+        if ($extension === '' || ! in_array($extension, $allowed, true)) {
+            $base = pathinfo($base, PATHINFO_FILENAME).'.'.$fallbackExtension;
+        }
+
+        return mb_substr($base, 0, 255);
     }
 
     protected function storeTextDocument(string $text, int $customerId, string $originalName): ?int

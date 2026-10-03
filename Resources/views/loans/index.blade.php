@@ -1163,17 +1163,20 @@
             </div>
         </div>
 
+        @php
+            $initialStatus = strtolower((string) request('status', ''));
+        @endphp
         {{-- STATUS QUICK-FILTER CARDS --}}
         <div class="lm-status-cards-grid">
-            <div class="lm-status-card status-card-all active" data-status="" title="{{ $text('Show All Installments', 'បង្ហាញកម្ចីទាំងអស់') }}">
+            <div class="lm-status-card status-card-all {{ $initialStatus === '' ? 'active' : '' }}" data-status="" title="{{ $text('Show All Installments', 'បង្ហាញកម្ចីទាំងអស់') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-list-alt"></i></div>
                 <div class="lm-status-card-content">
-                    <span class="lm-status-card-label">{{ $text('All Agreements', 'កិច្ចសន្យាទាំងអស់') }}</span>
+                    <span class="lm-status-card-label">{{ $text('All Installments', 'រំលស់ទាំងអស់') }}</span>
                     <strong class="lm-status-card-count" id="count_all">{{ $statusCounts['all'] ?? 0 }}</strong>
                 </div>
                 <div class="lm-status-card-indicator"></div>
             </div>
-            <div class="lm-status-card status-card-pending" data-status="pending" title="{{ $text('Filter by Pending', 'ច្រោះតាមកំពុងរង់ចាំ') }}">
+            <div class="lm-status-card status-card-pending {{ $initialStatus === 'pending' ? 'active' : '' }}" data-status="pending" title="{{ $text('Filter by Pending', 'ច្រោះតាមកំពុងរង់ចាំ') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-clock-o"></i></div>
                 <div class="lm-status-card-content">
                     <span class="lm-status-card-label">{{ $text('Pending', 'កំពុងរង់ចាំ') }}</span>
@@ -1181,7 +1184,7 @@
                 </div>
                 <div class="lm-status-card-indicator"></div>
             </div>
-            <div class="lm-status-card status-card-approved" data-status="approved" title="{{ $text('Filter by Approved', 'ច្រោះតាមបានអនុម័ត') }}">
+            <div class="lm-status-card status-card-approved {{ $initialStatus === 'approved' ? 'active' : '' }}" data-status="approved" title="{{ $text('Filter by Approved', 'ច្រោះតាមបានអនុម័ត') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-thumbs-o-up"></i></div>
                 <div class="lm-status-card-content">
                     <span class="lm-status-card-label">{{ $text('Approved', 'បានអនុម័ត') }}</span>
@@ -1189,7 +1192,7 @@
                 </div>
                 <div class="lm-status-card-indicator"></div>
             </div>
-            <div class="lm-status-card status-card-active" data-status="active" title="{{ $text('Filter by Active', 'ច្រោះតាមកំពុងដំណើរការ') }}">
+            <div class="lm-status-card status-card-active {{ $initialStatus === 'active' ? 'active' : '' }}" data-status="active" title="{{ $text('Filter by Active', 'ច្រោះតាមកំពុងដំណើរការ') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-bolt"></i></div>
                 <div class="lm-status-card-content">
                     <span class="lm-status-card-label">{{ $text('Active', 'កំពុងដំណើរការ') }}</span>
@@ -1197,7 +1200,7 @@
                 </div>
                 <div class="lm-status-card-indicator"></div>
             </div>
-            <div class="lm-status-card status-card-completed" data-status="completed" title="{{ $text('Filter by Completed', 'ច្រោះតាមបានបញ្ចប់') }}">
+            <div class="lm-status-card status-card-completed {{ $initialStatus === 'completed' ? 'active' : '' }}" data-status="completed" title="{{ $text('Filter by Completed', 'ច្រោះតាមបានបញ្ចប់') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-check-circle-o"></i></div>
                 <div class="lm-status-card-content">
                     <span class="lm-status-card-label">{{ $text('Completed', 'បានបញ្ចប់') }}</span>
@@ -1205,7 +1208,7 @@
                 </div>
                 <div class="lm-status-card-indicator"></div>
             </div>
-            <div class="lm-status-card status-card-rejected" data-status="rejected" title="{{ $text('Filter by Rejected', 'ច្រោះតាមបានបដិសេធ') }}">
+            <div class="lm-status-card status-card-rejected {{ $initialStatus === 'rejected' ? 'active' : '' }}" data-status="rejected" title="{{ $text('Filter by Rejected', 'ច្រោះតាមបានបដិសេធ') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-times-circle-o"></i></div>
                 <div class="lm-status-card-content">
                     <span class="lm-status-card-label">{{ $text('Rejected', 'បានបដិសេធ') }}</span>
@@ -1213,7 +1216,7 @@
                 </div>
                 <div class="lm-status-card-indicator"></div>
             </div>
-            <div class="lm-status-card status-card-cancelled" data-status="cancelled" title="{{ $text('Filter by Cancelled', 'ច្រោះតាមបានបោះបង់') }}">
+            <div class="lm-status-card status-card-cancelled {{ $initialStatus === 'cancelled' ? 'active' : '' }}" data-status="cancelled" title="{{ $text('Filter by Cancelled', 'ច្រោះតាមបានបោះបង់') }}">
                 <div class="lm-status-card-icon"><i class="fa fa-ban"></i></div>
                 <div class="lm-status-card-content">
                     <span class="lm-status-card-label">{{ $text('Cancelled', 'បានបោះបង់') }}</span>
@@ -1253,14 +1256,14 @@
                 <label for="status">{{ $text('Status', 'ស្ថានភាព') }}</label>
                 <select id="status" class="form-control select2" style="width:100%">
                     <option value="">{{ $text('All Statuses', 'ស្ថានភាពទាំងអស់') }}</option>
-                    <option value="draft">{{ $text('Draft', 'ព្រាង') }}</option>
-                    <option value="pending">{{ $text('Pending', 'កំពុងរង់ចាំ') }}</option>
-                    <option value="approved">{{ $text('Approved', 'បានអនុម័ត') }}</option>
-                    <option value="active">{{ $text('Active', 'កំពុងដំណើរការ') }}</option>
-                    <option value="completed">{{ $text('Completed', 'បានបញ្ចប់') }}</option>
-                    <option value="rejected">{{ $text('Rejected', 'បានបដិសេធ') }}</option>
-                    <option value="cancelled">{{ $text('Cancelled', 'បានបោះបង់') }}</option>
-                    <option value="defaulted">{{ $text('Defaulted', 'ខូចបំណុល') }}</option>
+                    <option value="draft" {{ $initialStatus === 'draft' ? 'selected' : '' }}>{{ $text('Draft', 'ព្រាង') }}</option>
+                    <option value="pending" {{ $initialStatus === 'pending' ? 'selected' : '' }}>{{ $text('Pending', 'កំពុងរង់ចាំ') }}</option>
+                    <option value="approved" {{ $initialStatus === 'approved' ? 'selected' : '' }}>{{ $text('Approved', 'បានអនុម័ត') }}</option>
+                    <option value="active" {{ $initialStatus === 'active' ? 'selected' : '' }}>{{ $text('Active', 'កំពុងដំណើរការ') }}</option>
+                    <option value="completed" {{ $initialStatus === 'completed' ? 'selected' : '' }}>{{ $text('Completed', 'បានបញ្ចប់') }}</option>
+                    <option value="rejected" {{ $initialStatus === 'rejected' ? 'selected' : '' }}>{{ $text('Rejected', 'បានបដិសេធ') }}</option>
+                    <option value="cancelled" {{ $initialStatus === 'cancelled' ? 'selected' : '' }}>{{ $text('Cancelled', 'បានបោះបង់') }}</option>
+                    <option value="defaulted" {{ $initialStatus === 'defaulted' ? 'selected' : '' }}>{{ $text('Defaulted', 'ខូចបំណុល') }}</option>
                 </select>
             </div>
             <div class="lm-loan-list-field">
@@ -1688,6 +1691,19 @@ function escapeHtml(value) {
         }
     });
 
+    var urlParams = new URLSearchParams(window.location.search);
+    var urlStatus = urlParams.get('status');
+    if (urlStatus !== null) {
+        urlStatus = urlStatus.toLowerCase();
+        $('#status').val(urlStatus);
+        $('.lm-status-card').removeClass('active');
+        if (urlStatus) {
+            $('.lm-status-card[data-status="' + urlStatus + '"]').addClass('active');
+        } else {
+            $('.lm-status-card[data-status=""]').addClass('active');
+        }
+    }
+
     loanTable = $('#loan_list_table').DataTable({
         processing: true,
         serverSide: true,
@@ -1784,6 +1800,15 @@ function escapeHtml(value) {
         $(this).addClass('active');
 
         $('#status').val(status).trigger('change.select2');
+        if (window.history && window.history.replaceState) {
+            var newUrl = new URL(window.location.href);
+            if (status) {
+                newUrl.searchParams.set('status', status);
+            } else {
+                newUrl.searchParams.delete('status');
+            }
+            window.history.replaceState({}, '', newUrl.toString());
+        }
         loanTable.ajax.reload();
     });
 
@@ -1794,6 +1819,15 @@ function escapeHtml(value) {
             $('.lm-status-card[data-status="' + currentStatus + '"]').addClass('active');
         } else {
             $('.lm-status-card[data-status=""]').addClass('active');
+        }
+        if (window.history && window.history.replaceState) {
+            var newUrl = new URL(window.location.href);
+            if (currentStatus) {
+                newUrl.searchParams.set('status', currentStatus);
+            } else {
+                newUrl.searchParams.delete('status');
+            }
+            window.history.replaceState({}, '', newUrl.toString());
         }
     });
 
@@ -1811,6 +1845,11 @@ function escapeHtml(value) {
         $('#status,#location_name,#collector_name').val('').trigger('change.select2');
         $('.lm-status-card').removeClass('active');
         $('.lm-status-card[data-status=""]').addClass('active');
+        if (window.history && window.history.replaceState) {
+            var newUrl = new URL(window.location.href);
+            newUrl.searchParams.delete('status');
+            window.history.replaceState({}, '', newUrl.toString());
+        }
         loanTable.search('');
         $('#loan_list_table_filter input[type="search"]').val('');
         loanTable.ajax.reload();
@@ -1860,14 +1899,41 @@ function escapeHtml(value) {
     }
 
     $(document).on('click', '.btn-delete-loan', function(){
-        if(!confirm(loanListText.deleteConfirm)) return;
-        $.ajax({
-            url: $(this).data('url'),
-            type: 'DELETE',
-            data: {_token: $('meta[name=\"csrf-token\"]').attr('content')},
-            success: function(){ loanTable.ajax.reload(); },
-            error: function(){ alert(loanListText.deleteFailed); }
-        });
+        var $btn = $(this);
+        var url = $btn.data('url');
+        var promptMsg = (typeof loanListText !== 'undefined' && loanListText.deleteConfirm) ? loanListText.deleteConfirm : 'Are you sure you want to delete this installment?';
+        var errorMsg = (typeof loanListText !== 'undefined' && loanListText.deleteFailed) ? loanListText.deleteFailed : 'Failed to delete installment.';
+
+        var doDelete = function () {
+            $.ajax({
+                url: url,
+                type: 'DELETE',
+                data: {_token: $('meta[name="csrf-token"]').attr('content')},
+                success: function(){
+                    loanTable.ajax.reload();
+                    if (window.LoanAlert) {
+                        LoanAlert.success('Installment deleted successfully.');
+                    } else if (window.toastr) {
+                        toastr.success('Installment deleted successfully.');
+                    }
+                },
+                error: function(){
+                    if (window.LoanAlert) {
+                        LoanAlert.error(errorMsg);
+                    } else {
+                        alert(errorMsg);
+                    }
+                }
+            });
+        };
+
+        if (window.LoanAlert) {
+            LoanAlert.confirm(promptMsg, { isDelete: true }).then(function(confirmed){
+                if (confirmed) doDelete();
+            });
+        } else if (confirm(promptMsg)) {
+            doDelete();
+        }
     });
 
     var $openLoanActionOwner = null;

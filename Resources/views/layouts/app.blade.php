@@ -1463,6 +1463,8 @@
     </script>
     @yield('loan_js')
 
+    @include('loanmanagement::layouts.partials.alert_dialog')
+
     @unless($isLoanEmbeddedModal)
     @endunless
 

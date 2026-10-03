@@ -91,8 +91,8 @@
         @endif
         <form method="POST" action="{{ $loginAction }}" id="portalLoginForm">
             @csrf
-            <div class="field"><label class="field-label" for="usernameInput"><i class="fa-solid fa-user" aria-hidden="true"></i> {{ $isCustomer ? 'Phone or Username' : 'Email or Username' }}</label>
-                <input type="text" id="usernameInput" name="{{ $loginField }}" value="{{ old($loginField) }}" autocomplete="username" maxlength="255" required autofocus placeholder="{{ $isCustomer ? 'Phone number or username' : 'Email or username' }}" @if($errors->has($loginField)) aria-invalid="true" @endif>
+            <div class="field"><label class="field-label" for="usernameInput"><i class="fa-solid fa-user" aria-hidden="true"></i> {{ $isCustomer ? 'Phone, Email or Username' : 'Email or Username' }}</label>
+                <input type="text" id="usernameInput" name="{{ $loginField }}" value="{{ old($loginField) }}" autocomplete="username" maxlength="255" required autofocus placeholder="{{ $isCustomer ? 'Phone, email or username' : 'Email or username' }}" @if($errors->has($loginField)) aria-invalid="true" @endif>
             </div>
             <div class="field"><label class="field-label" for="passwordInput"><i class="fa-solid fa-lock" aria-hidden="true"></i> Password</label><div class="password-row">
                 <input type="password" id="passwordInput" name="password" autocomplete="current-password" required placeholder="Enter password">
@@ -110,7 +110,7 @@
             </section>
         @endif
         <div class="explore">
-            @if($isCustomer)<a href="{{ route('loan-management.public.register') }}"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Create account</a>@elseif($settings['customer_login_enabled'])<a href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>@endif
+            @if($isCustomer)<a href="{{ route('loan-management.public.register') }}"><i class="fa-solid fa-file-pen" aria-hidden="true"></i> Request installment</a>@elseif($settings['customer_login_enabled'])<a href="{{ route('loan-management.public.customer-login') }}">Customer Login</a>@endif
             @if($settings['cms_enabled'])<a href="{{ route('loan-management.public.home') }}">Browse Products</a>@endif
         </div>
     </section></main>

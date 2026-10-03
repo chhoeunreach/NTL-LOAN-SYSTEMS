@@ -41,11 +41,15 @@ Route::middleware(['web'])
     ->get('/loan-management/settings/business/public-logo', [SettingsController::class, 'businessPublicLogo'])
     ->name('loan-management.settings.business.public-logo');
 
+Route::middleware(['web'])
+    ->get('/loan-management/settings/business/public-stamp', [SettingsController::class, 'businessPublicStamp'])
+    ->name('loan-management.settings.business.public-stamp');
+
 Route::middleware(['web'])->group(function () {
     Route::get('/', [PublicAppController::class, 'home'])->name('loan-management.public.home');
     Route::get('/cms/home-image', [PublicAppController::class, 'homeImage'])->name('loan-management.public.home-image');
     Route::get('/register', [PublicAppController::class, 'register'])->name('loan-management.public.register');
-    Route::post('/register', [PublicAppController::class, 'storeRegistration'])->name('loan-management.public.register.store');
+    Route::post('/register', [PublicAppController::class, 'storeRegistration'])->middleware('throttle:6,1')->name('loan-management.public.register.store');
     Route::get('/customer/login', [PublicAppController::class, 'customerLogin'])->name('loan-management.public.customer-login');
     Route::get('/loan-management/customer/login', fn () => redirect()->route('loan-management.public.customer-login'));
     Route::post('/customer/login', [PublicAppController::class, 'customerLoginStore'])->middleware('throttle:6,1')->name('loan-management.public.customer-login.store');
@@ -250,6 +254,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::get('/settings', fn () => redirect()->route('loan-management.settings.business'))->name('loan-management.settings');
         Route::get('/settings/business', [SettingsController::class, 'business'])->name('loan-management.settings.business');
         Route::get('/settings/business/logo', [SettingsController::class, 'businessLogo'])->name('loan-management.settings.business.logo');
+        Route::get('/settings/business/stamp', [SettingsController::class, 'businessStamp'])->name('loan-management.settings.business.stamp');
         Route::post('/settings/business', [SettingsController::class, 'updateBusiness'])->name('loan-management.settings.business.update');
         Route::get('/settings/cms', [SettingsController::class, 'cms'])->name('loan-management.settings.cms');
         Route::post('/settings/cms', [SettingsController::class, 'updateCms'])->name('loan-management.settings.cms.update');

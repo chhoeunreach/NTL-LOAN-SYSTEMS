@@ -31,7 +31,7 @@ class PublicCmsHomeTest extends TestCase
     public function testTemplatePreservesLiveCatalogAndRealGuestLinks(): void
     {
         $html = $this->renderHome();
-        foreach (['Products Catalog', 'Installment Guide', 'publicMenuToggle', 'catalogSearchInput', 'cartApply', 'Sample &lt;Laptop&gt;', 'Shop &lt;safely&gt;', 'Sample about text'] as $text) {
+        foreach (['Products Catalog', 'Installment Guide', 'publicMenuToggle', 'catalogSearchInput', 'cartApply', 'Sample &lt;Laptop&gt;', 'Shop &lt;safely&gt;', 'Sample about text', 'Register Installment Request', 'id="installmentRequestModal"', 'name="installment_items"'] as $text) {
             $this->assertStringContainsString($text, $html);
         }
         $this->assertStringContainsString(route('loan-management.public.register'), $html);
@@ -71,6 +71,41 @@ class PublicCmsHomeTest extends TestCase
         $html = $this->renderHome(['label_products' => 'Our Shop', 'contact_phone' => '012 123 456', 'contact_email' => 'support@example.com', 'contact_address' => 'Sample Address', 'guide_title' => 'Sample Guide']);
         foreach (['Our Shop', 'Sample Guide', 'Sample Address', 'mailto:support@example.com', 'tel:012123456'] as $text) {
             $this->assertStringContainsString($text, $html);
+        }
+    }
+
+    public function testManagedPartnersRenderInOrderWithLogosAndSafeLinks(): void
+    {
+        $html = $this->renderHome(['brands_source' => 'managed', 'brands_items' => [
+            ['name' => 'Partner <b>One</b>', 'logo_url' => 'https://example.com/logo.png', 'website_url' => 'https://example.com', 'enabled' => true],
+            ['name' => 'Hidden Partner', 'enabled' => false],
+            ['name' => 'Partner Two', 'website_url' => 'javascript:alert(1)', 'enabled' => true],
+        ]]);
+        $this->assertStringContainsString('Authorized Brands &amp; Partners', $html);
+        $this->assertStringContainsString('src="https://example.com/logo.png"', $html);
+        $this->assertStringContainsString('href="https://example.com" target="_blank" rel="noopener noreferrer"', $html);
+        $this->assertStringNotContainsString('Hidden Partner', $html);
+        $this->assertStringNotContainsString('javascript:alert', $html);
+        $this->assertStringContainsString('Partner One', $html);
+        $this->assertLessThan(strpos($html, 'Partner Two'), strpos($html, 'Partner One'));
+    }
+
+    public function testEmptyOrDisabledManagedBrandsHideTheStrip(): void
+    {
+        $this->assertStringNotContainsString('id="partnerBrandsTitle"', $this->renderHome(['brands_source' => 'managed', 'brands_items' => []]));
+        $this->assertStringNotContainsString('id="partnerBrandsTitle"', $this->renderHome(['brands' => false]));
+        $this->assertStringContainsString('Sample Brand', $this->renderHome());
+    }
+
+    public function testSampleFeaturesUseCmsContentAndVisibility(): void
+    {
+        $html = $this->renderHome(['experience_title' => 'Custom Experience', 'privacy_body' => 'Custom privacy content', 'assessment_title' => 'Custom Assessment']);
+        foreach (['Custom Experience', 'Custom Assessment', 'Custom privacy content', 'id="customerLoginModal"', 'id="assessmentMonthly"', 'id="cartSubtotal"'] as $text) {
+            $this->assertStringContainsString($text, $html);
+        }
+        $hidden = $this->renderHome(['experience' => false, 'assessment' => false, 'privacy' => false]);
+        foreach (['id="experience"', 'id="assessmentProduct"', 'id="privacyModal"'] as $text) {
+            $this->assertStringNotContainsString($text, $hidden);
         }
     }
 }
