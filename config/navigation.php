@@ -73,6 +73,7 @@ return [
             ['label' => 'Business', 'km' => 'អាជីវកម្ម', 'route' => 'loan-management.settings.business', 'can' => $view],
             ['label' => 'Payment Methods', 'km' => 'វិធីបង់ប្រាក់', 'route' => 'loan-management.settings.payment-methods', 'can' => $view],
             ['label' => 'Customer Portal', 'km' => 'ទំព័រអតិថិជន', 'route' => 'loan-management.settings.cms', 'can' => $view],
+            ['label' => 'Social Media', 'km' => 'បណ្ដាញសង្គម', 'route' => 'loan-management.settings.social', 'can' => $view],
         ],
     ],
 ];

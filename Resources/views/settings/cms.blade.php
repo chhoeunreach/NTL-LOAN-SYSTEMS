@@ -546,7 +546,7 @@
 
                         @php($cmsValues = \Modules\LoanManagement\Services\CmsHomeService::normalize($settings['home_cms'] ?? []))
                         @foreach(\Modules\LoanManagement\Services\CmsHomeService::groups() as $group => $fields)
-                            <details class="lm-cms-group" @if($loop->first || $group === 'Authorized Brands & Partners') open @endif><summary>{{ $group }}</summary>
+                            <details class="lm-cms-group" @if($loop->first || $group === 'Authorized Brands & Partners' || $group === 'Follow Us & Social Media') open @endif><summary>{{ $group }}</summary>
                                 <div class="lm-cms-group-body">
                                     @foreach($fields as $key => [$label, $type, $default])
                                         <div class="lm-field">

@@ -104,6 +104,9 @@
         ['url' => $footerUrl($cms['footer_tiktok']), 'icon' => 'fa-brands fa-tiktok', 'label' => 'TikTok'],
         ['url' => $footerUrl($cms['footer_instagram']), 'icon' => 'fa-brands fa-instagram', 'label' => 'Instagram'],
         ['url' => $footerUrl($cms['footer_youtube']), 'icon' => 'fa-brands fa-youtube', 'label' => 'YouTube'],
+        ['url' => $footerUrl($cms['footer_whatsapp'] ?? ''), 'icon' => 'fa-brands fa-whatsapp', 'label' => 'WhatsApp'],
+        ['url' => $footerUrl($cms['footer_linkedin'] ?? ''), 'icon' => 'fa-brands fa-linkedin-in', 'label' => 'LinkedIn'],
+        ['url' => $footerUrl($cms['footer_twitter'] ?? ''), 'icon' => 'fa-brands fa-x-twitter', 'label' => 'X (Twitter)'],
         ['url' => $footerUrl($cms['footer_website']), 'icon' => 'fa-solid fa-globe', 'label' => 'Website'],
     ], fn ($item) => filled($item['url'])));
     $footerContactRows = array_values(array_filter([

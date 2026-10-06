@@ -86,6 +86,9 @@ class CmsHomeService
             'footer_tiktok' => ['Footer TikTok URL', 'text', ''],
             'footer_instagram' => ['Footer Instagram URL', 'text', ''],
             'footer_youtube' => ['Footer YouTube URL', 'text', ''],
+            'footer_whatsapp' => ['Footer WhatsApp URL', 'text', ''],
+            'footer_linkedin' => ['Footer LinkedIn URL', 'text', ''],
+            'footer_twitter' => ['Footer X / Twitter URL', 'text', ''],
             'footer_website' => ['Footer Website URL', 'text', ''],
             'footer_show_contact' => ['Footer Show Contact Block', 'boolean', true],
             'footer_show_links' => ['Footer Show Quick Links', 'boolean', true],
@@ -163,6 +166,10 @@ class CmsHomeService
                 str_starts_with($key, 'privacy_') => 'Privacy Policy',
                 str_starts_with($key, 'guide_'), str_starts_with($key, 'step_') => 'Installment Guide',
                 str_starts_with($key, 'catalog_') => 'Products Catalog',
+                str_starts_with($key, 'footer_social') || in_array($key, [
+                    'footer_facebook', 'footer_telegram', 'footer_tiktok', 'footer_instagram',
+                    'footer_youtube', 'footer_whatsapp', 'footer_linkedin', 'footer_twitter', 'footer_website', 'footer_show_social'
+                ], true) => 'Follow Us & Social Media',
                 str_starts_with($key, 'contact_'), str_starts_with($key, 'about_'), str_starts_with($key, 'footer_') => 'About, Contact & Footer',
                 $field[1] === 'boolean' => 'Section Visibility',
                 default => 'Brand & Hero',

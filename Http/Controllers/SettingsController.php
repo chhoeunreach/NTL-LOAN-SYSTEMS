@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Modules\LoanManagement\Services\BusinessSettingsService;
+use Modules\LoanManagement\Services\CmsHomeService;
 
 use Throwable;
 
@@ -106,6 +107,13 @@ class SettingsController extends Controller
             'remove_logo' => 'nullable|boolean',
             'remove_stamp' => 'nullable|boolean',
             'remove_login_background' => 'nullable|boolean',
+            'home_headline' => 'nullable|string|max:140',
+            'home_subtitle' => 'nullable|string|max:220',
+            'home_body' => 'nullable|string|max:1200',
+            'home_hero' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:51200',
+            'remove_home_hero' => 'nullable|boolean',
+            'home_cms' => 'nullable|array',
+            'home_cms.*' => 'nullable',
         ]);
 
         $current = BusinessSettingsService::get();
@@ -141,6 +149,22 @@ class SettingsController extends Controller
         if ($request->hasFile('login_background')) {
             BusinessSettingsService::deleteLoginBackground($loginBackgroundPath);
             $loginBackgroundPath = $request->file('login_background')->store('loan-management/business', 'public');
+        }
+
+        $heroPath = $current['home_hero_path'] ?? null;
+        if ($request->hasFile('home_hero')) {
+            $heroPath = $request->file('home_hero')->store('loan-management/cms', 'public');
+        } elseif ($request->boolean('remove_home_hero')) {
+            $heroPath = null;
+        }
+
+        $homeCms = $current['home_cms'] ?? [];
+        if ($request->has('home_cms')) {
+            $inputCms = (array) $request->input('home_cms', []);
+            if ($request->has('home_cms.footer_show_social')) {
+                $inputCms['footer_show_social'] = $request->boolean('home_cms.footer_show_social');
+            }
+            $homeCms = CmsHomeService::normalize(array_merge($homeCms, $inputCms));
         }
 
         $interestRate = $data['default_interest_rate'] ?? ($data['default_profit_percent'] ?? $current['default_interest_rate']);
@@ -192,9 +216,11 @@ class SettingsController extends Controller
             'customer_login_enabled' => $request->boolean('customer_login_enabled'),
             'demo_customer_login_enabled' => $request->boolean('demo_customer_login_enabled'),
             'demo_admin_login_enabled' => $request->boolean('demo_admin_login_enabled'),
-            'home_headline' => $current['home_headline'],
-            'home_subtitle' => $current['home_subtitle'],
-            'home_body' => $current['home_body'],
+            'home_headline' => $request->filled('home_headline') ? $request->input('home_headline') : $current['home_headline'],
+            'home_subtitle' => $request->filled('home_subtitle') ? $request->input('home_subtitle') : $current['home_subtitle'],
+            'home_body' => $request->has('home_body') ? $request->input('home_body') : $current['home_body'],
+            'home_cms' => $homeCms,
+            'home_hero_path' => $heroPath,
             'invoice_message_template' => $data['invoice_message_template'],
             'logo_path' => $logoPath,
             'stamp_path' => $stampPath,

@@ -222,4 +222,55 @@ class CmsSettingsTest extends TestCase
         $this->assertSame('-100987654321', $settings['telegram_chat_id']);
         $this->assertTrue($settings['notify_new_loan']);
     }
+
+    public function testSocialMediaSettingsSaveThroughBusinessSettingsAndUpdateHomeCms(): void
+    {
+        $payload = [
+            'business_name' => 'NTL Finance',
+            'system_name' => 'Loan App',
+            'currency_code' => 'USD',
+            'currency_symbol_placement' => 'before',
+            'time_zone' => 'Asia/Phnom_Penh',
+            'fy_start_month' => 1,
+            'transaction_edit_days' => 30,
+            'date_format' => 'd-m-Y',
+            'time_format' => 24,
+            'currency_precision' => 2,
+            'theme_color' => '#6366f1',
+            'invoice_message_template' => 'Thank you {Customer Name}',
+            'home_cms' => [
+                'footer_show_social' => '1',
+                'footer_social_title' => 'Follow Us Online',
+                'footer_facebook' => 'https://facebook.com/ntlfinance',
+                'footer_telegram' => 'https://t.me/ntltelegram',
+                'footer_tiktok' => 'https://tiktok.com/@ntlfinance',
+                'footer_whatsapp' => 'https://wa.me/85512999888',
+                'footer_website' => 'https://ntl-finance.com',
+            ],
+        ];
+
+        $request = Request::create('/loan-management/settings/business', 'POST', $payload);
+        $request->setLaravelSession(session()->driver());
+        app()->instance('request', $request);
+
+        $response = (new SettingsController)->updateBusiness($request);
+        $this->assertTrue($response->isRedirect());
+
+        $saved = BusinessSettingsService::get();
+        $this->assertTrue($saved['home_cms']['footer_show_social']);
+        $this->assertSame('Follow Us Online', $saved['home_cms']['footer_social_title']);
+        $this->assertSame('https://facebook.com/ntlfinance', $saved['home_cms']['footer_facebook']);
+        $this->assertSame('https://t.me/ntltelegram', $saved['home_cms']['footer_telegram']);
+        $this->assertSame('https://tiktok.com/@ntlfinance', $saved['home_cms']['footer_tiktok']);
+        $this->assertSame('https://wa.me/85512999888', $saved['home_cms']['footer_whatsapp']);
+        $this->assertSame('https://ntl-finance.com', $saved['home_cms']['footer_website']);
+    }
+
+    public function testSocialSettingsRouteRedirectsToTabSocial(): void
+    {
+        $url = route('loan-management.settings.social');
+        $this->assertStringContainsString('/settings/social', $url);
+        $businessUrl = route('loan-management.settings.business');
+        $this->assertSame($businessUrl . '#tab-social', redirect()->to($businessUrl . '#tab-social')->getTargetUrl());
+    }
 }

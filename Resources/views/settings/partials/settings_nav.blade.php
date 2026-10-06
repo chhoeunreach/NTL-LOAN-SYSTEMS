@@ -84,6 +84,23 @@
             @endif
         </a>
 
+        <a href="{{ $tabUrl('tab-social') }}"
+           class="lm-nav-item {{ in_array($currentActive, ['tab-social', 'social'], true) ? 'active' : '' }}"
+           data-tab="tab-social">
+            <i class="fa fa-share-alt"></i>
+            <span>{{ $lmText('Social Media (Follow Us)', 'បណ្ដាញសង្គម (Follow Us)') }}</span>
+            @php
+                $activeSocialCount = 0;
+                $cmsData = $settings['home_cms'] ?? [];
+                foreach (['footer_facebook', 'footer_telegram', 'footer_tiktok', 'footer_instagram', 'footer_youtube', 'footer_whatsapp', 'footer_linkedin', 'footer_twitter', 'footer_website'] as $sKey) {
+                    if (!empty($cmsData[$sKey])) $activeSocialCount++;
+                }
+            @endphp
+            @if($activeSocialCount > 0)
+                <span class="nav-badge" style="background:#ecfdf5; color:#047857;">{{ $activeSocialCount }}</span>
+            @endif
+        </a>
+
         <a href="{{ $tabUrl('tab-cms') }}"
            class="lm-nav-item {{ in_array($currentActive, ['tab-cms', 'cms'], true) ? 'active' : '' }}"
            data-tab="tab-cms">

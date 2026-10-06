@@ -618,6 +618,155 @@
     }
     .lm-preview-logo img { width: 100%; height: 100%; object-fit: contain; }
 
+    /* Social Media & Follow Us Cards */
+    .lm-social-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 18px;
+    }
+    @media (max-width: 900px) {
+        .lm-social-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .lm-social-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 16px 18px;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+    }
+    .lm-social-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+    }
+    .lm-social-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+    .lm-social-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .lm-social-icon-box {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    .lm-social-info h4 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+    .lm-social-info p {
+        margin: 2px 0 0;
+        font-size: 11.5px;
+        color: #64748b;
+    }
+    .lm-social-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 3px 8px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .lm-social-badge.active {
+        background: #ecfdf5;
+        color: #059669;
+    }
+    .lm-social-badge.inactive {
+        background: #f1f5f9;
+        color: #94a3b8;
+    }
+    .lm-social-input-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .lm-social-test-btn {
+        height: 40px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: all 0.15s ease;
+    }
+    .lm-social-test-btn:hover:not(.disabled) {
+        background: #0f172a;
+        color: #fff;
+        border-color: #0f172a;
+    }
+    .lm-social-test-btn.disabled {
+        opacity: 0.45;
+        pointer-events: none;
+    }
+    .lm-social-preview-container {
+        background: #18181b;
+        border: 1px solid #27272a;
+        border-radius: 12px;
+        padding: 20px;
+        color: #fff;
+        margin-top: 20px;
+    }
+    .lm-social-preview-title {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #a1a1aa;
+        margin-bottom: 12px;
+    }
+    .lm-social-preview-icons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .lm-social-preview-link {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: #27272a;
+        border: 1px solid #3f3f46;
+        color: #e4e4e7;
+        display: inline-grid;
+        place-items: center;
+        font-size: 16px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .lm-social-preview-link:hover {
+        background: var(--lm-primary, #6366f1);
+        border-color: var(--lm-primary, #6366f1);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+
     /* Sticky Bottom Action Bar */
     .lm-sticky-actions {
         position: sticky;
@@ -1526,6 +1675,230 @@
                     </div>
                 </div>
 
+                <!-- TAB: SOCIAL MEDIA & FOLLOW US LINKS -->
+                <div class="lm-tab-pane" id="tab-social">
+                    <div class="lm-section-head">
+                        <div>
+                            <h2>{{ $lmText('Social Media Channels & Follow Us', 'បណ្ដាញសង្គម និងតំណភ្ជាប់ Follow Us') }}</h2>
+                            <p>{{ $lmText('Connect your official social media pages displayed in the website footer, customer portal, and contact sections.', 'កំណត់តំណភ្ជាប់បណ្ដាញសង្គមផ្លូវការរបស់អ្នកដែលត្រូវបង្ហាញនៅខាងក្រោមគេហទំព័រ (Footer) និងផតថលអតិថិជន។') }}</p>
+                        </div>
+                        <a href="{{ route('loan-management.public.home') }}" target="_blank" class="btn btn-sm btn-default" style="font-weight:700;">
+                            <i class="fa fa-external-link"></i> {{ $lmText('Preview Public Website', 'មើលគេហទំព័រជាក់ស្តែង') }}
+                        </a>
+                    </div>
+
+                    @php
+                        $cms = $settings['home_cms'] ?? [];
+                        $socialShow = (bool) old('home_cms.footer_show_social', $cms['footer_show_social'] ?? true);
+                        $socialTitle = old('home_cms.footer_social_title', $cms['footer_social_title'] ?? 'Follow Us');
+
+                        $socialChannels = [
+                            [
+                                'key' => 'footer_facebook',
+                                'label' => 'Facebook',
+                                'km_label' => 'ទំព័រ Facebook',
+                                'desc' => 'Official Facebook page or profile',
+                                'icon' => 'fa fa-facebook',
+                                'bg' => '#1877F2',
+                                'placeholder' => 'https://facebook.com/your-page-name',
+                                'example' => 'https://facebook.com/...',
+                            ],
+                            [
+                                'key' => 'footer_telegram',
+                                'label' => 'Telegram',
+                                'km_label' => 'ឆានែល Telegram',
+                                'desc' => 'Public channel, group, or support bot',
+                                'icon' => 'fa fa-paper-plane',
+                                'bg' => '#229ED9',
+                                'placeholder' => 'https://t.me/your-channel-or-username',
+                                'example' => 'https://t.me/...',
+                            ],
+                            [
+                                'key' => 'footer_tiktok',
+                                'label' => 'TikTok',
+                                'km_label' => 'គណនី TikTok',
+                                'desc' => 'Official video showcase account',
+                                'icon' => 'fa fa-music',
+                                'bg' => '#000000',
+                                'placeholder' => 'https://tiktok.com/@your-username',
+                                'example' => 'https://tiktok.com/@...',
+                            ],
+                            [
+                                'key' => 'footer_instagram',
+                                'label' => 'Instagram',
+                                'km_label' => 'គណនី Instagram',
+                                'desc' => 'Showroom photos and stories',
+                                'icon' => 'fa fa-instagram',
+                                'bg' => 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                                'placeholder' => 'https://instagram.com/your-handle',
+                                'example' => 'https://instagram.com/...',
+                            ],
+                            [
+                                'key' => 'footer_youtube',
+                                'label' => 'YouTube',
+                                'km_label' => 'ឆានែល YouTube',
+                                'desc' => 'Tutorials, promotions, and reviews',
+                                'icon' => 'fa fa-youtube-play',
+                                'bg' => '#FF0000',
+                                'placeholder' => 'https://youtube.com/@your-channel',
+                                'example' => 'https://youtube.com/@...',
+                            ],
+                            [
+                                'key' => 'footer_whatsapp',
+                                'label' => 'WhatsApp',
+                                'km_label' => 'គណនី WhatsApp',
+                                'desc' => 'WhatsApp direct chat link or business number',
+                                'icon' => 'fa fa-whatsapp',
+                                'bg' => '#25D366',
+                                'placeholder' => 'https://wa.me/85512345678',
+                                'example' => 'https://wa.me/...',
+                            ],
+                            [
+                                'key' => 'footer_linkedin',
+                                'label' => 'LinkedIn',
+                                'km_label' => 'ទំព័រ LinkedIn',
+                                'desc' => 'Corporate and career profile',
+                                'icon' => 'fa fa-linkedin',
+                                'bg' => '#0A66C2',
+                                'placeholder' => 'https://linkedin.com/company/your-company',
+                                'example' => 'https://linkedin.com/...',
+                            ],
+                            [
+                                'key' => 'footer_twitter',
+                                'label' => 'X (Twitter)',
+                                'km_label' => 'គណនី X (Twitter)',
+                                'desc' => 'Official news and quick announcements',
+                                'icon' => 'fa fa-twitter',
+                                'bg' => '#0f172a',
+                                'placeholder' => 'https://x.com/your-handle',
+                                'example' => 'https://x.com/...',
+                            ],
+                            [
+                                'key' => 'footer_website',
+                                'label' => 'Official Website',
+                                'km_label' => 'គេហទំព័រចម្បង',
+                                'desc' => 'Main corporate or external partner portal',
+                                'icon' => 'fa fa-globe',
+                                'bg' => '#6366f1',
+                                'placeholder' => 'https://your-main-domain.com',
+                                'example' => 'https://...',
+                            ],
+                        ];
+                    @endphp
+
+                    <!-- Master Follow Us Toggle & Title Controls -->
+                    <div style="background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(15,23,42,0.04);">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:280px;" data-search-target>
+                                <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin-bottom:4px;">
+                                    <input type="hidden" name="home_cms[footer_show_social]" value="0">
+                                    <input type="checkbox" id="socialShowToggle" name="home_cms[footer_show_social]" value="1" {{ $socialShow ? 'checked' : '' }} style="width:18px; height:18px; accent-color:var(--lm-primary, #6366f1); cursor:pointer;">
+                                    <span style="font-size:15px; font-weight:800; color:#0f172a;">{{ $lmText('Enable "Follow Us" Section on Public Site', 'បើកដំណើរការផ្នែក "តាមដានពួកយើង" (Follow Us) លើគេហទំព័រ') }}</span>
+                                </label>
+                                <p style="margin:0 0 0 28px; font-size:12.5px; color:#64748b; line-height:1.4;">
+                                    {{ $lmText('When enabled, visitors will see the social media icons in the website footer. Any social channel with an empty link will be hidden automatically.', 'នៅពេលបើក អតិថិជននឹងឃើញនិមិត្តសញ្ញាបណ្ដាញសង្គមនៅក្បែរ Footer។ បណ្ដាញណាដែលគ្មានតំណភ្ជាប់ នឹងត្រូវលាក់ដោយស្វ័យប្រវត្តិ។') }}
+                                </p>
+                            </div>
+
+                            <div style="min-width:260px; max-width:340px; flex:1;" data-search-target>
+                                <label class="lm-field-label" for="socialTitleInput">
+                                    <span>{{ $lmText('Section Title (Heading)', 'ចំណងជើងផ្នែក') }}</span>
+                                </label>
+                                <input type="text" class="lm-input" id="socialTitleInput" name="home_cms[footer_social_title]" value="{{ $socialTitle }}" maxlength="80" placeholder="Follow Us (e.g. តាមដានពួកយើង)">
+                                <div class="lm-field-hint">{{ $lmText('Text displayed above the social icons.', 'អក្សរដែលបង្ហាញពីលើរូបតំណាងបណ្ដាញសង្គម។') }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Real-time Live Footer Mockup -->
+                        <div class="lm-social-preview-container" id="socialPreviewWrapper">
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid #27272a; padding-bottom:10px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <i class="fa fa-eye" style="color:#a1a1aa; font-size:13px;"></i>
+                                    <span style="font-size:12px; font-weight:800; color:#e4e4e7; text-transform:uppercase; letter-spacing:0.5px;">{{ $lmText('Live Website Footer Preview', 'គំរូជាក់ស្តែងនៅក្បាល Footer គេហទំព័រ') }}</span>
+                                </div>
+                                <span style="font-size:11px; color:#71717a; background:#27272a; padding:2px 8px; border-radius:4px;">{{ $lmText('Interactive Preview', 'មើលទិន្នន័យជាក់ស្តែង') }}</span>
+                            </div>
+
+                            <div id="socialPreviewBody" style="transition:opacity 0.2s ease;">
+                                <div class="lm-social-preview-title" id="socialPreviewTitle">{{ $socialTitle ?: 'FOLLOW US' }}</div>
+                                <div class="lm-social-preview-icons" id="socialPreviewIcons">
+                                    @foreach($socialChannels as $channel)
+                                        @php
+                                            $val = trim((string) old('home_cms.'.$channel['key'], $cms[$channel['key']] ?? ''));
+                                            $hasVal = filled($val);
+                                            $url = $hasVal ? (preg_match('#^(https?:)?//#i', $val) ? $val : 'https://'.$val) : '#';
+                                        @endphp
+                                        <a href="{{ $url }}" id="preview_icon_{{ $channel['key'] }}" class="lm-social-preview-link" target="_blank" rel="noopener noreferrer" title="{{ $channel['label'] }}" style="{{ $hasVal ? 'display:inline-grid;' : 'display:none;' }}">
+                                            <i class="{{ $channel['icon'] }}"></i>
+                                        </a>
+                                    @endforeach
+                                </div>
+                                <div id="socialPreviewEmptyNotice" style="display:none; color:#71717a; font-size:12px; font-style:italic; margin-top:8px;">
+                                    {{ $lmText('No social links filled yet. Fill at least one link below to see it live.', 'មិនទាន់មានតំណភ្ជាប់ណាមួយត្រូវបានបញ្ចូលនៅឡើយទេ។ សូមបំពេញតំណភ្ជាប់ខាងក្រោមយ៉ាងហោចមួយ។') }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Individual Social Media Platform Cards -->
+                    <div class="lm-social-grid">
+                        @foreach($socialChannels as $channel)
+                            @php
+                                $val = trim((string) old('home_cms.'.$channel['key'], $cms[$channel['key']] ?? ''));
+                                $hasVal = filled($val);
+                                $testUrl = $hasVal ? (preg_match('#^(https?:)?//#i', $val) ? $val : 'https://'.$val) : 'javascript:void(0)';
+                            @endphp
+                            <div class="lm-social-card" data-search-target>
+                                <div>
+                                    <div class="lm-social-card-head">
+                                        <div class="lm-social-meta">
+                                            <div class="lm-social-icon-box" style="background:{{ $channel['bg'] }};">
+                                                <i class="{{ $channel['icon'] }}"></i>
+                                            </div>
+                                            <div class="lm-social-info">
+                                                <h4>{{ $channel['label'] }} <span style="font-size:12px; font-weight:600; color:#64748b;">({{ $channel['km_label'] }})</span></h4>
+                                                <p>{{ $channel['desc'] }}</p>
+                                            </div>
+                                        </div>
+                                        <span id="badge_{{ $channel['key'] }}" class="lm-social-badge {{ $hasVal ? 'active' : 'inactive' }}">
+                                            @if($hasVal)
+                                                <i class="fa fa-check-circle"></i> {{ $lmText('Active', 'បានភ្ជាប់') }}
+                                            @else
+                                                {{ $lmText('Not Set', 'មិនទាន់កំណត់') }}
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    <div class="lm-field" style="margin-bottom:8px;">
+                                        <div class="lm-social-input-row">
+                                            <input type="text"
+                                                   class="lm-input social-link-input"
+                                                   id="cms_{{ $channel['key'] }}"
+                                                   name="home_cms[{{ $channel['key'] }}]"
+                                                   value="{{ $val }}"
+                                                   maxlength="220"
+                                                   placeholder="{{ $channel['placeholder'] }}"
+                                                   autocomplete="off">
+
+                                            <a href="{{ $testUrl }}"
+                                               id="test_btn_{{ $channel['key'] }}"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="lm-social-test-btn {{ $hasVal ? '' : 'disabled' }}"
+                                               title="{{ $lmText('Open and test link in new tab', 'បើកមើលតំណភ្ជាប់ក្នុងផ្ទាំងថ្មី') }}">
+                                                <i class="fa fa-external-link"></i> {{ $lmText('Test', 'តេស្ត') }}
+                                            </a>
+                                        </div>
+                                        <div class="lm-field-hint" style="margin-top:4px;">
+                                            {{ $lmText('Example:', 'ឧទាហរណ៍៖') }} <code>{{ $channel['example'] }}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
                 <!-- TAB 8: CMS & PUBLIC HOMEPAGE (EMBEDDED NATIVELY) -->
                 <div class="lm-tab-pane" id="tab-cms">
                     <div class="lm-section-head">
@@ -2027,6 +2400,83 @@
                 }
             });
         }
+
+        // Social Media & Follow Us Live Preview and Verification
+        var socialTitleInput = document.getElementById('socialTitleInput');
+        var socialShowToggle = document.getElementById('socialShowToggle');
+        var socialPreviewTitle = document.getElementById('socialPreviewTitle');
+        var socialPreviewBody = document.getElementById('socialPreviewBody');
+        var socialPreviewEmptyNotice = document.getElementById('socialPreviewEmptyNotice');
+
+        var socialPlatformKeys = [
+            'footer_facebook', 'footer_telegram', 'footer_tiktok', 'footer_instagram',
+            'footer_youtube', 'footer_whatsapp', 'footer_linkedin', 'footer_twitter', 'footer_website'
+        ];
+
+        function syncSocialPreview() {
+            if (socialPreviewTitle && socialTitleInput) {
+                socialPreviewTitle.textContent = (socialTitleInput.value || '').trim() || 'FOLLOW US';
+            }
+            if (socialPreviewBody && socialShowToggle) {
+                socialPreviewBody.style.opacity = socialShowToggle.checked ? '1' : '0.4';
+            }
+
+            var activeCount = 0;
+            socialPlatformKeys.forEach(function(key) {
+                var input = document.getElementById('cms_' + key);
+                var iconEl = document.getElementById('preview_icon_' + key);
+                var badgeEl = document.getElementById('badge_' + key);
+                var testBtn = document.getElementById('test_btn_' + key);
+                if (!input) return;
+
+                var val = (input.value || '').trim();
+                var hasVal = val.length > 0;
+                if (hasVal) activeCount++;
+
+                if (iconEl) {
+                    iconEl.style.display = hasVal ? 'inline-grid' : 'none';
+                    if (hasVal) {
+                        var fullUrl = /^(https?:)?\/\//i.test(val) ? val : 'https://' + val;
+                        iconEl.setAttribute('href', fullUrl);
+                    }
+                }
+
+                if (badgeEl) {
+                    if (hasVal) {
+                        badgeEl.className = 'lm-social-badge active';
+                        badgeEl.innerHTML = '<i class="fa fa-check-circle"></i> {{ $lmText("Active", "បានភ្ជាប់") }}';
+                    } else {
+                        badgeEl.className = 'lm-social-badge inactive';
+                        badgeEl.textContent = '{{ $lmText("Not Set", "មិនទាន់កំណត់") }}';
+                    }
+                }
+
+                if (testBtn) {
+                    if (hasVal) {
+                        var fullUrl = /^(https?:)?\/\//i.test(val) ? val : 'https://' + val;
+                        testBtn.href = fullUrl;
+                        testBtn.classList.remove('disabled');
+                    } else {
+                        testBtn.href = 'javascript:void(0)';
+                        testBtn.classList.add('disabled');
+                    }
+                }
+            });
+
+            if (socialPreviewEmptyNotice) {
+                socialPreviewEmptyNotice.style.display = activeCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        if (socialTitleInput) socialTitleInput.addEventListener('input', syncSocialPreview);
+        if (socialShowToggle) socialShowToggle.addEventListener('change', syncSocialPreview);
+
+        socialPlatformKeys.forEach(function(key) {
+            var input = document.getElementById('cms_' + key);
+            if (input) input.addEventListener('input', syncSocialPreview);
+        });
+
+        syncSocialPreview();
 
         syncPreview();
     })();

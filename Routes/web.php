@@ -259,6 +259,7 @@ Route::middleware(['web', 'auth', 'SetSessionData', 'language', 'timezone', 'Adm
         Route::post('/settings/business', [SettingsController::class, 'updateBusiness'])->name('loan-management.settings.business.update');
         Route::get('/settings/cms', [SettingsController::class, 'cms'])->name('loan-management.settings.cms');
         Route::post('/settings/cms', [SettingsController::class, 'updateCms'])->name('loan-management.settings.cms.update');
+        Route::get('/settings/social', fn () => redirect()->to(route('loan-management.settings.business') . '#tab-social'))->name('loan-management.settings.social');
         Route::post('/settings/invoice-prefix', fn () => redirect()->route('loan-management.locations.index'))->name('loan-management.settings.invoice-prefix');
         Route::get('/settings/payment-methods', [SettingsController::class, 'paymentMethods'])->name('loan-management.settings.payment-methods');
         Route::post('/settings/payment-methods', [SettingsController::class, 'updatePaymentMethods'])->name('loan-management.settings.payment-methods.update');
