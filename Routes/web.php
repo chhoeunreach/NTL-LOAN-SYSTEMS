@@ -46,6 +46,7 @@ Route::middleware(['web'])
     ->name('loan-management.settings.business.public-stamp');
 
 Route::middleware(['web'])->group(function () {
+    Route::match(['get', 'post'], '/language', [SettingsController::class, 'switchLanguage'])->name('loan-management.public.language.switch');
     Route::get('/', [PublicAppController::class, 'home'])->name('loan-management.public.home');
     Route::get('/cms/home-image', [PublicAppController::class, 'homeImage'])->name('loan-management.public.home-image');
     Route::get('/register', [PublicAppController::class, 'register'])->name('loan-management.public.register');

@@ -97,6 +97,63 @@ class PublicCmsHomeTest extends TestCase
         $this->assertStringContainsString('Sample Brand', $this->renderHome());
     }
 
+    public function testLanguageSwitcherRendersNearCustomerLogin(): void
+    {
+        $html = $this->renderHome();
+        $this->assertStringContainsString('cms-lang-switch', $html);
+        $this->assertStringContainsString('cms-lang-btn', $html);
+        $this->assertStringContainsString('ខ្មែរ', $html);
+        $this->assertStringContainsString('EN', $html);
+        $this->assertStringContainsString('lang=km', $html);
+        $this->assertStringContainsString('lang=en', $html);
+        $this->assertStringContainsString('Customer Login', $html);
+
+        // Language toggle is inside nav-actions right alongside customer login button
+        $navActionsPos = strpos($html, 'class="nav-actions"');
+        $langSwitchPos = strpos($html, 'class="cms-lang-switch', $navActionsPos);
+        $loginPos = strpos($html, route('loan-management.public.customer-login'), $navActionsPos);
+        $this->assertNotFalse($navActionsPos);
+        $this->assertNotFalse($langSwitchPos);
+        $this->assertNotFalse($loginPos);
+    }
+
+    public function testKhmerLanguageRendersCompleteTranslations(): void
+    {
+        request()->merge(['lang' => 'km']);
+        session(['user.language' => 'km']);
+        app()->setLocale('km');
+
+        $html = $this->renderHome();
+
+        // Check HTML lang attribute
+        $this->assertStringContainsString('lang="km"', $html);
+
+        // Check header, menus, and announcements
+        $this->assertStringContainsString('កាតាឡុកទំនិញ', $html);
+        $this->assertStringContainsString('របៀបស្នើសុំ', $html);
+        $this->assertStringContainsString('អំពីយើង', $html);
+        $this->assertStringContainsString('ទំនាក់ទំនង', $html);
+
+        // Check login modal and installment modal translations
+        $this->assertStringContainsString('ចូលគណនីអតិថិជន', $html);
+        $this->assertStringContainsString('ចុះឈ្មោះស្នើសុំបង់រំលស់', $html);
+        $this->assertStringContainsString('ឈ្មោះពេញ', $html);
+        $this->assertStringContainsString('លេខទូរស័ព្ទ', $html);
+        $this->assertStringContainsString('អាសយដ្ឋានដឹកជញ្ជូន', $html);
+        $this->assertStringContainsString('ឯកសារភ្ជាប់', $html);
+
+        // Check catalog, cart, and actions
+        $this->assertStringContainsString('ទំនិញទាំងអស់', $html);
+        $this->assertStringContainsString('ដាក់ក្នុងកន្ត្រក', $html);
+        $this->assertStringContainsString('កន្ត្រករំលស់', $html);
+        $this->assertStringContainsString('ស្នើសុំរំលស់', $html);
+
+        // Reset request locale
+        request()->query->remove('lang');
+        session()->forget('user.language');
+        app()->setLocale('en');
+    }
+
     public function testSampleFeaturesUseCmsContentAndVisibility(): void
     {
         $html = $this->renderHome(['experience_title' => 'Custom Experience', 'privacy_body' => 'Custom privacy content', 'assessment_title' => 'Custom Assessment']);
@@ -109,3 +166,4 @@ class PublicCmsHomeTest extends TestCase
         }
     }
 }
+

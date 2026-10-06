@@ -1,3 +1,8 @@
+@php
+    $modalLang = strtolower((string) request()->query('lang', request()->query('language', session('user.language', request()->cookie('lm_lang', app()->getLocale() ?? 'en')))));
+    $mIsKm = in_array($modalLang, ['km', 'kh', 'khmer']);
+    $mText = function ($en, $km) use ($mIsKm) { return $mIsKm ? $km : $en; };
+@endphp
 <style>
     .installment-modal { width:min(720px, calc(100% - 32px)); max-height:calc(100dvh - 32px); padding:32px; border:0; border-radius:8px; background:#fff; color:#202020; overflow-y:auto; }
     .installment-modal::backdrop { background:rgba(0,0,0,.60); }
@@ -23,10 +28,10 @@
     @media (max-width:540px) { .installment-modal { padding:24px 20px; } .installment-modal h2 { font-size:23px; } .installment-grid { grid-template-columns:1fr; gap:16px; } .installment-docs-grid { grid-template-columns:1fr; } }
 </style>
 <dialog class="installment-modal" id="installmentRequestModal" aria-labelledby="installmentRequestTitle">
-    <button class="installment-close" type="button" id="installmentRequestClose" aria-label="Close request" title="Close"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
+    <button class="installment-close" type="button" id="installmentRequestClose" aria-label="{{ $mText('Close request', 'បិទ') }}" title="{{ $mText('Close', 'បិទ') }}"><i class="fa-solid fa-xmark" aria-hidden="true"></i></button>
     <div id="installmentRequestFields">
-        <h2 id="installmentRequestTitle">Register Installment Request</h2>
-        <p>Send your contact details and selected products. Our staff will follow up on your request.</p>
+        <h2 id="installmentRequestTitle">{{ $mText('Register Installment Request', 'ចុះឈ្មោះស្នើសុំបង់រំលស់') }}</h2>
+        <p>{{ $mText('Send your contact details and selected products. Our staff will follow up on your request.', 'ផ្ញើព័ត៌មានទំនាក់ទំនង និងទំនិញដែលបានជ្រើសរើស។ បុគ្គលិករបស់យើងនឹងទាក់ទងមកអ្នកវិញ។') }}</p>
         <div class="installment-message" id="installmentRequestError" role="alert" hidden></div>
         <form method="POST" action="{{ route('loan-management.public.register.store') }}" id="installmentRequestForm">
             @csrf
@@ -36,68 +41,68 @@
             <input type="hidden" name="installment_items" id="requestInstallmentItems" value="{{ old('installment_items', '[]') }}">
             <div class="installment-grid">
                 <div>
-                    <label for="requestFullName">Full Name</label>
-                    <input id="requestFullName" name="name" maxlength="255" autocomplete="name" placeholder="Your name" value="{{ old('name') }}" required autofocus>
+                    <label for="requestFullName">{{ $mText('Full Name', 'ឈ្មោះពេញ') }}</label>
+                    <input id="requestFullName" name="name" maxlength="255" autocomplete="name" placeholder="{{ $mText('Your name', 'ឈ្មោះរបស់អ្នក') }}" value="{{ old('name') }}" required autofocus>
                 </div>
                 <div>
-                    <label for="requestPhone">Phone Number</label>
+                    <label for="requestPhone">{{ $mText('Phone Number', 'លេខទូរស័ព្ទ') }}</label>
                     <input id="requestPhone" name="phone" type="tel" maxlength="50" autocomplete="tel" placeholder="+855 ..." value="{{ old('phone') }}" required>
                 </div>
                 <div class="installment-field-full">
-                    <label for="requestAddress">Delivery / Contact Address</label>
-                    <textarea id="requestAddress" name="address" maxlength="1000" autocomplete="street-address" placeholder="Phnom Penh address" required>{{ old('address') }}</textarea>
+                    <label for="requestAddress">{{ $mText('Delivery / Contact Address', 'អាសយដ្ឋានដឹកជញ្ជូន / ទំនាក់ទំនង') }}</label>
+                    <textarea id="requestAddress" name="address" maxlength="1000" autocomplete="street-address" placeholder="{{ $mText('Phnom Penh address', 'អាសយដ្ឋាន រាជធានីភ្នំពេញ ឬខេត្ត...') }}" required>{{ old('address') }}</textarea>
                 </div>
                 <div class="installment-field-full">
-                    <label for="requestSelectedProducts">Selected Products</label>
+                    <label for="requestSelectedProducts">{{ $mText('Selected Products', 'ទំនិញដែលបានជ្រើសរើស') }}</label>
                     <textarea id="requestSelectedProducts" readonly rows="2"></textarea>
                 </div>
             </div>
             <div class="installment-docs">
-                <p class="installment-docs-title">Documents (optional)</p>
-                <p class="installment-docs-note">Add multiple photos or PDFs. Crop a photo if you want to trim it, or keep the original file exactly as it is.</p>
+                <p class="installment-docs-title">{{ $mText('Documents (optional)', 'ឯកសារភ្ជាប់ (ស្រេចចិត្ត)') }}</p>
+                <p class="installment-docs-note">{{ $mText('Add multiple photos or PDFs. Crop a photo if you want to trim it, or keep the original file exactly as it is.', 'ភ្ជាប់រូបថត ឬឯកសារ PDF។ អ្នកអាចកាត់តម្រឹមរូបថត ឬរក្សាទុកឯកសារដើម។') }}</p>
                 <div class="installment-docs-grid">
                     <div class="md-doc-slot" data-md-slot data-md-max="8">
                         <input type="file" name="id_card_front[]" multiple accept="image/*,application/pdf" data-md-input>
                         <span class="md-doc-count" data-md-count>0</span>
-                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">National ID (Front)</div>
-                        <div class="md-doc-hint">Up to 8 files</div>
+                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">{{ $mText('National ID (Front)', 'អត្តសញ្ញាណប័ណ្ណ (ខាងមុខ)') }}</div>
+                        <div class="md-doc-hint">{{ $mText('Up to 8 files', 'រហូតដល់ ៨ ឯកសារ') }}</div>
                         <div data-md-queue></div>
-                        <button type="button" class="md-doc-add" data-md-add>+ Add more files</button>
+                        <button type="button" class="md-doc-add" data-md-add>{{ $mText('+ Add more files', '+ បន្ថែមឯកសារ') }}</button>
                     </div>
                     <div class="md-doc-slot" data-md-slot data-md-max="8">
                         <input type="file" name="id_card_back[]" multiple accept="image/*,application/pdf" data-md-input>
                         <span class="md-doc-count" data-md-count>0</span>
-                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">National ID (Back)</div>
-                        <div class="md-doc-hint">Up to 8 files</div>
+                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">{{ $mText('National ID (Back)', 'អត្តសញ្ញាណប័ណ្ណ (ខាងក្រោយ)') }}</div>
+                        <div class="md-doc-hint">{{ $mText('Up to 8 files', 'រហូតដល់ ៨ ឯកសារ') }}</div>
                         <div data-md-queue></div>
-                        <button type="button" class="md-doc-add" data-md-add>+ Add more files</button>
+                        <button type="button" class="md-doc-add" data-md-add>{{ $mText('+ Add more files', '+ បន្ថែមឯកសារ') }}</button>
                     </div>
                     <div class="md-doc-slot" data-md-slot data-md-max="8">
                         <input type="file" name="income_proof[]" multiple accept="image/*,application/pdf" data-md-input>
                         <span class="md-doc-count" data-md-count>0</span>
-                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">Income Proof / Pay Slip</div>
-                        <div class="md-doc-hint">Up to 8 files</div>
+                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">{{ $mText('Income Proof / Pay Slip', 'លិខិតបញ្ជាក់ប្រាក់ចំណូល / ប័ណ្ណបើកប្រាក់ខែ') }}</div>
+                        <div class="md-doc-hint">{{ $mText('Up to 8 files', 'រហូតដល់ ៨ ឯកសារ') }}</div>
                         <div data-md-queue></div>
-                        <button type="button" class="md-doc-add" data-md-add>+ Add more files</button>
+                        <button type="button" class="md-doc-add" data-md-add>{{ $mText('+ Add more files', '+ បន្ថែមឯកសារ') }}</button>
                     </div>
                     <div class="md-doc-slot" data-md-slot data-md-max="8">
                         <input type="file" name="collateral_photo[]" multiple accept="image/*,application/pdf" data-md-input>
                         <span class="md-doc-count" data-md-count>0</span>
-                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">Product / Receipt Photo</div>
-                        <div class="md-doc-hint">Optional - up to 8 files</div>
+                        <div class="doc-label" style="font-size:12px; font-weight:800; color:#202020;">{{ $mText('Product / Receipt Photo', 'រូបថតទំនិញ / វិក្កយបត្រ') }}</div>
+                        <div class="md-doc-hint">{{ $mText('Optional - up to 8 files', 'ស្រេចចិត្ត - រហូតដល់ ៨ ឯកសារ') }}</div>
                         <div data-md-queue></div>
-                        <button type="button" class="md-doc-add" data-md-add>+ Add more files</button>
+                        <button type="button" class="md-doc-add" data-md-add>{{ $mText('+ Add more files', '+ បន្ថែមឯកសារ') }}</button>
                     </div>
                 </div>
             </div>
-            <button class="installment-submit" type="submit" id="installmentRequestSubmit">Submit Registration &amp; Cart</button>
+            <button class="installment-submit" type="submit" id="installmentRequestSubmit">{{ $mText('Submit Registration & Cart', 'ដាក់ស្នើការចុះឈ្មោះ និងកន្ត្រក') }}</button>
         </form>
     </div>
     <div class="installment-success" id="installmentRequestSuccess" hidden tabindex="-1" role="status">
-        <h2 id="installmentRequestSuccessTitle">Request Submitted</h2>
-        <div class="installment-message"><i class="fa-solid fa-clock" aria-hidden="true"></i> Pending Staff Follow-Up</div>
+        <h2 id="installmentRequestSuccessTitle">{{ $mText('Request Submitted', 'សំណើត្រូវបានដាក់រួចរាល់') }}</h2>
+        <div class="installment-message"><i class="fa-solid fa-clock" aria-hidden="true"></i> {{ $mText('Pending Staff Follow-Up', 'រង់ចាំបុគ្គលិកទាក់ទងមកវិញ') }}</div>
         <p id="installmentRequestSuccessMessage"></p>
-        <button class="installment-submit" type="button" id="installmentRequestDone">Done</button>
+        <button class="installment-submit" type="button" id="installmentRequestDone">{{ $mText('Done', 'រួចរាល់') }}</button>
     </div>
 </dialog>
 @if(session('installment_request_success'))
@@ -113,6 +118,7 @@
     var errorBox = document.getElementById('installmentRequestError');
     var submit = document.getElementById('installmentRequestSubmit');
     var usesCart = true;
+    var isKmModal = {{ $mIsKm ? 'true' : 'false' }};
     var previousFocus;
     var previousOverflow;
     var submitting = false;
@@ -146,9 +152,11 @@
         }));
         document.getElementById('requestSelectedProducts').value = items.length ? items.map(function (item) {
             return (item.name || 'Product') + ' x' + Number(item.qty || 1) + ' ($' + (Number(item.price || 0) * Number(item.qty || 1)).toFixed(2) + ')';
-        }).join('\n') : 'Staff will help you choose a product.';
+        }).join('\n') : (isKmModal ? 'បុគ្គលិកនឹងជួយលោកអ្នកជ្រើសរើសទំនិញ។' : 'Staff will help you choose a product.');
         if (preferences?.months) {
-            document.getElementById('requestSelectedProducts').value += '\nPreferred term: ' + preferences.months + ' months; down payment: $' + Number(preferences.downPayment || 0).toFixed(2);
+            document.getElementById('requestSelectedProducts').value += isKmModal
+                ? ('\nរយៈពេលបង់រំលស់: ' + preferences.months + ' ខែ; ប្រាក់កក់មុន: $' + Number(preferences.downPayment || 0).toFixed(2))
+                : ('\nPreferred term: ' + preferences.months + ' months; down payment: $' + Number(preferences.downPayment || 0).toFixed(2));
         }
         previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
@@ -170,7 +178,7 @@
         if (submitting) return;
         submitting = true;
         submit.disabled = true;
-        submit.textContent = 'Submitting...';
+        submit.textContent = isKmModal ? 'កំពុងដាក់ស្នើ...' : 'Submitting...';
         errorBox.hidden = true;
         try {
             window.MDUpload.syncAll();
@@ -181,7 +189,7 @@
             var payload = response.headers.get('content-type')?.includes('application/json') ? await response.json() : {};
             if (!response.ok || payload.status !== 'pending') {
                 var errors = Object.values(payload.errors || {}).flat();
-                throw new Error(errors[0] || (response.status === 419 ? 'Your session has expired. Refresh the page and try again.' : response.status === 429 ? 'Please wait a minute before submitting another request.' : response.status < 500 && payload.message ? payload.message : 'Unable to submit your request. Please try again.'));
+                throw new Error(errors[0] || (response.status === 419 ? (isKmModal ? 'សម័យការងាររបស់អ្នកបានផុតកំណត់។ សូមផ្ទុកទំព័រឡើងវិញ។' : 'Your session has expired. Refresh the page and try again.') : response.status === 429 ? (isKmModal ? 'សូមរង់ចាំមួយនាទី មុននឹងដាក់ស្នើឡើងវិញ។' : 'Please wait a minute before submitting another request.') : response.status < 500 && payload.message ? payload.message : (isKmModal ? 'មិនអាចដាក់ស្នើសំណើរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។' : 'Unable to submit your request. Please try again.')));
             }
             fields.hidden = true;
             success.hidden = false;
@@ -192,12 +200,12 @@
             form.reset();
             clearDocs();
         } catch (error) {
-            errorBox.textContent = error.message || 'Unable to submit your request. Please try again.';
+            errorBox.textContent = error.message || (isKmModal ? 'មិនអាចដាក់ស្នើសំណើរបស់អ្នកបានទេ។ សូមព្យាយាមម្តងទៀត។' : 'Unable to submit your request. Please try again.');
             errorBox.hidden = false;
         } finally {
             submitting = false;
             submit.disabled = false;
-            submit.textContent = 'Submit Registration & Cart';
+            submit.textContent = isKmModal ? 'ដាក់ស្នើការចុះឈ្មោះ និងកន្ត្រក' : 'Submit Registration & Cart';
         }
     });
 })();

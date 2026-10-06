@@ -1,10 +1,76 @@
 @php
     $businessLogoUrl = \Modules\LoanManagement\Services\BusinessSettingsService::publicLogoUrl();
     $businessName = \Modules\LoanManagement\Services\BusinessSettingsService::businessName();
+    $loanLanguage = session('user.language') ?? request()->cookie('lm_lang') ?? request('lang') ?? config('app.locale', 'en');
+    $loanLanguage = in_array($loanLanguage, ['en', 'km'], true) ? $loanLanguage : 'en';
+    $lmIsKhmer = $loanLanguage === 'km';
+    $lmText = fn ($en, $km) => $lmIsKhmer ? $km : $en;
+
     $headline = $settings['home_headline'] ?? 'Simple loan service for customers';
+    if ($lmIsKhmer && $headline === 'Simple loan service for customers') {
+        $headline = 'សេវាកម្មបង់រំលស់ងាយស្រួលសម្រាប់អតិថិជន';
+    }
     $subtitle = $settings['home_subtitle'] ?? '';
     $body = $settings['home_body'] ?? '';
     $cms = \Modules\LoanManagement\Services\CmsHomeService::normalize($settings['home_cms'] ?? []);
+
+    if ($lmIsKhmer) {
+        if ($cms['tagline'] === 'Showroom & Installment') $cms['tagline'] = 'បន្ទប់តាំងបង្ហាញ & សេវាកម្មបង់រំលស់';
+        if ($cms['announcement_text'] === 'Showroom & Installment') $cms['announcement_text'] = 'បន្ទប់តាំងបង្ហាញ & សេវាកម្មបង់រំលស់';
+        if ($cms['hero_eyebrow'] === 'Installment Shopping') $cms['hero_eyebrow'] = 'ទិញទំនិញបង់រំលស់';
+        if ($cms['assessment_title'] === 'Instant Loan Assessment') $cms['assessment_title'] = 'គណនាប្រាក់បង់រំលស់ភ្លាមៗ';
+        if ($cms['assessment_note'] === 'Estimate before interest and fees. Our staff confirms final installment terms after review.') {
+            $cms['assessment_note'] = 'ការប៉ាន់ស្មានមុនការប្រាក់ និងថ្លៃសេវា។ បុគ្គលិកយើងនឹងបញ្ជាក់លក្ខខណ្ឌចុងក្រោយបន្ទាប់ពីពិនិត្យ។';
+        }
+        if ($cms['brands_title'] === 'Authorized Brands & Partners') $cms['brands_title'] = 'ម៉ាកយីហោ និងដៃគូសហការ';
+        if ($cms['guide_title'] === 'Apply in a few minutes') $cms['guide_title'] = 'ស្នើសុំត្រឹមតែប៉ុន្មាននាទី';
+        if ($cms['guide_description'] === 'Choose a product, submit your request, and our staff will follow up.') {
+            $cms['guide_description'] = 'ជ្រើសរើសទំនិញ បញ្ជូនសំណើរបស់អ្នក ហើយបុគ្គលិកយើងនឹងទាក់ទងមកវិញ។';
+        }
+        if ($cms['step_1_title'] === 'Choose product') $cms['step_1_title'] = 'ជ្រើសរើសទំនិញ';
+        if ($cms['step_1_body'] === 'Add products from the catalog to your installment cart.' || $cms['step_1_body'] === 'Browse the catalog and add your selected products to the installment cart.') {
+            $cms['step_1_body'] = 'ជ្រើសរើសទំនិញពីកាតាឡុកដាក់ចូលក្នុងកន្ត្រកបង់រំលស់។';
+        }
+        if ($cms['step_2_title'] === 'Submit request') $cms['step_2_title'] = 'បញ្ជូនសំណើ';
+        if ($cms['step_2_body'] === 'Send your name, phone number, and contact address with your selected items.' || $cms['step_2_body'] === 'Send your contact details and selected items to our team.') {
+            $cms['step_2_body'] = 'ផ្ញើព័ត៌មានទំនាក់ទំនង និងទំនិញដែលបានជ្រើសរើសទៅកាន់ក្រុមការងារយើង។';
+        }
+        if ($cms['step_3_title'] === 'Staff follow-up') $cms['step_3_title'] = 'បុគ្គលិកទាក់ទងមកវិញ';
+        if ($cms['step_3_body'] === 'Our staff will contact you to review your request and discuss installment terms.' || $cms['step_3_body'] === 'Our staff will contact you to review your pending request.') {
+            $cms['step_3_body'] = 'បុគ្គលិកយើងនឹងទាក់ទងមកដើម្បីពិនិត្យសំណើដែលកំពុងរង់ចាំរបស់អ្នក។';
+        }
+        if ($cms['experience_title'] === 'Simple customer experience') $cms['experience_title'] = 'បទពិសោធន៍អតិថិជនងាយស្រួល';
+        if ($cms['experience_description'] === 'Browse products, request installment service, and return to your customer account once staff has enabled access.') {
+            $cms['experience_description'] = 'ស្វែងរកទំនិញ ស្នើសុំសេវាបង់រំលស់ និងចូលទៅកាន់គណនីអតិថិជនបន្ទាប់ពីបុគ្គលិកបានអនុញ្ញាត។';
+        }
+        if ($cms['experience_1_title'] === 'Choose product') $cms['experience_1_title'] = 'ជ្រើសរើសទំនិញ';
+        if ($cms['experience_1_body'] === 'Add products from the catalog to your installment cart.') $cms['experience_1_body'] = 'ជ្រើសរើសទំនិញពីកាតាឡុកដាក់ចូលក្នុងកន្ត្រកបង់រំលស់។';
+        if ($cms['experience_2_title'] === 'Submit request') $cms['experience_2_title'] = 'បញ្ជូនសំណើ';
+        if ($cms['experience_2_body'] === 'Send your contact details and selected items. Our staff will follow up.') $cms['experience_2_body'] = 'ផ្ញើព័ត៌មានទំនាក់ទំនង និងទំនិញដែលបានជ្រើសរើស។ បុគ្គលិកយើងនឹងទាក់ទងមកវិញ។';
+        if ($cms['experience_3_title'] === 'Track your account') $cms['experience_3_title'] = 'តាមដានគណនីរបស់អ្នក';
+        if ($cms['experience_3_body'] === 'After staff enables your account, log in to view loan records and payment history.') $cms['experience_3_body'] = 'បន្ទាប់ពីបុគ្គលិកបើកគណនីរបស់អ្នក សូមចូលដើម្បីមើលកំណត់ត្រាកម្ចី និងប្រវត្តិបង់ប្រាក់។';
+        if ($cms['catalog_title'] === 'Products Catalog') $cms['catalog_title'] = 'កាតាឡុកទំនិញ';
+        if ($cms['catalog_description'] === 'Find your next product and submit an installment request. All requests are subject to review.') {
+            $cms['catalog_description'] = 'ស្វែងរកទំនិញ និងបញ្ជូនសំណើបង់រំលស់។ សំណើទាំងអស់ត្រូវឆ្លងកាត់ការពិនិត្យ។';
+        }
+        if ($cms['about_title'] === 'About Us') $cms['about_title'] = 'អំពីយើង';
+        if ($cms['contact_title'] === 'Contact Us') $cms['contact_title'] = 'ទាក់ទងមកយើង';
+        if ($cms['privacy_title'] === 'Privacy Policy') $cms['privacy_title'] = 'គោលការណ៍ភាពឯកជន';
+        if ($cms['privacy_body'] === 'Contact our showroom team for information about our privacy policy.') {
+            $cms['privacy_body'] = 'សូមទាក់ទងក្រុមការងារបន្ទប់តាំងបង្ហាញរបស់យើងសម្រាប់ព័ត៌មានអំពីគោលការណ៍ភាពឯកជន។';
+        }
+        if ($cms['footer_text'] === 'For your applications, installment account, and payment history, visit the Customer Portal.') {
+            $cms['footer_text'] = 'សម្រាប់ពាក្យស្នើសុំ គណនីបង់រំលស់ និងប្រវត្តិបង់ប្រាក់ សូមចូលទៅកាន់ផតថលអតិថិជន។';
+        }
+        if ($cms['footer_note'] === 'All installment requests are subject to review and approval by our team.') {
+            $cms['footer_note'] = 'សំណើបង់រំលស់ទាំងអស់ស្ថិតក្រោមការពិនិត្យ និងអនុម័តដោយក្រុមការងាររបស់យើង។';
+        }
+        if ($cms['footer_links_title'] === 'Quick Links') $cms['footer_links_title'] = 'តំណភ្ជាប់រហ័ស';
+        if ($cms['footer_accounts_title'] === 'Accounts') $cms['footer_accounts_title'] = 'គណនី';
+        if ($cms['footer_contact_title'] === 'Get In Touch') $cms['footer_contact_title'] = 'ទាក់ទងមកយើង';
+        if ($cms['footer_social_title'] === 'Follow Us') $cms['footer_social_title'] = 'តាមដានពួកយើង';
+    }
+
     $customerPortalEnabled = \Modules\LoanManagement\Services\BusinessSettingsService::isCustomerLoginEnabled();
     $partnerBrands = \Modules\LoanManagement\Services\CmsHomeService::visibleBrands($cms, $brands ?? []);
     $menuSections = ['home' => 'hero', 'products' => 'catalog', 'how' => 'guide', 'cart' => 'cart', 'about' => 'about', 'contact' => 'contact'];
@@ -46,56 +112,73 @@
         ['icon' => 'fa-solid fa-envelope', 'value' => $cms['contact_email'], 'link' => 'mailto:'.$cms['contact_email']],
         ['icon' => 'fa-solid fa-clock', 'value' => $cms['contact_hours']],
     ], fn ($item) => filled($item['value'])));
-    $footerCopyright = trim(strtr($cms['footer_copyright'] ?: '© {year} {business}. All rights reserved.', [
+    $footerCopyright = trim(strtr($cms['footer_copyright'] ?: ($lmIsKhmer ? '© {year} {business}។ រក្សាសិទ្ធិគ្រប់យ៉ាង។' : '© {year} {business}. All rights reserved.'), [
         '{year}' => date('Y'),
         '{business}' => $businessName,
-    ])) ?: '© '.date('Y').' '.$businessName;
+    ])) ?: ($lmIsKhmer ? '© '.date('Y').' '.$businessName.'។ រក្សាសិទ្ធិគ្រប់យ៉ាង។' : '© '.date('Y').' '.$businessName);
     $footerQuickLinks = [];
     foreach ($visibleMenu as $footerKey => $footerSection) {
-        $footerQuickLinks[] = ['href' => '#'.$footerKey, 'label' => $cms['label_'.$footerKey], 'icon' => 'fa-solid fa-chevron-right'];
+        $footerMenuLabel = $cms['label_'.$footerKey];
+        if ($lmIsKhmer) {
+            $defaultMenuMap = [
+                'Home' => 'ទំព័រដើម',
+                'Products Catalog' => 'កាតាឡុកទំនិញ',
+                'Installment Guide' => 'របៀបស្នើសុំ',
+                'Cart' => 'កន្ត្រក',
+                'About Us' => 'អំពីយើង',
+                'Contact' => 'ទំនាក់ទំនង',
+            ];
+            $footerMenuLabel = $defaultMenuMap[$footerMenuLabel] ?? $footerMenuLabel;
+        }
+        $footerQuickLinks[] = ['href' => '#'.$footerKey, 'label' => $footerMenuLabel, 'icon' => 'fa-solid fa-chevron-right'];
     }
     if (! $customerUser && $customerPortalEnabled && $cms['catalog']) {
-        $footerQuickLinks[] = ['href' => route('loan-management.public.register'), 'label' => 'Request Installment', 'icon' => 'fa-solid fa-chevron-right'];
+        $footerQuickLinks[] = ['href' => route('loan-management.public.register'), 'label' => $lmText('Request Installment', 'ស្នើសុំបង់រំលស់'), 'icon' => 'fa-solid fa-chevron-right'];
     }
     $footerAccounts = [];
     if ($customerUser) {
-        $footerAccounts[] = ['href' => route('loan-management.public.customer-dashboard'), 'label' => 'My Dashboard', 'icon' => 'fa-solid fa-gauge-high'];
+        $footerAccounts[] = ['href' => route('loan-management.public.customer-dashboard'), 'label' => $lmText('My Dashboard', 'ផ្ទាំងគ្រប់គ្រងរបស់ខ្ញុំ'), 'icon' => 'fa-solid fa-gauge-high'];
     }
     if ($adminUser) {
-        $footerAccounts[] = ['href' => route('loan-management.dashboard'), 'label' => 'Admin Dashboard', 'icon' => 'fa-solid fa-gauge-high'];
+        $footerAccounts[] = ['href' => route('loan-management.dashboard'), 'label' => $lmText('Admin Dashboard', 'ផ្ទាំងគ្រប់គ្រងរដ្ឋបាល'), 'icon' => 'fa-solid fa-gauge-high'];
     } else {
         $footerAccounts[] = [
             'href' => route('login'),
-            'label' => 'Admin Login',
+            'label' => $lmText('Admin Login', 'ចូលប្រព័ន្ធគ្រប់គ្រង'),
             'icon' => 'fa-solid fa-user-shield',
-            'confirm' => $customerUser ? 'Are you sure you want to log out first to access Admin Login?' : null,
+            'confirm' => $customerUser ? $lmText('Are you sure you want to log out first to access Admin Login?', 'តើអ្នកប្រាកដជាចង់ចាកចេញដើម្បីចូលប្រព័ន្ធគ្រប់គ្រង?') : null,
         ];
     }
     if ($customerPortalEnabled) $footerAccounts[] = [
         'href' => route('loan-management.public.customer-login'),
-        'label' => $customerUser ? 'Switch Customer Account' : 'Customer Portal',
+        'label' => $customerUser ? $lmText('Switch Customer Account', 'ប្តូរគណនីអតិថិជន') : $lmText('Customer Portal', 'ផតថលអតិថិជន'),
         'icon' => 'fa-solid fa-id-card',
-        'confirm' => $adminUser ? 'You are currently signed in as Administrator ('.($adminUser->name ?? 'Admin').'). Are you sure you want to log out first to switch to Customer Portal?' : null,
+        'confirm' => $adminUser ? $lmText('You are currently signed in as Administrator ('.($adminUser->name ?? 'Admin').'). Are you sure you want to log out first to switch to Customer Portal?', 'អ្នកកំពុងចូលជាអ្នកគ្រប់គ្រង ('.($adminUser->name ?? 'Admin').')។ តើអ្នកប្រាកដជាចង់ចាកចេញដើម្បីប្តូរទៅកាន់ផតថលអតិថិជន?') : null,
     ];
     $footerAccounts[] = [
         'href' => route('loan-management.products'),
-        'label' => 'Installment Products Setup',
+        'label' => $lmText('Installment Products Setup', 'រៀបចំទំនិញបង់រំលស់'),
         'icon' => 'fa-solid fa-boxes-stacked',
     ];
     $footerAccounts[] = [
         'href' => route('loan-management.public.home'),
-        'label' => 'Back to Homepage',
+        'label' => $lmText('Back to Homepage', 'ត្រឡប់ទៅទំព័រដើម'),
         'icon' => 'fa-solid fa-house',
     ];
     $footerSignedIn = $customerUser ?? $adminUser;
     $catalogCount = count($products ?? []);
 @endphp
 <!doctype html>
-<html lang="en">
+<html lang="{{ $lmIsKhmer ? 'km' : 'en' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $businessName }}</title>
+    @if($lmIsKhmer)
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700;800&display=swap">
+    @endif
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --public-primary:#b9570b; --brand-orange:#d76b17; --ink:#231f20; --muted:#6d6d72; --line:#e5e5e7; --panel:#fff; --soft:#f6f6f7; }
@@ -351,14 +434,111 @@
             .footer-grid { grid-template-columns:minmax(0,1fr); }
         }
         @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+
+        /* Language switcher styling */
+        .cms-lang-switch {
+            display: inline-flex;
+            align-items: center;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 999px;
+            padding: 2px 3px;
+            height: 34px;
+            box-sizing: border-box;
+            user-select: none;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+        .cms-lang-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 28px;
+            padding: 0 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #64748b;
+            text-decoration: none !important;
+            border-radius: 999px;
+            background: transparent;
+            cursor: pointer;
+            line-height: 1;
+            transition: all .15s ease;
+        }
+        .cms-lang-btn:hover {
+            color: #0f172a;
+        }
+        .cms-lang-btn.active {
+            background: #ffffff;
+            color: var(--public-primary, #b9570b);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+            font-weight: 800;
+        }
+        .cms-lang-divider {
+            width: 1px;
+            height: 14px;
+            background: #cbd5e1;
+            display: inline-block;
+        }
+        .announcement-lang {
+            margin-left: 10px;
+            padding-left: 10px;
+            border-left: 1px solid rgba(255,255,255,0.25);
+            font-size: 11px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .announcement-lang a {
+            color: rgba(255,255,255,0.75);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .announcement-lang a.active {
+            color: #ffffff;
+            font-weight: 800;
+            text-decoration: underline;
+        }
+        .menu-mobile-lang {
+            display: none;
+            padding: 12px 0 6px;
+            margin-top: 8px;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--muted);
+            align-items: center;
+            gap: 8px;
+        }
+        .menu-mobile-lang a {
+            color: var(--ink);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .menu-mobile-lang a.active {
+            color: var(--public-primary);
+            font-weight: 800;
+            text-decoration: underline;
+        }
+        @media (max-width: 1100px) {
+            .menu-mobile-lang { display: flex; }
+        }
+        @media (max-width: 520px) {
+            .cms-lang-switch { height: 32px; padding: 2px; }
+            .cms-lang-btn { height: 26px; padding: 0 7px; font-size: 11px; }
+        }
+        /* Khmer font support */
+        html[lang="km"],
+        body.lm-lang-km {
+            font-family: "Kantumruy Pro", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
     </style>
 </head>
-<body>
+<body @class(['lm-lang-km' => $lmIsKhmer])>
     <main class="public-shell">
         @if($cms['announcement'])
         <div class="announcement"><div class="announcement-inner">
             <span>{{ $businessName }} &middot; {{ $cms['announcement_text'] }} @if($cms['contact_address']) &middot; {{ $cms['contact_address'] }} @endif @if($cms['contact_phone']) &middot; <a href="tel:{{ preg_replace('/[^0-9+]/', '', $cms['contact_phone']) }}">{{ $cms['contact_phone'] }}</a> @endif</span>
-            <div class="announcement-links">@if($customerPortalEnabled)<a href="{{ route('loan-management.public.customer-login') }}">Customer Portal</a>@endif<a href="{{ route('login') }}">Admin Login</a></div>
+            <div class="announcement-links">@if($customerPortalEnabled)<a href="{{ route('loan-management.public.customer-login') }}">{{ $lmText('Customer Portal', 'ផតថលអតិថិជន') }}</a>@endif<a href="{{ route('login') }}">{{ $lmText('Admin Login', 'ចូលប្រព័ន្ធគ្រប់គ្រង') }}</a><span class="announcement-lang"><a href="{{ request()->fullUrlWithQuery(['lang' => 'en']) }}" data-lang="en" class="{{ !$lmIsKhmer ? 'active' : '' }}">EN</a> &middot; <a href="{{ request()->fullUrlWithQuery(['lang' => 'km']) }}" data-lang="km" class="{{ $lmIsKhmer ? 'active' : '' }}">ខ្មែរ</a></span></div>
         </div></div>
         @endif
         <header class="site-nav">
@@ -373,13 +553,52 @@
                     </span>
                     <span class="brand-text">{{ $businessName }}<small>{{ $cms['tagline'] }}</small></span>
                 </a>
-                @if(!empty($visibleMenu))<button type="button" class="menu-toggle" id="publicMenuToggle" aria-label="Toggle navigation" aria-controls="publicMainMenu" aria-expanded="false"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>@endif
-                <nav class="menu" id="publicMainMenu" aria-label="Main menu">
+                @if(!empty($visibleMenu))<button type="button" class="menu-toggle" id="publicMenuToggle" aria-label="{{ $lmText('Toggle navigation', 'បើក/បិទ ម៉ឺនុយ') }}" aria-controls="publicMainMenu" aria-expanded="false"><i class="fa-solid fa-bars" aria-hidden="true"></i></button>@endif
+                <nav class="menu" id="publicMainMenu" aria-label="{{ $lmText('Main menu', 'ម៉ឺនុយមេ') }}">
                     @foreach($visibleMenu as $key => $section)
-                        <a href="#{{ $key }}" data-section-link="{{ $key }}" @class(['active' => $loop->first])>{{ $cms['label_'.$key] }}</a>
+                        @php
+                            $menuLabel = $cms['label_'.$key] ?? '';
+                            if ($lmIsKhmer) {
+                                $defaultMenuMap = [
+                                    'Home' => 'ទំព័រដើម',
+                                    'Products Catalog' => 'កាតាឡុកទំនិញ',
+                                    'Installment Guide' => 'របៀបស្នើសុំ',
+                                    'Cart' => 'កន្ត្រក',
+                                    'About Us' => 'អំពីយើង',
+                                    'Contact' => 'ទំនាក់ទំនង',
+                                ];
+                                $menuLabel = $defaultMenuMap[$menuLabel] ?? $menuLabel;
+                            }
+                        @endphp
+                        <a href="#{{ $key }}" data-section-link="{{ $key }}" @class(['active' => $loop->first])>{{ $menuLabel }}</a>
                     @endforeach
+                    <div class="menu-mobile-lang">
+                        <span>{{ $lmText('Language:', 'ភាសា៖') }}</span>
+                        <a href="{{ request()->fullUrlWithQuery(['lang' => 'en']) }}" data-lang="en" class="{{ !$lmIsKhmer ? 'active' : '' }}">English</a>
+                        &middot;
+                        <a href="{{ request()->fullUrlWithQuery(['lang' => 'km']) }}" data-lang="km" class="{{ $lmIsKhmer ? 'active' : '' }}">ភាសាខ្មែរ</a>
+                    </div>
                 </nav>
                 <div class="nav-actions">
+                    {{-- Language Switcher near Customer Login --}}
+                    <div class="cms-lang-switch" role="group" aria-label="{{ $lmText('Language selector', 'ជ្រើសរើសភាសា') }}" title="{{ $lmText('Switch language', 'ប្តូរភាសា') }}">
+                        <a href="{{ request()->fullUrlWithQuery(['lang' => 'en']) }}"
+                           data-lang="en"
+                           @class(['cms-lang-btn', 'active' => !$lmIsKhmer])
+                           aria-pressed="{{ !$lmIsKhmer ? 'true' : 'false' }}"
+                           title="English">
+                            EN
+                        </a>
+                        <span class="cms-lang-divider"></span>
+                        <a href="{{ request()->fullUrlWithQuery(['lang' => 'km']) }}"
+                           data-lang="km"
+                           @class(['cms-lang-btn', 'active' => $lmIsKhmer])
+                           aria-pressed="{{ $lmIsKhmer ? 'true' : 'false' }}"
+                           title="ភាសាខ្មែរ">
+                            ខ្មែរ
+                        </a>
+                    </div>
+
                     @if($adminUser)
                         <div class="user-dropdown-wrapper" id="adminDropdownWrapper">
                             <button type="button" class="user-profile-btn admin-profile-btn" id="adminProfileToggle" aria-expanded="false">
@@ -400,28 +619,28 @@
                                     @endif
                                     <div style="min-width: 0;">
                                         <div class="dropdown-user-name">{{ $adminUser->name ?? $adminUser->username ?? 'Administrator' }}</div>
-                                        <div class="dropdown-user-sub">{{ $adminUser->email ?? 'Admin & Staff Portal' }}</div>
+                                        <div class="dropdown-user-sub">{{ $adminUser->email ?? $lmText('Admin & Staff Portal', 'ផតថលរដ្ឋបាល និងបុគ្គលិក') }}</div>
                                     </div>
                                 </div>
                                 <div class="dropdown-divider"></div>
                                 <a href="{{ route('loan-management.dashboard') }}" class="dropdown-item">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                                    Admin Dashboard
+                                    {{ $lmText('Admin Dashboard', 'ផ្ទាំងគ្រប់គ្រងរដ្ឋបាល') }}
                                 </a>
-                                <a href="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and switch to Customer Portal?');" title="Switch or login as customer">
+                                <a href="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" class="dropdown-item" onclick="return confirm('{{ $lmText('Are you sure you want to log out and switch to Customer Portal?', 'តើអ្នកប្រាកដជាចង់ចាកចេញ ហើយប្តូរទៅកាន់ផតថលអតិថិជន?') }}');" title="{{ $lmText('Switch or login as customer', 'ប្តូរ ឬចូលជាអតិថិជន') }}">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                    Switch to Customer
+                                    {{ $lmText('Switch to Customer', 'ប្តូរទៅអតិថិជន') }}
                                 </a>
-                                <a href="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and switch admin account?');" title="Switch or login as another admin user">
+                                <a href="{{ Route::has('logout') ? route('logout') : url('/logout') }}?redirect={{ urlencode(route('login')) }}" class="dropdown-item" onclick="return confirm('{{ $lmText('Are you sure you want to log out and switch admin account?', 'តើអ្នកប្រាកដជាចង់ចាកចេញ ហើយប្តូរគណនីរដ្ឋបាល?') }}');" title="{{ $lmText('Switch or login as another admin user', 'ប្តូរ ឬចូលជាគណនីរដ្ឋបាលផ្សេង') }}">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                    Switch / Other Admin
+                                    {{ $lmText('Switch / Other Admin', 'ប្តូរ / គណនីរដ្ឋបាលផ្សេង') }}
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <form method="POST" action="{{ Route::has('logout') ? route('logout') : url('/logout') }}" style="margin: 0;" onsubmit="return confirm('Are you sure you want to log out?');">
+                                <form method="POST" action="{{ Route::has('logout') ? route('logout') : url('/logout') }}" style="margin: 0;" onsubmit="return confirm('{{ $lmText('Are you sure you want to log out?', 'តើអ្នកប្រាកដជាចង់ចាកចេញមែនទេ?') }}');">
                                     @csrf
                                     <button type="submit" class="dropdown-item danger">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                        Logout Admin
+                                        {{ $lmText('Logout Admin', 'ចាកចេញពីរដ្ឋបាល') }}
                                     </button>
                                 </form>
                             </div>
@@ -436,7 +655,7 @@
                                 @else
                                     <span class="user-avatar-badge">{{ strtoupper(mb_substr($customerUser->name ?: 'C', 0, 1)) }}</span>
                                 @endif
-                                <span class="user-profile-name">{{ $customerUser->name ?: 'Customer' }}</span>
+                                <span class="user-profile-name">{{ $customerUser->name ?: $lmText('Customer', 'អតិថិជន') }}</span>
                                 <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                             </button>
                             <div class="user-dropdown-menu" id="customerDropdownMenu">
@@ -447,38 +666,38 @@
                                         <div class="dropdown-avatar-circle-fallback">{{ strtoupper(mb_substr($customerUser->name ?: 'C', 0, 1)) }}</div>
                                     @endif
                                     <div style="min-width: 0;">
-                                        <div class="dropdown-user-name">{{ $customerUser->name ?: 'Customer' }}</div>
+                                        <div class="dropdown-user-name">{{ $customerUser->name ?: $lmText('Customer', 'អតិថិជន') }}</div>
                                         <div class="dropdown-user-sub">{{ $customerUser->phone ?: $customerUser->username }}</div>
                                     </div>
                                 </div>
                                 <div class="dropdown-divider"></div>
                                 <a href="{{ route('loan-management.public.customer-dashboard') }}" class="dropdown-item">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-                                    My Dashboard
+                                    {{ $lmText('My Dashboard', 'ផ្ទាំងគ្រប់គ្រងរបស់ខ្ញុំ') }}
                                 </a>
-                                <a href="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and switch to another account?');" title="Switch or add another customer account">
+                                <a href="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('loan-management.public.customer-login')) }}" class="dropdown-item" onclick="return confirm('{{ $lmText('Are you sure you want to log out and switch to another account?', 'តើអ្នកប្រាកដជាចង់ចាកចេញ ហើយប្តូរទៅកាន់គណនីផ្សេង?') }}');" title="{{ $lmText('Switch or add another customer account', 'ប្តូរ ឬបន្ថែមគណនីអតិថិជនផ្សេង') }}">
                                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
-                                    Switch Account
+                                    {{ $lmText('Switch Account', 'ប្តូរគណនី') }}
                                 </a>
                                 @if(! $adminUser)
-                                    <a href="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('login')) }}" class="dropdown-item" onclick="return confirm('Are you sure you want to log out and go to Admin Login?');">
+                                    <a href="{{ route('loan-management.public.customer-logout') }}?redirect={{ urlencode(route('login')) }}" class="dropdown-item" onclick="return confirm('{{ $lmText('Are you sure you want to log out and go to Admin Login?', 'តើអ្នកប្រាកដជាចង់ចាកចេញ ហើយទៅកាន់ការចូលប្រព័ន្ធគ្រប់គ្រង?') }}');">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-                                        Admin Login
+                                        {{ $lmText('Admin Login', 'ចូលប្រព័ន្ធគ្រប់គ្រង') }}
                                     </a>
                                 @endif
                                 <div class="dropdown-divider"></div>
-                                <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0;" onsubmit="return confirm('Are you sure you want to log out?');">
+                                <form method="POST" action="{{ route('loan-management.public.customer-logout') }}" style="margin: 0;" onsubmit="return confirm('{{ $lmText('Are you sure you want to log out?', 'តើអ្នកប្រាកដជាចង់ចាកចេញមែនទេ?') }}');">
                                     @csrf
                                     <button type="submit" class="dropdown-item danger">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                                        Logout Customer
+                                        {{ $lmText('Logout Customer', 'ចាកចេញពីអតិថិជន') }}
                                     </button>
                                 </form>
                             </div>
                         </div>
                     @elseif(! $adminUser && $customerPortalEnabled)
-                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Login</a>
-                        <a class="button" href="{{ route('loan-management.public.register') }}">Apply Now</a>
+                        <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">{{ $lmText('Login', 'ចូលប្រើ') }}</a>
+                        <a class="button" href="{{ route('loan-management.public.register') }}">{{ $lmText('Apply Now', 'ស្នើសុំឥឡូវនេះ') }}</a>
                     @endif
                 </div>
             </div>
@@ -500,14 +719,14 @@
                     @endif
                     <div class="hero-cta">
                         @if($customerUser)
-                            <a class="button" href="{{ route('loan-management.public.customer-dashboard') }}">Go to My Dashboard</a>
-                            @if($cms['catalog'])<a class="button-outline" href="#products">Shop Products</a>@endif
+                            <a class="button" href="{{ route('loan-management.public.customer-dashboard') }}">{{ $lmText('Go to My Dashboard', 'ទៅកាន់ផ្ទាំងគ្រប់គ្រង') }}</a>
+                            @if($cms['catalog'])<a class="button-outline" href="#products">{{ $lmText('Shop Products', 'ទិញទំនិញ') }}</a>@endif
                         @elseif($adminUser)
-                            <a class="button" href="{{ route('loan-management.dashboard') }}">Open Admin Dashboard</a>
-                            <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}" onclick="return confirm('You are currently signed in as Administrator ({{ $adminUser->name ?? $adminUser->username ?? 'Admin' }}). Are you sure you want to log out first to switch to Customer Portal?');">Customer Login / Switch</a>
+                            <a class="button" href="{{ route('loan-management.dashboard') }}">{{ $lmText('Open Admin Dashboard', 'បើកផ្ទាំងគ្រប់គ្រងរដ្ឋបាល') }}</a>
+                            <a class="button-outline" href="{{ route('loan-management.public.customer-login') }}" onclick="return confirm('{{ $lmText('You are currently signed in as Administrator. Are you sure you want to log out first to switch to Customer Portal?', 'អ្នកកំពុងចូលជាអ្នកគ្រប់គ្រង។ តើអ្នកប្រាកដជាចង់ចាកចេញដើម្បីប្តូរទៅកាន់ផតថលអតិថិជនមែនទេ?') }}');">{{ $lmText('Customer Login / Switch', 'ចូលគណនីអតិថិជន / ប្តូរ') }}</a>
                         @else
-                            @if($cms['catalog'])<a class="button" href="#products">Shop Products</a>@endif
-                            @if($customerPortalEnabled)<a class="button-outline" href="{{ route('loan-management.public.register') }}">Apply Now</a>@endif
+                            @if($cms['catalog'])<a class="button" href="#products">{{ $lmText('Shop Products', 'ទិញទំនិញ') }}</a>@endif
+                            @if($customerPortalEnabled)<a class="button-outline" href="{{ route('loan-management.public.register') }}">{{ $lmText('Apply Now', 'ស្នើសុំឥឡូវនេះ') }}</a>@endif
                         @endif
                     </div>
                 </div>
@@ -519,12 +738,12 @@
         <section class="assessment" aria-labelledby="assessmentTitle"><div class="section-inner">
             <h2 id="assessmentTitle">{{ $cms['assessment_title'] }}</h2>
             <div class="assessment-grid">
-                <div><label for="assessmentProduct">Selected Item</label><select id="assessmentProduct">@foreach($products as $product)<option value="{{ $loop->index }}">{{ $product['name'] }}</option>@endforeach</select></div>
-                <div><label for="assessmentPrice">Product Price</label><input id="assessmentPrice" readonly></div>
-                <div><label for="assessmentMonths">Months</label><input id="assessmentMonths" type="number" min="1" max="120" value="12" required></div>
-                <div><label for="assessmentDownPayment">Down Payment</label><input id="assessmentDownPayment" type="number" min="0" step="0.01" value="0" required></div>
+                <div><label for="assessmentProduct">{{ $lmText('Selected Item', 'ទំនិញដែលបានជ្រើស') }}</label><select id="assessmentProduct">@foreach($products as $product)<option value="{{ $loop->index }}">{{ $product['name'] }}</option>@endforeach</select></div>
+                <div><label for="assessmentPrice">{{ $lmText('Product Price', 'តម្លៃទំនិញ') }}</label><input id="assessmentPrice" readonly></div>
+                <div><label for="assessmentMonths">{{ $lmText('Months', 'ចំនួនខែ') }}</label><input id="assessmentMonths" type="number" min="1" max="120" value="12" required></div>
+                <div><label for="assessmentDownPayment">{{ $lmText('Down Payment', 'ប្រាក់កក់មុន ($)') }}</label><input id="assessmentDownPayment" type="number" min="0" step="0.01" value="0" required></div>
             </div>
-            <div class="assessment-output"><div>Estimated Monthly: <strong id="assessmentMonthly"></strong></div>@if($customerPortalEnabled)<button type="button" class="button" id="assessmentApply"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Configure Installment</button>@endif</div>
+            <div class="assessment-output"><div>{{ $lmText('Estimated Monthly:', 'ការបង់ប្រចាំខែប៉ាន់ស្មាន:') }} <strong id="assessmentMonthly"></strong></div>@if($customerPortalEnabled)<button type="button" class="button" id="assessmentApply"><i class="fa-solid fa-sliders" aria-hidden="true"></i> {{ $lmText('Configure Installment', 'កំណត់រំលស់') }}</button>@endif</div>
             <p>{{ $cms['assessment_note'] }}</p>
         </div></section>
         @endif
@@ -588,15 +807,15 @@
                         <div class="catalog-search-row">
                             <div class="search-input-box">
                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                                <input type="text" id="catalogSearchInput" aria-label="Search products" placeholder="Search products, brand, SKU..." autocomplete="off">
-                                <button type="button" class="search-clear-btn" id="searchClearBtn" style="display: none;" title="Clear search">&times;</button>
+                                <input type="text" id="catalogSearchInput" aria-label="{{ $lmText('Search products', 'ស្វែងរកទំនិញ') }}" placeholder="{{ $lmText('Search products, brand, SKU...', 'ស្វែងរកទំនិញ ម៉ាក ឬលេខកូដ...') }}" autocomplete="off">
+                                <button type="button" class="search-clear-btn" id="searchClearBtn" style="display: none;" title="{{ $lmText('Clear search', 'សម្អាតការស្វែងរក') }}">&times;</button>
                             </div>
                             <div class="sort-select-box">
-                                <select id="catalogSortSelect" aria-label="Sort products">
-                                    <option value="default">Featured / Newest</option>
-                                    <option value="price_low">Price: Low to High</option>
-                                    <option value="price_high">Price: High to Low</option>
-                                    <option value="name_asc">Name: A to Z</option>
+                                <select id="catalogSortSelect" aria-label="{{ $lmText('Sort products', 'តម្រៀបទំនិញ') }}">
+                                    <option value="default">{{ $lmText('Featured / Newest', 'ទំនិញពិសេស / ថ្មីបំផុត') }}</option>
+                                    <option value="price_low">{{ $lmText('Price: Low to High', 'តម្លៃ: ទាបទៅខ្ពស់') }}</option>
+                                    <option value="price_high">{{ $lmText('Price: High to Low', 'តម្លៃ: ខ្ពស់ទៅទាប') }}</option>
+                                    <option value="name_asc">{{ $lmText('Name: A to Z', 'ឈ្មោះ: A ដល់ Z') }}</option>
                                 </select>
                             </div>
                         </div>
@@ -604,7 +823,7 @@
                         {{-- Category Filter Chips --}}
                         <div class="category-chips-scroll" id="categoryChipsContainer">
                             <button type="button" class="category-chip active" data-category="all">
-                                All Products <span class="chip-count" id="totalCountPill">{{ count($products) }}</span>
+                                {{ $lmText('All Products', 'ទំនិញទាំងអស់') }} <span class="chip-count" id="totalCountPill">{{ count($products) }}</span>
                             </button>
                             @foreach($categories ?? [] as $cat)
                                 @php
@@ -653,39 +872,39 @@
                                         @endif
 
                                         @if($pMinDp > 0)
-                                            <span class="card-badge-top-right">Min {{ $pMinDp }}% DP</span>
+                                            <span class="card-badge-top-right">{{ $lmText('Min ' . $pMinDp . '% DP', 'កក់ទាបបំផុត ' . $pMinDp . '%') }}</span>
                                         @else
-                                            <span class="card-badge-top-right">0% Down Payment</span>
+                                            <span class="card-badge-top-right">{{ $lmText('0% Down Payment', 'កក់មុន 0%') }}</span>
                                         @endif
                                     </div>
 
                                     <div class="product-body">
-                                        <div @class(['product-stock', 'unavailable' => ($product['qty_available'] ?? 1) <= 0])>{{ ($product['qty_available'] ?? 1) > 0 ? 'In Stock' : 'Stock subject to staff confirmation' }}</div>
+                                        <div @class(['product-stock', 'unavailable' => ($product['qty_available'] ?? 1) <= 0])>{{ ($product['qty_available'] ?? 1) > 0 ? $lmText('In Stock', 'មានក្នុងស្តុក') : $lmText('Stock subject to staff confirmation', 'ស្តុកត្រូវបញ្ជាក់ជាមួយបុគ្គលិក') }}</div>
                                         @if($pBrand)
                                             <div class="product-brand-tag">{{ $pBrand }}</div>
                                         @endif
                                         <h3 class="product-title">{{ $pName }}</h3>
-                                        <div class="product-sku">{{ $pSku ? 'SKU: ' . $pSku : 'Installment Eligible' }}</div>
+                                        <div class="product-sku">{{ $pSku ? 'SKU: ' . $pSku : $lmText('Installment Eligible', 'អាចបង់រំលស់បាន') }}</div>
 
                                         <div class="product-price-row">
                                             <div class="price-cash">${{ number_format($pPrice, 2) }}</div>
                                             @if($estMonthly > 0)
-                                                <div class="price-monthly-tag">Est. ${{ number_format($estMonthly, 2) }}/mo</div>
+                                                <div class="price-monthly-tag">{{ $lmText('Est.', 'ប៉ាន់ស្មាន') }} ${{ number_format($estMonthly, 2) }}/{{ $lmText('mo', 'ខែ') }}</div>
                                             @endif
                                         </div>
 
                                         <div class="product-actions-grid">
                                             @if($cms['cart'])<button type="button" class="cart-btn" data-product='@json($product)'>
                                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                                                Add to Cart
+                                                {{ $lmText('Add to Cart', 'ដាក់ក្នុងកន្ត្រក') }}
                                             </button>@endif
                                             @if($customerUser)
-                                                <a href="{{ route('loan-management.public.customer-loan-request', ['product_id' => $product['id']]) }}" class="apply-btn" title="Direct Installment Request">
-                                                    Apply
+                                                <a href="{{ route('loan-management.public.customer-loan-request', ['product_id' => $product['id']]) }}" class="apply-btn" title="{{ $lmText('Direct Installment Request', 'ស្នើសុំបង់រំលស់ផ្ទាល់') }}">
+                                                    {{ $lmText('Apply', 'ស្នើរំលស់') }}
                                                 </a>
                                             @elseif($customerPortalEnabled)
-                                                <a href="{{ route('loan-management.public.register', ['product_id' => $product['id']]) }}" data-installment-product="{{ json_encode($product) }}" class="apply-btn" title="Direct Installment Request">
-                                                    Apply
+                                                <a href="{{ route('loan-management.public.register', ['product_id' => $product['id']]) }}" data-installment-product="{{ json_encode($product) }}" class="apply-btn" title="{{ $lmText('Direct Installment Request', 'ស្នើសុំបង់រំលស់ផ្ទាល់') }}">
+                                                    {{ $lmText('Apply', 'ស្នើរំលស់') }}
                                                 </a>
                                             @endif
                                         </div>
@@ -695,39 +914,39 @@
                         </div>
                         <div id="noProductsFoundMsg" style="display: none; padding: 48px 20px; text-align: center; background: #fff; border: 1px dashed #cbd5e1; border-radius: 12px; margin-top: 10px;">
                             <div style="font-size: 38px; color: #94a3b8; margin-bottom: 8px;">🔍</div>
-                            <h4 style="margin: 0 0 4px; font-weight: 800; color: #0f172a;">No matching products found</h4>
-                            <p style="margin: 0 0 14px; color: #64748b; font-size: 13px;">Try searching with another keyword or resetting the category filter.</p>
-                            <button type="button" class="button-outline" onclick="resetAllFilters()" style="min-height: 36px; padding: 0 14px; font-size: 13px;">Reset Filters</button>
+                            <h4 style="margin: 0 0 4px; font-weight: 800; color: #0f172a;">{{ $lmText('No matching products found', 'រកមិនឃើញទំនិញដែលត្រូវគ្នាទេ') }}</h4>
+                            <p style="margin: 0 0 14px; color: #64748b; font-size: 13px;">{{ $lmText('Try searching with another keyword or resetting the category filter.', 'សូមសាកល្បងពាក្យគន្លឹះផ្សេង ឬកំណត់តម្រងឡើងវិញ') }}</p>
+                            <button type="button" class="button-outline" onclick="resetAllFilters()" style="min-height: 36px; padding: 0 14px; font-size: 13px;">{{ $lmText('Reset Filters', 'កំណត់តម្រងឡើងវិញ') }}</button>
                         </div>
                     @else
                         <div class="feature">
-                            <strong>No installment products available</strong>
-                            <span>Please check back soon for new products.</span>
+                            <strong>{{ $lmText('No installment products available', 'មិនទាន់មានទំនិញរំលស់ទេ') }}</strong>
+                            <span>{{ $lmText('Please check back soon for new products.', 'សូមចូលពិនិត្យមើលឡើងវិញនៅពេលក្រោយ') }}</span>
                         </div>
                     @endif
                 </div>
 
                 @if($cms['cart'])<aside class="cart-panel" id="cart">
                     <div class="cart-panel-head">
-                        <h2>Installment Cart</h2>
-                        <span class="cart-count-pill" id="cartCountPill">0 items</span>
+                        <h2>{{ $lmText('Installment Cart', 'កន្ត្រករំលស់') }}</h2>
+                        <span class="cart-count-pill" id="cartCountPill">{{ $lmText('0 items', '0 មុខ') }}</span>
                     </div>
                     <div class="cart-items" id="cartItems"></div>
                     <div class="cart-total">
-                        <span>Subtotal</span><span id="cartSubtotal">$0.00</span>
+                        <span>{{ $lmText('Subtotal', 'សរុបរង') }}</span><span id="cartSubtotal">$0.00</span>
                     </div>
                     <div class="cart-total">
-                        <span>Estimated Total</span>
+                        <span>{{ $lmText('Estimated Total', 'សរុបប៉ាន់ស្មាន') }}</span>
                         <span id="cartTotal">$0.00</span>
                     </div>
                     <p id="cartLimitMessage" role="status" hidden style="color:#b42318;"></p>
                     @if($customerUser)
                         <a class="cart-apply" href="{{ route('loan-management.public.customer-loan-request') }}" id="cartApply">
-                            Apply Installment
+                            {{ $lmText('Apply Installment', 'ស្នើសុំរំលស់') }}
                         </a>
                     @elseif($customerPortalEnabled)
                         <a class="cart-apply" href="{{ route('loan-management.public.register') }}" id="cartApply">
-                            Apply Installment
+                            {{ $lmText('Apply Installment', 'ស្នើសុំរំលស់') }}
                         </a>
                     @endif
                 </aside>@endif
@@ -750,7 +969,7 @@
                     @if($cms['contact_address'])<p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ $cms['contact_address'] }}</p>@endif
                     @if($cms['contact_hours'])<p><i class="fa-solid fa-clock" aria-hidden="true"></i> {{ $cms['contact_hours'] }}</p>@endif
                 </div>
-                @if($customerPortalEnabled)<a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">Customer Portal</a>@endif
+                @if($customerPortalEnabled)<a class="button-outline" href="{{ route('loan-management.public.customer-login') }}">{{ $lmText('Customer Portal', 'ផតថលអតិថិជន') }}</a>@endif
             </div></section>
         @endif
 
@@ -775,16 +994,16 @@
                             @if($cms['footer_text'])<p>{{ $cms['footer_text'] }}</p>@endif
                             <div class="footer-cta">
                                 @if($customerUser)
-                                    <a class="primary" href="{{ route('loan-management.public.customer-dashboard') }}"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> My Dashboard</a>
+                                    <a class="primary" href="{{ route('loan-management.public.customer-dashboard') }}"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> {{ $lmText('My Dashboard', 'ផ្ទាំងគ្រប់គ្រង') }}</a>
                                 @elseif($adminUser)
-                                    <a class="primary" href="{{ route('loan-management.dashboard') }}"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Admin Dashboard</a>
+                                    <a class="primary" href="{{ route('loan-management.dashboard') }}"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> {{ $lmText('Admin Dashboard', 'ផ្ទាំងគ្រប់គ្រងរដ្ឋបាល') }}</a>
                                 @elseif($customerPortalEnabled)
-                                    <a class="primary" href="{{ route('loan-management.public.register') }}"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> Apply Now</a>
-                                    <a href="{{ route('loan-management.public.customer-login') }}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Login</a>
+                                    <a class="primary" href="{{ route('loan-management.public.register') }}"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> {{ $lmText('Apply Now', 'ស្នើសុំឥឡូវនេះ') }}</a>
+                                    <a href="{{ route('loan-management.public.customer-login') }}"><i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> {{ $lmText('Login', 'ចូលគណនី') }}</a>
                                 @endif
                             </div>
                             @if($footerSignedIn)
-                                <p style="margin-top:12px; color:#8b929c;"><i class="fa-solid fa-circle-user" aria-hidden="true"></i> Signed in as {{ $customerUser ? $customerUser->name : ($adminUser->name ?? $adminUser->username ?? 'Administrator') }}</p>
+                                <p style="margin-top:12px; color:#8b929c;"><i class="fa-solid fa-circle-user" aria-hidden="true"></i> {{ $lmText('Signed in as', 'បានចូលដោយឈ្មោះ') }} {{ $customerUser ? $customerUser->name : ($adminUser->name ?? $adminUser->username ?? 'Administrator') }}</p>
                             @endif
                             @if($cms['footer_show_social'] && $footerSocials)
                                 <div class="footer-social-title">{{ $cms['footer_social_title'] }}</div>
@@ -856,15 +1075,15 @@
                 <div class="footer-bottom">
                     <div>{{ $footerCopyright }}</div>
                     <div class="footer-meta">
-                        @if($cms['hero'])<a href="#home" data-section-link="home"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> Back to top</a>@endif
-                        @if($cms['cart'] && $catalogCount)<span>{{ $catalogCount }} {{ $catalogCount === 1 ? 'product' : 'products' }} available</span>@endif
+                        @if($cms['hero'])<a href="#home" data-section-link="home"><i class="fa-solid fa-arrow-up" aria-hidden="true"></i> {{ $lmText('Back to top', 'ត្រឡប់ទៅលើ') }}</a>@endif
+                        @if($cms['cart'] && $catalogCount)<span>{{ $catalogCount }} {{ $lmText($catalogCount === 1 ? 'product available' : 'products available', 'មុខទំនិញមានលក់') }}</span>@endif
                         <span>{{ $businessName }} &middot; Powered by rvstechsolution.com</span>
                     </div>
                 </div>
             </div>
         </footer>@endif
 
-        <button type="button" class="footer-top-btn" id="backToTopBtn" aria-label="Back to top" title="Back to top">
+        <button type="button" class="footer-top-btn" id="backToTopBtn" aria-label="{{ $lmText('Back to top', 'ត្រឡប់ទៅលើ') }}" title="{{ $lmText('Back to top', 'ត្រឡប់ទៅលើ') }}">
             <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
         </button>
 
@@ -873,7 +1092,7 @@
     @include('loanmanagement::public.partials.installment_request_modal')
     @include('loanmanagement::public.partials.customer_login_modal')
     @if($cms['privacy'] && $cms['privacy_body'])
-        <dialog class="installment-modal" id="privacyModal" aria-labelledby="privacyTitle"><h2 id="privacyTitle">{{ $cms['privacy_title'] }}</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere;">{{ $cms['privacy_body'] }}</p><form method="dialog"><button class="button" type="submit">Close</button></form></dialog>
+        <dialog class="installment-modal" id="privacyModal" aria-labelledby="privacyTitle"><h2 id="privacyTitle">{{ $cms['privacy_title'] }}</h2><p style="white-space:pre-wrap;overflow-wrap:anywhere;">{{ $cms['privacy_body'] }}</p><form method="dialog"><button class="button" type="submit">{{ $lmText('Close', 'បិទ') }}</button></form></dialog>
     @endif
 
     <script>
@@ -898,6 +1117,7 @@
             var cartKey = 'loan_public_installment_cart';
             var liveCatalog = @json($products ?? []);
             var cart = [];
+            var isKhmer = {{ $lmIsKhmer ? 'true' : 'false' }};
             var itemsBox = document.getElementById('cartItems');
             var totalBox = document.getElementById('cartTotal');
             var countPill = document.getElementById('cartCountPill');
@@ -938,7 +1158,7 @@
                 var totalItems = 0;
                 itemsBox.innerHTML = '';
                 if (!cart.length) {
-                    itemsBox.innerHTML = '<div class="cart-empty">No products selected yet.</div>';
+                    itemsBox.innerHTML = '<div class="cart-empty">' + (isKhmer ? 'មិនទាន់មានទំនិញត្រូវបានជ្រើសរើសនៅឡើយទេ។' : 'No products selected yet.') + '</div>';
                 }
 
                 cart.forEach(function (item, index) {
@@ -957,7 +1177,7 @@
 
                 totalBox.textContent = money(total);
                 document.getElementById('cartSubtotal').textContent = money(total);
-                if (countPill) countPill.textContent = totalItems + (totalItems === 1 ? ' item' : ' items');
+                if (countPill) countPill.textContent = totalItems + (isKhmer ? ' មុខ' : (totalItems === 1 ? ' item' : ' items'));
                 if (mobCartBadge) {
                     mobCartBadge.textContent = totalItems;
                     mobCartBadge.style.display = totalItems > 0 ? 'inline-block' : 'none';
@@ -972,10 +1192,10 @@
                     var key = String(product.id || product.product_id || product.name);
                     var existing = cart.find(function (item) { return String(item.id || item.product_id || item.name) === key; });
                     if (existing) {
-                        if (existing.qty >= 99) { showCartLimit('Maximum 99 units per product.'); return; }
+                        if (existing.qty >= 99) { showCartLimit(isKhmer ? 'អតិបរមា 99 ឯកតាក្នុងមួយទំនិញ។' : 'Maximum 99 units per product.'); return; }
                         existing.qty = Number(existing.qty || 1) + 1;
                     } else {
-                        if (cart.length >= 20) { showCartLimit('Maximum 20 different products per request.'); return; }
+                        if (cart.length >= 20) { showCartLimit(isKhmer ? 'អតិបរមា 20 មុខទំនិញខុសៗគ្នាក្នុងមួយសំណើ។' : 'Maximum 20 different products per request.'); return; }
                         product.qty = 1;
                         cart.push(product);
                     }
@@ -985,7 +1205,7 @@
                     // Button feedback animation
                     var originalHtml = button.innerHTML;
                     button.style.background = '#16a34a';
-                    button.innerHTML = '✓ Added!';
+                    button.innerHTML = isKhmer ? '✓ បានបញ្ចូល!' : '✓ Added!';
                     setTimeout(function() {
                         button.style.background = '';
                         button.innerHTML = originalHtml;
@@ -1000,7 +1220,7 @@
                 var index = Number(button.getAttribute('data-index'));
                 if (!cart[index]) return;
                 if (button.getAttribute('data-action') === 'plus') {
-                    if (cart[index].qty >= 99) { showCartLimit('Maximum 99 units per product.'); return; }
+                    if (cart[index].qty >= 99) { showCartLimit(isKhmer ? 'អតិបរមា 99 ឯកតាក្នុងមួយទំនិញ។' : 'Maximum 99 units per product.'); return; }
                     cart[index].qty = Number(cart[index].qty || 1) + 1;
                 } else {
                     cart[index].qty = Number(cart[index].qty || 1) - 1;
@@ -1029,7 +1249,7 @@
                 assessmentDown.max = price;
                 document.getElementById('assessmentPrice').value = money(price);
                 var valid = assessmentMonths.checkValidity() && assessmentDown.checkValidity();
-                document.getElementById('assessmentMonthly').textContent = valid ? money((price - Number(assessmentDown.value)) / Number(assessmentMonths.value)) + ' / mo' : '--';
+                document.getElementById('assessmentMonthly').textContent = valid ? money((price - Number(assessmentDown.value)) / Number(assessmentMonths.value)) + (isKhmer ? ' / ខែ' : ' / mo') : '--';
             }
             if (assessmentSelect) {
                 [assessmentSelect, assessmentMonths, assessmentDown].forEach(function (input) { input.addEventListener('input', updateAssessment); });

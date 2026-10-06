@@ -34,12 +34,22 @@ class PublicAppController extends Controller
         return response()->file($path, ['Cache-Control' => 'no-cache']);
     }
 
-    public function home()
+    public function home(Request $request)
     {
         if (! BusinessSettingsService::isCmsEnabled()) {
             return Route::has('login')
                 ? redirect()->route('login')
                 : redirect('/login');
+        }
+
+        $langParam = $request->query('lang') ?? $request->query('language');
+        if ($langParam && in_array($langParam, ['en', 'km'], true)) {
+            $user = $request->session()->get('user', []);
+            $user['language'] = $langParam;
+            $request->session()->put('user', $user);
+            $request->session()->put('user.language', $langParam);
+            cookie()->queue(cookie()->forever('lm_lang', $langParam));
+            app()->setLocale($langParam);
         }
 
         $products = $this->catalogProducts();
@@ -56,6 +66,15 @@ class PublicAppController extends Controller
 
     public function register()
     {
+        if (request()->has('product_id') || request()->has('apply') || request()->has('cart')) {
+            return redirect()->route('loan-management.public.home', array_filter([
+                'apply' => 1,
+                'product_id' => request('product_id'),
+                'months' => request('months'),
+                'down_payment' => request('down_payment'),
+            ]));
+        }
+
         return view('loanmanagement::public.register', [
             'settings' => BusinessSettingsService::get(),
         ]);
@@ -63,15 +82,49 @@ class PublicAppController extends Controller
 
     public function storeRegistration(Request $request, LoanCustomerService $customers)
     {
+        if (! BusinessSettingsService::isCustomerLoginEnabled()) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Customer portal registration is disabled.'], 403);
+            }
+            return response('Customer portal registration is disabled.', 403);
+        }
+
+        $isInstallmentRequest = $request->boolean('installment_request') || $request->has('installment_items');
+
+        if ($isInstallmentRequest && $request->has('installment_items')) {
+            $rawItems = $request->input('installment_items');
+            $items = is_string($rawItems) ? json_decode($rawItems, true) : (is_array($rawItems) ? $rawItems : null);
+            if (! is_array($items)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'installment_items' => ['Invalid cart items format.'],
+                ]);
+            }
+            $catalogMap = collect($this->catalogProducts())->keyBy('id');
+            foreach ($items as $item) {
+                if (! is_array($item) || ! isset($item['id']) || ! $catalogMap->has($item['id'])) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'installment_items' => ['One or more items in the cart are invalid or no longer available.'],
+                    ]);
+                }
+                if (! isset($item['qty']) || (int) $item['qty'] <= 0 || (int) $item['qty'] > 99) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'installment_items' => ['Invalid item quantity.'],
+                    ]);
+                }
+            }
+        }
+
         $data = $request->validate([
             'name' => 'required|string|max:255',
             'khmer_name' => 'nullable|string|max:255',
             'phone' => 'required|string|max:50',
             'telegram' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'address' => 'nullable|string|max:1000',
-            'password' => 'required|string|min:8|confirmed',
-            'installment_items' => 'nullable|string|max:10000',
+            'address' => $isInstallmentRequest ? 'required|string|max:1000' : 'nullable|string|max:1000',
+            'password' => $isInstallmentRequest ? 'nullable|string' : 'required|string|min:8|confirmed',
+            'preferred_months' => 'nullable|integer|min:1|max:120',
+            'preferred_down_payment' => 'nullable|numeric|min:0',
+            'installment_items' => 'nullable',
             'id_card_front' => 'nullable|array|max:8',
             'id_card_front.*' => 'nullable|file|mimes:jpeg,png,jpg,webp,pdf|max:10240',
             'id_card_back' => 'nullable|array|max:8',
@@ -91,15 +144,15 @@ class PublicAppController extends Controller
                 ->withInput($request->except('password', 'password_confirmation'));
         }
 
-        if (isset($data['installment_items']) || isset($data['preferred_months']) || isset($data['preferred_down_payment'])) {
+        if ($isInstallmentRequest) {
             $installmentNote = $this->installmentRequestNote((string) ($data['installment_items'] ?? ''));
             if (!empty($data['preferred_months'])) {
                 $installmentNote .= "\nPreferred installment term: ".(int) $data['preferred_months'].' months (subject to staff review).';
             }
-            if (isset($data['preferred_down_payment'])) {
+            if (isset($data['preferred_down_payment']) && $data['preferred_down_payment'] !== null && $data['preferred_down_payment'] !== '') {
                 $installmentNote .= "\nProposed down payment: ".number_format((float) $data['preferred_down_payment'], 2).'.';
             }
-            unset($data['installment_items'], $data['preferred_months'], $data['preferred_down_payment']);
+            unset($data['installment_items'], $data['preferred_months'], $data['preferred_down_payment'], $data['password'], $data['status'], $data['can_login']);
             unset($data['id_card_front'], $data['id_card_back'], $data['income_proof'], $data['collateral_photo']);
             $customerId = $customers->create(array_merge($data, [
                 'can_login' => 0,
@@ -789,10 +842,14 @@ class PublicAppController extends Controller
     protected function installmentRequestNote(string $itemsJson): ?string
     {
         $items = json_decode($itemsJson, true);
-        if (! is_array($items) || empty($items)) {
+        if (! is_array($items)) {
             return null;
         }
+        if (empty($items)) {
+            return "Public installment request:\n- Staff will help customer choose a product.";
+        }
 
+        $catalogMap = collect($this->catalogProducts())->keyBy('id');
         $lines = ['Public installment request:'];
         $total = 0;
         foreach (array_slice($items, 0, 20) as $item) {
@@ -800,11 +857,13 @@ class PublicAppController extends Controller
                 continue;
             }
 
-            $name = trim((string) ($item['name'] ?? 'Product'));
+            $id = $item['id'] ?? null;
+            $catItem = $id ? $catalogMap->get($id) : null;
+            $name = $catItem ? ($catItem['name'] ?? 'Product') : trim((string) ($item['name'] ?? 'Product'));
+            $sku = $catItem ? ($catItem['sku'] ?? '') : trim((string) ($item['sku'] ?? ''));
+            $price = $catItem ? (float) ($catItem['price'] ?? 0) : round((float) ($item['price'] ?? 0), 2);
             $qty = max(1, (int) ($item['qty'] ?? 1));
-            $price = round((float) ($item['price'] ?? 0), 2);
             $total += $qty * $price;
-            $sku = trim((string) ($item['sku'] ?? ''));
             $lines[] = '- '.$name.($sku !== '' ? ' (SKU: '.$sku.')' : '').' x'.$qty.' = '.number_format($qty * $price, 2);
         }
 
