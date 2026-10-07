@@ -26,6 +26,7 @@ return [
         'link_ttl_minutes' => (int) env('LOAN_CHAT_TELEGRAM_LINK_TTL_MINUTES', 15),
     ],
     'allow_without_pos_stock' => true,
+    'daily_penalty_rate' => 0.50,
     'google_vision' => [
         'api_key' => env('GOOGLE_CLOUD_VISION_API_KEY', env('GOOGLE_VISION_API_KEY')),
         'endpoint' => env('GOOGLE_CLOUD_VISION_ENDPOINT', 'https://vision.googleapis.com/v1/images:annotate'),

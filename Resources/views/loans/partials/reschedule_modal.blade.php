@@ -42,7 +42,7 @@
                     </div>
                     <div class="col-md-6 form-group">
                         <label>New Interest Rate / ការប្រាក់ (% / Yr) <span class="text-danger">*</span></label>
-                        <input type="number" step="0.01" name="new_interest_rate" class="form-control" value="{{ $loanRow->interest_rate ?? '18.00' }}" required>
+                        <input type="number" step="0.01" name="new_interest_rate" class="form-control" value="{{ $annualInterestRate }}" required>
                     </div>
                 </div>
 

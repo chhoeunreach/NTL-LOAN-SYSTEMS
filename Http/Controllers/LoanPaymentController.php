@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Schema;
 
 class LoanPaymentController extends Controller
 {
+    use AuthorizesLoanFinancialActions;
+
     protected string $connection = 'mysql_loan';
 
     public function index(Request $request)
@@ -261,8 +263,10 @@ class LoanPaymentController extends Controller
 
     public function update(Request $request, int $payment)
     {
+        $this->authorizeFinancialAction(['loan_management.edit', 'loan_management.payment']);
         $row = $this->paymentRow($payment);
         abort_if(! $row, 404);
+        abort_if($this->paymentHasPostedAmount($row), 409, 'Posted payments are immutable. Use an approved reversal to correct a payment.');
 
         $payload = $request->validate([
             'paid_date' => 'required|date',
@@ -288,6 +292,10 @@ class LoanPaymentController extends Controller
         $paymentTypeVal = trim((string) ($payload['payment_type'] ?? ($row->payment_type ?? 'monthly'))) ?: 'monthly';
 
         DB::connection($this->connection)->transaction(function () use ($payment, $row, $payload, $method, $methodName, $newAmount, $oldAmount, $newScheduleId, $oldScheduleId, $paidDate, $paidAt, $paymentTypeVal) {
+            DB::connection($this->connection)->table('loans')->where('id', $row->loan_id)->lockForUpdate()->first();
+            $current = DB::connection($this->connection)->table('loan_payments')->where('id', $payment)->lockForUpdate()->first();
+            abort_if(! $current || ! empty($current->deleted_at), 404);
+            abort_if($this->paymentHasPostedAmount($current), 409, 'Posted payments are immutable.');
             DB::connection($this->connection)->table('loan_payments')->where('id', $payment)->update($this->safeColumns('loan_payments', [
                 'schedule_id' => $newScheduleId,
                 'payment_type' => $paymentTypeVal,
@@ -355,20 +363,22 @@ class LoanPaymentController extends Controller
 
     public function destroy(Request $request, int $payment)
     {
+        $this->authorizeFinancialAction(['loan_management.delete', 'loan_management.payment']);
         $row = $this->paymentRow($payment);
         abort_if(! $row, 404);
 
         DB::connection($this->connection)->transaction(function () use ($payment, $row) {
+            DB::connection($this->connection)->table('loans')->where('id', $row->loan_id)->lockForUpdate()->first();
+            $row = DB::connection($this->connection)->table('loan_payments')->where('id', $payment)->lockForUpdate()->first();
+            abort_if(! $row || ! empty($row->deleted_at), 404);
             $amount = (float) ($row->total_paid_base ?? $row->total_paid ?? $row->amount ?? 0);
+            abort_if($this->paymentHasPostedAmount($row), 409, 'Posted payments cannot be deleted. Use an approved reversal.');
+            abort_unless($this->hasColumn('loan_payments', 'deleted_at'), 409, 'Archiving requires the payment soft-delete column.');
             if (! empty($row->schedule_id)) {
                 $this->adjustSchedulePayment((int) $row->schedule_id, -$amount, now()->toDateTimeString());
             }
 
-            if (Schema::connection($this->connection)->hasTable('loan_payment_details')) {
-                DB::connection($this->connection)->table('loan_payment_details')->where('payment_id', $payment)->delete();
-            }
-
-            DB::connection($this->connection)->table('loan_payments')->where('id', $payment)->delete();
+            DB::connection($this->connection)->table('loan_payments')->where('id', $payment)->update(['deleted_at' => now(), 'updated_at' => now()]);
         });
 
         $this->refreshLoanTotals((int) $row->loan_id);

@@ -62,6 +62,7 @@ class StoreStandaloneLoanRequest extends FormRequest
             'exchange_rate' => 'nullable|numeric|min:0',
             'penalty_type' => 'nullable|string|max:50',
             'penalty_amount' => 'nullable|numeric|min:0',
+            'daily_penalty_rate' => 'nullable|numeric|min:0',
             'assigned_collector_id' => 'nullable|integer',
             'note' => 'nullable|string|max:1000',
             'business_location_id' => 'nullable|integer',

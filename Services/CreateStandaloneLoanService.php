@@ -420,6 +420,7 @@ class CreateStandaloneLoanService
                 'exchange_rate' => $data['exchange_rate'] ?? 1,
                 'penalty_type' => $data['penalty_type'] ?? null,
                 'penalty_amount' => $data['penalty_amount'] ?? 0,
+                'daily_penalty_rate' => $data['daily_penalty_rate'] ?? null,
                 'assigned_to' => $data['assigned_collector_id'] ?? null,
                 'collector_id' => $data['assigned_collector_id'] ?? null,
                 'source_type' => 'manual',

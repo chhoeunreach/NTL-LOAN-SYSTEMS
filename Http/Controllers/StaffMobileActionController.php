@@ -15,11 +15,13 @@ use Illuminate\Support\Str;
 class StaffMobileActionController extends Controller
 {
     use ApiResponseTrait;
+    use AuthorizesLoanFinancialActions;
 
     protected string $conn = 'mysql_loan';
 
     public function receivePayment(Request $request)
     {
+        $this->authorizeFinancialAction(['loan_management.payments.create', 'loan_management.payment']);
         $this->ensurePaymentTypeColumn();
 
         $data = $request->validate([
@@ -43,22 +45,52 @@ class StaffMobileActionController extends Controller
         ]);
 
         $result = DB::connection($this->conn)->transaction(function () use ($data) {
-            $loan = DB::connection($this->conn)->table('loans')->where('id', $data['loan_id'])->first();
-            if (! $loan) {
-                throw new \RuntimeException('Loan not found');
+            $loan = DB::connection($this->conn)->table('loans')->where('id', $data['loan_id'])->lockForUpdate()->first();
+            abort_if(! $loan || ! empty($loan->deleted_at), 404, 'Loan not found');
+            abort_if(in_array($loan->status ?? '', ['completed', 'closed', 'cancelled', 'rejected', 'draft', 'pending'], true), 422, 'This loan cannot receive payments in its current status.');
+            abort_if((int) $loan->customer_id !== (int) $data['customer_id'], 422, 'Customer does not match the loan.');
+            abort_if(($loan->currency ?? 'USD') !== $data['currency'], 422, 'Payment currency must match the loan currency.');
+            if (! empty($data['pay_off'])) {
+                $this->authorizeFinancialAction(['loan_management.approve', 'loan_management.loans.approve']);
+            }
+            $detailTotal = 0.0;
+            foreach ($data['details'] as $detail) {
+                $currency = $detail['currency'] ?? $data['currency'];
+                $detailAmount = (float) $detail['amount'];
+                if ($currency !== $data['currency']) {
+                    abort_if(empty($detail['exchange_rate']), 422, 'An exchange rate is required for mixed-currency payments.');
+                    $detailAmount = $data['currency'] === 'USD' ? $detailAmount / $detail['exchange_rate'] : $detailAmount * $detail['exchange_rate'];
+                }
+                $detailTotal += $detailAmount;
+            }
+            abort_if(abs(round($detailTotal, 2) - round((float) $data['amount'], 2)) > 0.005, 422, 'Payment details must equal the payment amount in loan currency.');
+            $schedules = DB::connection($this->conn)->table('loan_payment_schedules')
+                ->where('loan_id', $data['loan_id'])->whereNull('deleted_at')
+                ->whereIn('status', ['pending', 'unpaid', 'partial', 'late', 'overdue'])
+                ->when(! empty($data['schedule_ids']), fn ($query) => $query->whereIn('id', $data['schedule_ids']))
+                ->orderBy('due_date')->orderBy('id')->lockForUpdate()->get();
+            $selectedIds = array_unique((array) ($data['schedule_ids'] ?? []));
+            abort_if($selectedIds && count($selectedIds) !== $schedules->count(), 422, 'Selected installments must be open and belong to this loan.');
+            $outstanding = round($schedules->sum(fn ($schedule) => (float) ($schedule->balance_amount ?? $schedule->amount_balance ?? 0)), 2);
+            abort_if(round((float) $data['amount'], 2) > $outstanding + 0.005, 422, 'Payment exceeds the selected installment balance.');
+            if (! empty($data['pay_off'])) {
+                $allSchedules = DB::connection($this->conn)->table('loan_payment_schedules')->where('loan_id', $data['loan_id'])->whereNull('deleted_at')->lockForUpdate()->get();
+                $fullBalance = round($allSchedules->sum(fn ($schedule) => (float) ($schedule->balance_amount ?? $schedule->amount_balance ?? 0)), 2);
+                abort_if(abs(round((float) $data['amount'], 2) - $fullBalance) > 0.005, 422, 'Payoff must cover the full outstanding balance.');
             }
 
             $payAt = ! empty($data['paid_at']) ? $data['paid_at'] : now()->toDateTimeString();
-            $amount = (float) $data['amount'];
+            $amount = round((float) $data['amount'], 2);
 
             $paymentPayload = [
                 'loan_id' => $data['loan_id'],
-                'payment_type' => 'monthly',
+                'payment_type' => ! empty($data['pay_off']) ? 'payoff' : 'monthly',
                 'schedule_id' => count((array) ($data['schedule_ids'] ?? [])) === 1 ? (int) $data['schedule_ids'][0] : null,
                 'customer_id' => $data['customer_id'],
                 'amount' => $amount,
                 'total_paid' => $amount,
                 'total_paid_base' => $amount,
+                'currency' => $data['currency'],
                 'paid_at' => $payAt,
                 'paid_date' => substr($payAt, 0, 10),
                 'channel' => 'mobile',
@@ -88,13 +120,12 @@ class StaffMobileActionController extends Controller
                 }
             }
 
-            $totalDetail = 0.0;
+            $totalDetail = round($detailTotal, 2);
             foreach ($data['details'] as $detail) {
                 $dAmount = (float) $detail['amount'];
                 $rate = (float) ($detail['exchange_rate'] ?? 1);
                 $dCurrency = (string) ($detail['currency'] ?? $data['currency']);
                 $amountBase = $dCurrency === 'KHR' ? ($dAmount / max($rate, 0.0001)) : $dAmount;
-                $totalDetail += $dAmount;
 
                 $detailPayload = [
                     'payment_id' => $paymentId,
@@ -114,18 +145,6 @@ class StaffMobileActionController extends Controller
 
             $remaining = $amount;
             if (Schema::connection($this->conn)->hasTable('loan_payment_schedules')) {
-                $schedules = DB::connection($this->conn)->table('loan_payment_schedules')
-                    ->where('loan_id', $data['loan_id'])
-                    ->whereIn('status', ['pending', 'unpaid', 'partial', 'late'])
-                    ->when(! empty($data['schedule_ids']), fn ($query) => $query->whereIn('id', $data['schedule_ids']))
-                    ->orderBy('due_date')
-                    ->orderBy('id')
-                    ->get();
-
-                if (! empty($data['schedule_ids']) && $schedules->isEmpty()) {
-                    throw new \RuntimeException('Selected payment schedule was not found.');
-                }
-
                 foreach ($schedules as $s) {
                     if ($remaining <= 0) {
                         break;
@@ -135,9 +154,6 @@ class StaffMobileActionController extends Controller
                         continue;
                     }
                     $applied = min($remaining, $due);
-                    if ($due > $applied && round($due - $applied, 2) <= 0.02) {
-                        $applied = $due;
-                    }
                     $existingPaid = (float) ($s->paid_amount ?? $s->amount_paid ?? 0);
                     $newPaid = round($existingPaid + $applied, 2);
                     $newBalance = max(0, round($due - $applied, 2));
@@ -146,6 +162,7 @@ class StaffMobileActionController extends Controller
                     DB::connection($this->conn)->table('loan_payment_schedules')->where('id', $s->id)->update($this->safeColumns('loan_payment_schedules', [
                         'amount_paid' => $newPaid,
                         'paid_amount' => $newPaid,
+                        'paid_value' => $newPaid,
                         'amount_balance' => $newBalance,
                         'balance_amount' => $newBalance,
                         'status' => $status,
@@ -172,7 +189,7 @@ class StaffMobileActionController extends Controller
             $scheduleBalance = 0.0;
             $hasScheduleBalance = false;
             if (Schema::connection($this->conn)->hasTable('loan_payment_schedules')) {
-                $balanceQuery = DB::connection($this->conn)->table('loan_payment_schedules')->where('loan_id', $data['loan_id']);
+                $balanceQuery = DB::connection($this->conn)->table('loan_payment_schedules')->where('loan_id', $data['loan_id'])->whereNull('deleted_at');
                 if (Schema::connection($this->conn)->hasColumn('loan_payment_schedules', 'balance_amount')) {
                     $scheduleBalance = (float) $balanceQuery->sum('balance_amount');
                     $hasScheduleBalance = true;
@@ -244,10 +261,12 @@ class StaffMobileActionController extends Controller
 
     public function updatePayment(Request $request, int $paymentId)
     {
+        $this->authorizeFinancialAction(['loan_management.edit', 'loan_management.payment']);
         $payment = $this->paymentRow($paymentId);
         if (! $payment) {
             return $this->fail('Payment not found', 404, (object) []);
         }
+        abort_if($this->paymentHasPostedAmount($payment), 409, 'Posted payments are immutable. Use an approved reversal.');
 
         $data = $request->validate([
             'amount' => 'required|numeric|min:0.01',
@@ -268,6 +287,10 @@ class StaffMobileActionController extends Controller
         $method = trim((string) ($data['method'] ?? ''));
 
         DB::connection($this->conn)->transaction(function () use ($paymentId, $payment, $data, $oldAmount, $newAmount, $oldScheduleId, $newScheduleId, $paidDate, $paidAt, $method) {
+            DB::connection($this->conn)->table('loans')->where('id', $payment->loan_id)->lockForUpdate()->first();
+            $current = DB::connection($this->conn)->table('loan_payments')->where('id', $paymentId)->lockForUpdate()->first();
+            abort_if(! $current || ! empty($current->deleted_at), 404);
+            abort_if($this->paymentHasPostedAmount($current), 409, 'Posted payments are immutable.');
             DB::connection($this->conn)->table('loan_payments')->where('id', $paymentId)->update($this->safeColumns('loan_payments', [
                 'schedule_id' => $newScheduleId,
                 'amount' => $newAmount,
@@ -323,27 +346,23 @@ class StaffMobileActionController extends Controller
 
     public function deletePayment(Request $request, int $paymentId)
     {
+        $this->authorizeFinancialAction(['loan_management.delete', 'loan_management.payment']);
         $payment = $this->paymentRow($paymentId);
         if (! $payment) {
             return $this->fail('Payment not found', 404, (object) []);
         }
 
         DB::connection($this->conn)->transaction(function () use ($paymentId, $payment) {
+            DB::connection($this->conn)->table('loans')->where('id', $payment->loan_id)->lockForUpdate()->first();
+            $payment = DB::connection($this->conn)->table('loan_payments')->where('id', $paymentId)->lockForUpdate()->first();
+            abort_if(! $payment || ! empty($payment->deleted_at), 404);
+            abort_if($this->paymentHasPostedAmount($payment), 409, 'Posted payments cannot be deleted. Use an approved reversal.');
+            abort_unless(Schema::connection($this->conn)->hasColumn('loan_payments', 'deleted_at'), 409, 'Archiving requires the payment soft-delete column.');
             if (! empty($payment->schedule_id)) {
                 $this->adjustSchedulePayment((int) $payment->schedule_id, -$this->paymentAmount($payment), now()->toDateTimeString());
             }
 
-            if (Schema::connection($this->conn)->hasTable('loan_payment_details')) {
-                DB::connection($this->conn)->table('loan_payment_details')->where('payment_id', $paymentId)->delete();
-            }
-            if (Schema::connection($this->conn)->hasTable('loan_files')) {
-                DB::connection($this->conn)->table('loan_files')
-                    ->where('fileable_type', \Modules\LoanManagement\Entities\LoanPayment::class)
-                    ->where('fileable_id', $paymentId)
-                    ->delete();
-            }
-
-            DB::connection($this->conn)->table('loan_payments')->where('id', $paymentId)->delete();
+            DB::connection($this->conn)->table('loan_payments')->where('id', $paymentId)->update(['deleted_at' => now(), 'updated_at' => now()]);
         });
 
         $this->refreshLoanTotals((int) $payment->loan_id);

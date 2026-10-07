@@ -30,7 +30,7 @@ class LoanPenaltyAccrualService
         }
 
         $activeLoans = DB::connection($this->conn)->table('loans')
-            ->whereNotIn('status', ['closed', 'completed', 'cancelled', 'draft', 'rejected'])
+            ->whereIn('status', ['active', 'overdue', 'defaulted'])
             ->whereNull('deleted_at')
             ->get();
 
@@ -54,11 +54,24 @@ class LoanPenaltyAccrualService
      */
     public function accrueLoan(object $loan, Carbon $today, bool $dryRun = false): array
     {
+        return DB::connection($this->conn)->transaction(function () use ($loan, $today, $dryRun) {
+            $currentLoan = DB::connection($this->conn)->table('loans')->where('id', $loan->id)->lockForUpdate()->first();
+            if (! $currentLoan || ! empty($currentLoan->deleted_at) || ! in_array($currentLoan->status, ['active', 'overdue', 'defaulted'], true)) {
+                return ['updated' => false, 'overdue_schedules' => 0, 'penalties_count' => 0, 'penalties_amount' => 0.0];
+            }
+
+            return $this->accrueLockedLoan($currentLoan, $today, $dryRun);
+        });
+    }
+
+    protected function accrueLockedLoan(object $loan, Carbon $today, bool $dryRun): array
+    {
         $loanId = (int) $loan->id;
         $schedules = DB::connection($this->conn)->table('loan_payment_schedules')
             ->where('loan_id', $loanId)
             ->whereNull('deleted_at')
             ->orderBy('installment_no')
+            ->lockForUpdate()
             ->get();
 
         if ($schedules->isEmpty()) {
@@ -77,16 +90,13 @@ class LoanPenaltyAccrualService
 
             if ($dueDate->lt($today) && $amountBalance > 0.01 && ($sched->status ?? '') !== 'paid') {
                 $overdueCount++;
-                $dpd = $today->diffInDays($dueDate);
+                $dpd = (int) $today->diffInDays($dueDate, true);
                 if ($dpd > $maxDpd) {
                     $maxDpd = $dpd;
                 }
 
-                // Calculate daily penalty (Default: $0.50/day or configured loan rate)
-                $dailyPenaltyRate = 0.50;
-                if (! empty($loan->penalty_amount) && (float) $loan->penalty_amount > 0) {
-                    $dailyPenaltyRate = (float) $loan->penalty_amount;
-                }
+                $dailyPenaltyRate = max(0, (float) ($loan->daily_penalty_rate ?? config('loanmanagement.daily_penalty_rate', 0.50)));
+                abort_unless($hasPenaltiesTable || $dailyPenaltyRate == 0, 409, 'Penalty history is required before accruing penalties.');
 
                 // Check if penalty was already accrued today for this schedule
                 $alreadyAccruedToday = false;
@@ -109,13 +119,15 @@ class LoanPenaltyAccrualService
 
                         DB::connection($this->conn)->table('loan_payment_schedules')
                             ->where('id', $sched->id)
-                            ->update([
+                            ->update(array_intersect_key([
                                 'penalty_due' => $newPenaltyDue,
                                 'amount_due' => $newAmountDue,
                                 'amount_balance' => $newBalance,
+                                'balance_amount' => $newBalance,
+                                'schedule_amount' => $newAmountDue,
                                 'status' => 'overdue',
                                 'updated_at' => now(),
-                            ]);
+                            ], array_flip(Schema::connection($this->conn)->getColumnListing('loan_payment_schedules'))));
 
                         if ($hasPenaltiesTable) {
                             DB::connection($this->conn)->table('loan_penalties')->insert([
@@ -123,7 +135,7 @@ class LoanPenaltyAccrualService
                                 'schedule_id' => $sched->id,
                                 'amount' => $dailyPenaltyRate,
                                 'reason' => "Daily penalty for installment #{$sched->installment_no} ({$dpd} DPD)",
-                                'applied_at' => now(),
+                                'applied_at' => $today,
                                 'created_at' => now(),
                                 'updated_at' => now(),
                             ]);
